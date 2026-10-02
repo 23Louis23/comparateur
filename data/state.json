@@ -1,13 +1,13 @@
 {
  "theoddsapi": {
   "status": "ok",
-  "remaining": 446,
-  "lastRun": "2026-10-02T20:47:08Z"
+  "remaining": 437,
+  "lastRun": "2026-10-02T20:48:54Z"
  },
  "oddspapi": {
   "status": "ok",
   "month": "2026-10",
-  "used": 60,
+  "used": 75,
   "cache": {
    "books": {
     "bwin": "bwin.fr",
@@ -90,64 +90,10 @@
      "category": "France"
     },
     {
-     "id": 53036,
-     "sport": "cyclisme",
-     "name": "World Championship",
-     "category": "International"
-    },
-    {
-     "id": 53038,
-     "sport": "cyclisme",
-     "name": "UCI World Tour",
-     "category": "International"
-    },
-    {
-     "id": 900900,
-     "sport": "cyclisme",
-     "name": "World Championship Mixed Relay",
-     "category": "World Championship Mixed Relay"
-    },
-    {
-     "id": 900905,
-     "sport": "cyclisme",
-     "name": "Cyclo-Cross World Cup Iowa",
-     "category": "Cyclo-Cross World Cup Iowa"
-    },
-    {
-     "id": 901151,
-     "sport": "cyclisme",
-     "name": "Vuelta a San Juan",
-     "category": "Vuelta a San Juan"
-    },
-    {
-     "id": 901355,
-     "sport": "cyclisme",
-     "name": "Sparkassen Munsterland Giro",
-     "category": "Sparkassen Munsterland Giro"
-    },
-    {
-     "id": 901629,
-     "sport": "cyclisme",
-     "name": "Giro d Abruzzo",
-     "category": "Giro d Abruzzo"
-    },
-    {
-     "id": 901674,
-     "sport": "cyclisme",
-     "name": "Vuelta a Burgos Feminas",
-     "category": "Vuelta a Burgos Feminas"
-    },
-    {
      "id": 904332,
      "sport": "cyclisme",
      "name": "Vuelta a Espana",
      "category": "Vuelta a Espana"
-    },
-    {
-     "id": 904404,
-     "sport": "cyclisme",
-     "name": "World Championship Time Trial",
-     "category": "World Championship Time Trial"
     },
     {
      "id": 904414,
@@ -156,28 +102,10 @@
      "category": "World Championship Road Race"
     },
     {
-     "id": 904415,
-     "sport": "cyclisme",
-     "name": "World Championship Women Road Race",
-     "category": "World Championship Women Road Race"
-    },
-    {
-     "id": 904436,
-     "sport": "cyclisme",
-     "name": "Giro dell'Emilia",
-     "category": "Giro dell'Emilia"
-    },
-    {
      "id": 904447,
      "sport": "cyclisme",
      "name": "Il Lombardia",
      "category": "Il Lombardia"
-    },
-    {
-     "id": 904459,
-     "sport": "cyclisme",
-     "name": "Giro Del Veneto",
-     "category": "Giro Del Veneto"
     },
     {
      "id": 904674,
@@ -186,40 +114,22 @@
      "category": "Paris-Tours"
     },
     {
-     "id": 904697,
-     "sport": "cyclisme",
-     "name": "Vuelta Murcia",
-     "category": "Vuelta Murcia"
-    },
-    {
-     "id": 904719,
-     "sport": "cyclisme",
-     "name": "Vuelta Andalucia",
-     "category": "Vuelta Andalucia"
-    },
-    {
      "id": 904784,
      "sport": "cyclisme",
      "name": "Paris-Nice",
      "category": "Paris-Nice"
     },
     {
+     "id": 904840,
+     "sport": "cyclisme",
+     "name": "Milan-San Remo",
+     "category": "Milan-San Remo"
+    },
+    {
      "id": 904882,
      "sport": "cyclisme",
      "name": "Tour Of Flanders",
      "category": "Tour Of Flanders"
-    },
-    {
-     "id": 904883,
-     "sport": "cyclisme",
-     "name": "In Flanders Fields Women",
-     "category": "In Flanders Fields Women"
-    },
-    {
-     "id": 904886,
-     "sport": "cyclisme",
-     "name": "In Flanders Fields",
-     "category": "In Flanders Fields"
     },
     {
      "id": 904908,
@@ -240,22 +150,10 @@
      "category": "La Fleche Wallone"
     },
     {
-     "id": 904946,
-     "sport": "cyclisme",
-     "name": "Vuelta a Asturias",
-     "category": "Vuelta a Asturias"
-    },
-    {
      "id": 904950,
      "sport": "cyclisme",
      "name": "Liege-Bastogne-Liege",
      "category": "Liege-Bastogne-Liege"
-    },
-    {
-     "id": 904974,
-     "sport": "cyclisme",
-     "name": "La Vuelta Femenina",
-     "category": "La Vuelta Femenina"
     },
     {
      "id": 904981,
@@ -268,30 +166,6 @@
      "sport": "cyclisme",
      "name": "Tour de France",
      "category": "Tour de France"
-    },
-    {
-     "id": 905308,
-     "sport": "cyclisme",
-     "name": "Vuelta a Burgos",
-     "category": "Vuelta a Burgos"
-    },
-    {
-     "id": 905486,
-     "sport": "cyclisme",
-     "name": "World Championship Women Time Trial",
-     "category": "World Championship Women Time Trial"
-    },
-    {
-     "id": 905490,
-     "sport": "cyclisme",
-     "name": "World Championship U23 Time Trial",
-     "category": "World Championship U23 Time Trial"
-    },
-    {
-     "id": 905497,
-     "sport": "cyclisme",
-     "name": "World Championship U23 Road Race",
-     "category": "World Championship U23 Road Race"
     }
    ],
    "markets": {
@@ -2607,8 +2481,8 @@
      }
     ]
    },
-   "at": "2026-10-02T20:47:08Z",
-   "v": 4,
+   "at": "2026-10-02T20:48:54Z",
+   "v": 5,
    "multi": false
   },
   "books": [
@@ -2618,8 +2492,8 @@
    "unibet",
    "winamax"
   ],
-  "rotation": 0,
-  "lastRun": "2026-10-02T20:47:08Z",
+  "rotation": 1,
+  "lastRun": "2026-10-02T20:48:54Z",
   "players": {},
   "teams": {},
   "empty": {}
