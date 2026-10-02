@@ -35,7 +35,7 @@ COVERAGE_DIR = ROOT / "data" / "coverage"
 
 FORCE = "--force" in sys.argv or os.environ.get("FORCE") == "true"
 NOW = datetime.now(timezone.utc)
-HORIZON = NOW + timedelta(days=int(os.environ.get("HORIZON_DAYS", "7")))
+HORIZON = NOW + timedelta(days=int(os.environ.get("HORIZON_DAYS", "14")))
 
 # Nos 6 bookmakers et les motifs qui reconnaissent leurs identifiants chez les fournisseurs
 BOOKS = ["unibet", "winamax", "pmu", "betclic", "bwin", "pokerstars"]
@@ -218,15 +218,19 @@ class Store:
 
 # ---------------------------------------------------------------- The Odds API
 TOA_BASE = "https://api.the-odds-api.com/v4"
-TOA_SPORTS = [  # ordre = priorité quand le quota est serré
+TOA_SPORTS = [  # ordre = priorité ; chaque compétition coûte 1 crédit par passage, quel que soit le nombre de matchs
     ("football", r"^soccer_france_ligue_one$"),
     ("football", r"^soccer_uefa_champs_league$"),
     ("football", r"^soccer_epl$"),
-    ("basket", r"^basketball_nba$"),
     ("football", r"^soccer_spain_la_liga$"),
-    ("rugby", r"^rugbyunion_"),
+    ("football", r"^soccer_italy_serie_a$"),
+    ("football", r"^soccer_germany_bundesliga$"),
+    ("basket", r"^basketball_nba$"),
     ("basket", r"^basketball_euroleague$"),
-    ("football", r"^soccer_(italy_serie_a|germany_bundesliga|uefa_europa_league)$"),
+    ("rugby", r"^rugbyunion_(top_14|france|champions_cup|six_nations)"),
+    ("football", r"^soccer_france_ligue_two$"),
+    ("football", r"^soccer_uefa_europa_league$"),
+    ("football", r"^soccer_uefa_europa_conference_league$"),
 ]
 
 
@@ -244,6 +248,9 @@ def run_the_odds_api(store, state):
         log("The Odds API : erreur", e.code)
         return
 
+    (COVERAGE_DIR / "theoddsapi-competitions.json").write_text(json.dumps(  # diagnostic gratuit
+        sorted("%s | %s%s" % (x["key"], x["title"], "" if x.get("active") else " (inactive)") for x in sports
+               if re.match(r"^(soccer|basketball|rugby)", x["key"])), indent=1, ensure_ascii=False))
     targets = []
     for sport, pat in TOA_SPORTS:
         for s in sports:
@@ -319,6 +326,8 @@ OP_TOURNAMENTS = [
     ("football", r"^serie a$", r"italy"),
     ("football", r"^bundesliga$", r"germany"),
     ("football", r"^uefa europa league$", r""),
+    ("football", r"^ligue 2$", r"france"),
+    ("football", r"conference league", r""),
     ("rugby", r"champions cup", r""),
     ("basket", r"betclic elite|^pro a$|^lnb", r"france"),
     ("cyclisme", r"^(il lombardia|paris-tours|tour de france|giro d ?italia|vuelta a espana|paris-roubaix|tour of flanders|"
@@ -348,7 +357,7 @@ OP_PROPS = [
 ]
 
 
-CATALOG_VERSION = 6  # à incrémenter quand les règles ci-dessus changent
+CATALOG_VERSION = 7  # à incrémenter quand les règles ci-dessus changent
 
 
 class Budget(Exception):
