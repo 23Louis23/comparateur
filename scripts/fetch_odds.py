@@ -319,7 +319,9 @@ OP_TOURNAMENTS = [
     ("football", r"^uefa europa league$", r""),
     ("rugby", r"champions cup", r""),
     ("basket", r"betclic elite|^pro a$|^lnb", r"france"),
-    ("cyclisme", r"lombardia|paris.?tours|tour de france|giro|vuelta|roubaix|flandre|flanders|sanremo|li[eè]ge|amstel|fl[eè]che|paris.?nice|dauphin|world", r""),
+    ("cyclisme", r"^(il lombardia|paris-tours|tour de france|giro d ?italia|vuelta a espana|paris-roubaix|tour of flanders|"
+                 r"liege-bastogne-liege|milano-sanremo|milan-san ?remo|paris-nice|amstel gold|la fleche wallone|"
+                 r"criterium du dauphine|world championship road race)$", r""),
 ]
 
 # Marchés joueurs : (sport, motif sur marketName, clé, libellé, type)
@@ -344,7 +346,7 @@ OP_PROPS = [
 ]
 
 
-CATALOG_VERSION = 4  # à incrémenter quand les règles ci-dessus changent
+CATALOG_VERSION = 5  # à incrémenter quand les règles ci-dessus changent
 
 
 class Budget(Exception):
@@ -440,7 +442,7 @@ def run_oddspapi(store, state):
             if found:
                 empty.pop(jid, None)
                 break
-            empty[jid] = iso(NOW + timedelta(hours=24))
+            empty[jid] = iso(NOW + timedelta(hours=72 if t["sport"] == "cyclisme" else 24))
         try:
             resolve_player_names(call, store, players)
         except urllib.error.HTTPError:
@@ -492,8 +494,12 @@ def run_oddspapi_tournament(call, budget, store, t, slug_to_book, cache, teams, 
     missing = sorted({str(f.get(k)) for f in fixtures for k in ("participant1Id", "participant2Id")} - set(teams))
     if missing and budget[0] > 0:
         try:
-            for p in as_list(call("/participants", {"participantIds": ",".join(missing[:200])})):
-                teams[str(p.get("participantId"))] = p.get("name") or p.get("participantName")
+            data = call("/participants", {"participantIds": ",".join(missing[:200])})
+            if isinstance(data, dict) and all(isinstance(v, str) for v in data.values()):
+                teams.update({str(k): v for k, v in data.items()})  # format réel : {"1641": "Olympique Marseille"}
+            else:
+                for p in as_list(data):
+                    teams[str(p.get("participantId"))] = p.get("name") or p.get("participantName")
         except urllib.error.HTTPError:
             pass
     for f in fixtures:
