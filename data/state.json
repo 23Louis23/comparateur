@@ -1,13 +1,13 @@
 {
  "theoddsapi": {
   "status": "ok",
-  "remaining": 428,
-  "lastRun": "2026-10-02T20:50:17Z"
+  "remaining": 419,
+  "lastRun": "2026-10-02T20:53:43Z"
  },
  "oddspapi": {
   "status": "ok",
   "month": "2026-10",
-  "used": 81,
+  "used": 87,
   "cache": {
    "books": {
     "bwin": "bwin.fr",
@@ -2492,8 +2492,8 @@
    "unibet",
    "winamax"
   ],
-  "rotation": 0,
-  "lastRun": "2026-10-02T20:50:17Z",
+  "rotation": 1,
+  "lastRun": "2026-10-02T20:53:43Z",
   "players": {},
   "teams": {
    "1662": "Le Havre AC",
