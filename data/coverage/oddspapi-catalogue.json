@@ -1,0 +1,105 @@
+{
+ "bookmakers_dispo": [
+  "bwin",
+  "bwin.be",
+  "bwin.de",
+  "bwin.dk",
+  "bwin.es",
+  "bwin.fr",
+  "bwin.pt",
+  "pmu",
+  "pokerstars",
+  "pokerstars.es",
+  "pokerstars.fr",
+  "pokerstars.it",
+  "pokerstars.ro",
+  "pokerstars.uk",
+  "unibet",
+  "unibet.be",
+  "unibet.com.au",
+  "unibet.dk",
+  "unibet.fr",
+  "unibet.ie",
+  "unibet.nl",
+  "unibet.se",
+  "winamax.de",
+  "winamax.es",
+  "winamax.fr"
+ ],
+ "retenus": {
+  "bwin": "bwin.fr",
+  "pmu": "pmu",
+  "pokerstars": "pokerstars.fr",
+  "unibet": "unibet.fr",
+  "winamax": "winamax.fr"
+ },
+ "competitions": [
+  {
+   "id": 34,
+   "sport": "football",
+   "name": "Ligue 1",
+   "category": "France"
+  },
+  {
+   "id": 7,
+   "sport": "football",
+   "name": "UEFA Champions League",
+   "category": "International Clubs"
+  },
+  {
+   "id": 17,
+   "sport": "football",
+   "name": "Premier League",
+   "category": "England"
+  },
+  {
+   "id": 132,
+   "sport": "basket",
+   "name": "NBA",
+   "category": "USA"
+  },
+  {
+   "id": 8,
+   "sport": "football",
+   "name": "LaLiga",
+   "category": "Spain"
+  },
+  {
+   "id": 138,
+   "sport": "basket",
+   "name": "Euroleague",
+   "category": "International"
+  },
+  {
+   "id": 23,
+   "sport": "football",
+   "name": "Serie A",
+   "category": "Italy"
+  },
+  {
+   "id": 35,
+   "sport": "football",
+   "name": "Bundesliga",
+   "category": "Germany"
+  },
+  {
+   "id": 679,
+   "sport": "football",
+   "name": "UEFA Europa League",
+   "category": "International Clubs"
+  },
+  {
+   "id": 401,
+   "sport": "rugby",
+   "name": "European Rugby Champions Cup",
+   "category": "Rugby Union"
+  },
+  {
+   "id": 156,
+   "sport": "basket",
+   "name": "LNB Elite",
+   "category": "France"
+  }
+ ],
+ "marches_utiles": 275
+}
