@@ -1,54 +1,11 @@
 {
- "run": "2026-10-02T20:42:59Z",
+ "run": "2026-10-02T20:47:08Z",
  "fixtures": [],
  "unmapped": {},
- "erreurs": [
-  {
-   "nom": "Serie A",
-   "code": 404,
-   "message": "{\"error\":{\"message\":\"Not Found\",\"code\":\"NOT_FOUND\",\"details\":\"The requested endpoint does not exist.\"}}"
-  },
-  {
-   "nom": "Bundesliga",
-   "code": 404,
-   "message": "{\"error\":{\"message\":\"Not Found\",\"code\":\"NOT_FOUND\",\"details\":\"The requested endpoint does not exist.\"}}"
-  },
-  {
-   "nom": "UEFA Europa League",
-   "code": 404,
-   "message": "{\"error\":{\"message\":\"Not Found\",\"code\":\"NOT_FOUND\",\"details\":\"The requested endpoint does not exist.\"}}"
-  },
-  {
-   "nom": "European Rugby Champions Cup",
-   "code": 404,
-   "message": "{\"error\":{\"message\":\"Not Found\",\"code\":\"NOT_FOUND\",\"details\":\"The requested endpoint does not exist.\"}}"
-  },
-  {
-   "nom": "LNB Elite",
-   "code": 404,
-   "message": "{\"error\":{\"message\":\"Not Found\",\"code\":\"NOT_FOUND\",\"details\":\"The requested endpoint does not exist.\"}}"
-  }
- ],
  "competitions": [
   {
-   "nom": "Serie A",
-   "matchs": 0
-  },
-  {
-   "nom": "Bundesliga",
-   "matchs": 0
-  },
-  {
-   "nom": "UEFA Europa League",
-   "matchs": 0
-  },
-  {
-   "nom": "European Rugby Champions Cup",
-   "matchs": 0
-  },
-  {
-   "nom": "LNB Elite",
-   "matchs": 0
+   "nom": "Ligue 1",
+   "matchs": 1
   }
  ]
 }
