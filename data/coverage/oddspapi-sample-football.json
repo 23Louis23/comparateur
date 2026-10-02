@@ -1,0 +1,14 @@
+{
+ "fixtureId": "id1001502773998606",
+ "participant1Id": 1110751,
+ "participant2Id": 889265,
+ "sportId": 10,
+ "tournamentId": 15027,
+ "seasonId": 139958,
+ "statusId": 0,
+ "hasOdds": true,
+ "startTime": "2026-10-02T20:30:00.000Z",
+ "trueStartTime": null,
+ "trueEndTime": null,
+ "updatedAt": "2026-10-02T13:43:34.560Z"
+}
