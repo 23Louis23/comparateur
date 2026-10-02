@@ -225,7 +225,7 @@ TOA_SPORTS = [  # ordre = priorité ; chaque compétition coûte 1 crédit par p
     ("football", r"^soccer_spain_la_liga$"),
     ("football", r"^soccer_italy_serie_a$"),
     ("football", r"^soccer_germany_bundesliga$"),
-    ("basket", r"^basketball_nba$"),
+    ("basket", r"^basketball_nba(_preseason)?$"),
     ("basket", r"^basketball_euroleague$"),
     ("rugby", r"^rugbyunion_(top_14|france|champions_cup|six_nations)"),
     ("football", r"^soccer_france_ligue_two$"),
