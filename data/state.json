@@ -1,13 +1,13 @@
 {
  "theoddsapi": {
   "status": "ok",
-  "remaining": 399,
-  "lastRun": "2026-10-02T21:02:14Z"
+  "remaining": 376,
+  "lastRun": "2026-10-02T21:04:05Z"
  },
  "oddspapi": {
   "status": "ok",
   "month": "2026-10",
-  "used": 119,
+  "used": 126,
   "cache": {
    "books": {
     "bwin": "bwin.fr",
@@ -2864,7 +2864,7 @@
    "unibet",
    "winamax"
   ],
-  "lastRun": "2026-10-02T21:02:14Z",
+  "lastRun": "2026-10-02T21:04:05Z",
   "players": {},
   "teams": {
    "1662": "Le Havre AC",
@@ -2926,7 +2926,22 @@
    "2816": "Real Betis Seville",
    "3002": "FC Porto",
    "2404": "SK Slovan Bratislava",
-   "2677": "VfB Stuttgart"
+   "2677": "VfB Stuttgart",
+   "34": "Leeds United",
+   "50": "Brentford FC",
+   "38": "Chelsea FC",
+   "60": "AFC Bournemouth",
+   "32": "Ipswich Town",
+   "43": "Fulham FC",
+   "41": "Sunderland AFC",
+   "30": "Brighton & Hove Albion",
+   "33": "Tottenham Hotspur",
+   "7": "Crystal Palace",
+   "14": "Nottingham Forest",
+   "96": "Hull City",
+   "48": "Everton FC",
+   "11": "Coventry City",
+   "39": "Newcastle United"
   },
   "empty": {},
   "tinfo": {
@@ -2937,6 +2952,10 @@
    "7": {
     "last": "2026-10-02T21:02:14Z",
     "next": "2026-10-13T16:45:00Z"
+   },
+   "17": {
+    "last": "2026-10-02T21:04:05Z",
+    "next": "2026-10-10T11:30:00Z"
    }
   },
   "miss": {}
