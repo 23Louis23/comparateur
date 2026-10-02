@@ -95,6 +95,18 @@
    "category": "International Clubs"
   },
   {
+   "id": 182,
+   "sport": "football",
+   "name": "Ligue 2",
+   "category": "France"
+  },
+  {
+   "id": 34480,
+   "sport": "football",
+   "name": "UEFA Conference League",
+   "category": "International Clubs"
+  },
+  {
    "id": 401,
    "sport": "rugby",
    "name": "European Rugby Champions Cup",

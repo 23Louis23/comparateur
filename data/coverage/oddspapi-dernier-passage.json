@@ -1,9 +1,162 @@
 {
- "run": "2026-10-02T20:57:08Z",
+ "run": "2026-10-02T21:02:14Z",
  "fixtures": [
   {
-   "match": "Racing Club De Lens - Olympique Lyon",
-   "cotes": 100,
+   "match": "Racing Club De Lens - Sporting CP",
+   "cotes": 32,
+   "bookmakers": [
+    "bwin",
+    "pmu",
+    "pokerstars"
+   ]
+  },
+  {
+   "match": "Sabah Masazir - Slavia Prague",
+   "cotes": 32,
+   "bookmakers": [
+    "bwin",
+    "pmu",
+    "pokerstars"
+   ]
+  },
+  {
+   "match": "Arsenal FC - Lille OSC",
+   "cotes": 34,
+   "bookmakers": [
+    "bwin",
+    "pmu",
+    "pokerstars"
+   ]
+  },
+  {
+   "match": "Atletico Madrid - Manchester United",
+   "cotes": 34,
+   "bookmakers": [
+    "bwin",
+    "pmu",
+    "pokerstars"
+   ]
+  },
+  {
+   "match": "Inter Milano - Club Brugge",
+   "cotes": 34,
+   "bookmakers": [
+    "bwin",
+    "pmu",
+    "pokerstars"
+   ]
+  },
+  {
+   "match": "Galatasaray Istanbul - FC Barcelona",
+   "cotes": 34,
+   "bookmakers": [
+    "bwin",
+    "pmu",
+    "pokerstars"
+   ]
+  },
+  {
+   "match": "RB Leipzig - PSV Eindhoven",
+   "cotes": 33,
+   "bookmakers": [
+    "bwin",
+    "pmu",
+    "pokerstars"
+   ]
+  },
+  {
+   "match": "Viking FK - Bayern Munich",
+   "cotes": 34,
+   "bookmakers": [
+    "bwin",
+    "pmu",
+    "pokerstars"
+   ]
+  },
+  {
+   "match": "Villarreal CF - SSC Napoli",
+   "cotes": 45,
+   "bookmakers": [
+    "bwin",
+    "pmu",
+    "pokerstars"
+   ]
+  },
+  {
+   "match": "Feyenoord Rotterdam - Como 1907",
+   "cotes": 34,
+   "bookmakers": [
+    "bwin",
+    "pmu",
+    "pokerstars"
+   ]
+  },
+  {
+   "match": "LASK Linz - Liverpool FC",
+   "cotes": 33,
+   "bookmakers": [
+    "bwin",
+    "pmu",
+    "pokerstars"
+   ]
+  },
+  {
+   "match": "AS Roma - Real Madrid",
+   "cotes": 33,
+   "bookmakers": [
+    "bwin",
+    "pmu",
+    "pokerstars"
+   ]
+  },
+  {
+   "match": "Aston Villa - Fenerbahce Istanbul",
+   "cotes": 32,
+   "bookmakers": [
+    "bwin",
+    "pmu",
+    "pokerstars"
+   ]
+  },
+  {
+   "match": "FC Shakhtar Donetsk - AEK Athens",
+   "cotes": 31,
+   "bookmakers": [
+    "bwin",
+    "pmu",
+    "pokerstars"
+   ]
+  },
+  {
+   "match": "Bodoe/Glimt - Borussia Dortmund",
+   "cotes": 33,
+   "bookmakers": [
+    "bwin",
+    "pmu",
+    "pokerstars"
+   ]
+  },
+  {
+   "match": "Manchester City - Paris Saint-Germain",
+   "cotes": 34,
+   "bookmakers": [
+    "bwin",
+    "pmu",
+    "pokerstars"
+   ]
+  },
+  {
+   "match": "Real Betis Seville - FC Porto",
+   "cotes": 45,
+   "bookmakers": [
+    "bwin",
+    "pmu",
+    "pokerstars"
+   ]
+  },
+  {
+   "match": "SK Slovan Bratislava - VfB Stuttgart",
+   "cotes": 48,
    "bookmakers": [
     "bwin",
     "pmu",
@@ -13,134 +166,140 @@
  ],
  "unmapped": {
   "bwin": {
-   "10262 Over Under First Half [p1, ligne 3.5]": 1,
-   "10244 Over Under Team 2 [fulltime, ligne 2.5]": 1,
-   "102248 Over Under Team 2 Second Half [p2, ligne 0.5]": 1,
-   "10300 Both Teams To Score First Half [p1, ligne 0.0]": 1,
-   "10276 Over Under Second Half [p2, ligne 3.5]": 1,
-   "10240 Over Under Team 2 [fulltime, ligne 0.5]": 1,
-   "10270 Over Under Second Half [p2, ligne 0.5]": 1,
-   "101915 Team 1 Win To Nil Second Half [p2, ligne 0.0]": 1,
-   "10246 Over Under Team 2 [fulltime, ligne 3.5]": 1,
-   "10336 Correct Score Full Time [fulltime, ligne 0.0]": 1,
-   "101908 Double Chance Second Half [p2, ligne 0.0]": 1,
-   "102222 Over Under Team 2 First Half [p1, ligne 1.5]": 1,
-   "10228 Over Under Team 1 [fulltime, ligne 2.5]": 1,
-   "10214 Draw No Bet [fulltime, ligne 0.0]": 1,
-   "10226 Over Under Team 1 [fulltime, ligne 1.5]": 1,
-   "101902 Double Chance Full Time [fulltime, ligne 0.0]": 1,
-   "102224 Over Under Team 2 First Half [p1, ligne 2.5]": 1,
-   "10230 Over Under Team 1 [fulltime, ligne 3.5]": 1,
-   "102250 Over Under Team 2 Second Half [p2, ligne 1.5]": 1,
-   "10264 Over Under First Half [p1, ligne 4.5]": 1,
-   "10326 Team 2 No Bet [fulltime, ligne 0.0]": 1,
-   "10258 Over Under First Half [p1, ligne 1.5]": 1,
-   "10274 Over Under Second Half [p2, ligne 2.5]": 1,
-   "101919 Half Time / Full Time [None, ligne 0.0]": 1,
-   "101917 Team 2 Win To Nil Second Half [p2, ligne 0.0]": 1,
-   "10260 Over Under First Half [p1, ligne 2.5]": 1,
-   "10256 Over Under First Half [p1, ligne 0.5]": 1,
-   "10318 Team 2 Win To Nil [fulltime, ligne 0.0]": 1,
-   "101911 Team 1 Win To Nil First Half [p1, ligne 0.0]": 1,
-   "101913 Team 2 Win To Nil First Half [p1, ligne 0.0]": 1,
-   "10224 Over Under Team 1 [fulltime, ligne 0.5]": 1,
-   "102220 Over Under Team 2 First Half [p1, ligne 0.5]": 1,
-   "10324 Team 1 No Bet [fulltime, ligne 0.0]": 1,
-   "102252 Over Under Team 2 Second Half [p2, ligne 2.5]": 1,
-   "10316 Team 1 Win To Nil [fulltime, ligne 0.0]": 1,
-   "10242 Over Under Team 2 [fulltime, ligne 1.5]": 1,
-   "10272 Over Under Second Half [p2, ligne 1.5]": 1,
-   "10208 First Half Result [p1, ligne 0.0]": 1,
-   "102041 Highest Scoring Half [None, ligne 0.0]": 1,
-   "101905 Double Chance First Half [p1, ligne 0.0]": 1
+   "102222 Over Under Team 2 First Half [p1, ligne 1.5]": 18,
+   "10276 Over Under Second Half [p2, ligne 3.5]": 18,
+   "10270 Over Under Second Half [p2, ligne 0.5]": 18,
+   "10228 Over Under Team 1 [fulltime, ligne 2.5]": 18,
+   "10224 Over Under Team 1 [fulltime, ligne 0.5]": 18,
+   "10226 Over Under Team 1 [fulltime, ligne 1.5]": 18,
+   "10326 Team 2 No Bet [fulltime, ligne 0.0]": 18,
+   "10272 Over Under Second Half [p2, ligne 1.5]": 18,
+   "101902 Double Chance Full Time [fulltime, ligne 0.0]": 18,
+   "10208 First Half Result [p1, ligne 0.0]": 18,
+   "101919 Half Time / Full Time [None, ligne 0.0]": 18,
+   "101915 Team 1 Win To Nil Second Half [p2, ligne 0.0]": 18,
+   "102252 Over Under Team 2 Second Half [p2, ligne 2.5]": 18,
+   "10264 Over Under First Half [p1, ligne 4.5]": 18,
+   "101917 Team 2 Win To Nil Second Half [p2, ligne 0.0]": 18,
+   "10336 Correct Score Full Time [fulltime, ligne 0.0]": 18,
+   "101908 Double Chance Second Half [p2, ligne 0.0]": 18,
+   "101911 Team 1 Win To Nil First Half [p1, ligne 0.0]": 18,
+   "10244 Over Under Team 2 [fulltime, ligne 2.5]": 18,
+   "102220 Over Under Team 2 First Half [p1, ligne 0.5]": 18,
+   "101905 Double Chance First Half [p1, ligne 0.0]": 18,
+   "10274 Over Under Second Half [p2, ligne 2.5]": 18,
+   "10256 Over Under First Half [p1, ligne 0.5]": 18,
+   "10260 Over Under First Half [p1, ligne 2.5]": 18,
+   "10262 Over Under First Half [p1, ligne 3.5]": 18,
+   "10316 Team 1 Win To Nil [fulltime, ligne 0.0]": 18,
+   "102041 Highest Scoring Half [None, ligne 0.0]": 18,
+   "10324 Team 1 No Bet [fulltime, ligne 0.0]": 18,
+   "102248 Over Under Team 2 Second Half [p2, ligne 0.5]": 18,
+   "10300 Both Teams To Score First Half [p1, ligne 0.0]": 18,
+   "102250 Over Under Team 2 Second Half [p2, ligne 1.5]": 18,
+   "101913 Team 2 Win To Nil First Half [p1, ligne 0.0]": 18,
+   "10246 Over Under Team 2 [fulltime, ligne 3.5]": 18,
+   "10258 Over Under First Half [p1, ligne 1.5]": 18,
+   "102224 Over Under Team 2 First Half [p1, ligne 2.5]": 18,
+   "10214 Draw No Bet [fulltime, ligne 0.0]": 18,
+   "10318 Team 2 Win To Nil [fulltime, ligne 0.0]": 18,
+   "10230 Over Under Team 1 [fulltime, ligne 3.5]": 18,
+   "10242 Over Under Team 2 [fulltime, ligne 1.5]": 17,
+   "10240 Over Under Team 2 [fulltime, ligne 0.5]": 14,
+   "10248 Over Under Team 2 [fulltime, ligne 4.5]": 4,
+   "10250 Over Under Team 2 [fulltime, ligne 5.5]": 1
   },
   "pmu": {
-   "10211 Second Half Result [p2, ligne 0.0]": 1,
-   "10336 Correct Score Full Time [fulltime, ligne 0.0]": 1,
-   "10224 Over Under Team 1 [fulltime, ligne 0.5]": 1,
-   "10216 First Goal Full Time [fulltime, ligne 0.0]": 1,
-   "10272 Over Under Second Half [p2, ligne 1.5]": 1,
-   "102250 Over Under Team 2 Second Half [p2, ligne 1.5]": 1,
-   "10302 Both Teams To Score Second Half [p2, ligne 0.0]": 1,
-   "10240 Over Under Team 2 [fulltime, ligne 0.5]": 1,
-   "10306 Team 2 To Win Either Halves [None, ligne 0.0]": 1,
-   "102222 Over Under Team 2 First Half [p1, ligne 1.5]": 1,
-   "102236 Over Under Team 1 Second Half [p2, ligne 1.5]": 1,
-   "102429 European Handicap First Half [p1, ligne -2.0]": 1,
-   "10230 Over Under Team 1 [fulltime, ligne 3.5]": 1,
-   "10300 Both Teams To Score First Half [p1, ligne 0.0]": 1,
-   "101905 Double Chance First Half [p1, ligne 0.0]": 1,
-   "102208 Over Under Team 1 First Half [p1, ligne 1.5]": 1,
-   "102234 Over Under Team 1 Second Half [p2, ligne 0.5]": 1,
-   "10244 Over Under Team 2 [fulltime, ligne 2.5]": 1,
-   "101908 Double Chance Second Half [p2, ligne 0.0]": 1,
-   "10228 Over Under Team 1 [fulltime, ligne 2.5]": 1,
-   "10146 European Handicap [fulltime, ligne -3.0]": 1,
-   "10274 Over Under Second Half [p2, ligne 2.5]": 1,
-   "10137 European Handicap [fulltime, ligne 1.0]": 1,
-   "10270 Over Under Second Half [p2, ligne 0.5]": 1,
-   "10304 Team 1 To Win Either Halves [None, ligne 0.0]": 1,
-   "10214 Draw No Bet [fulltime, ligne 0.0]": 1,
-   "10761 2Up - Full Time Result [fulltime, ligne 0.0]": 1,
-   "10316 Team 1 Win To Nil [fulltime, ligne 0.0]": 1,
-   "1076 Asian Handicap [fulltime, ligne 0.5]": 1,
-   "10246 Over Under Team 2 [fulltime, ligne 3.5]": 1,
-   "102252 Over Under Team 2 Second Half [p2, ligne 2.5]": 1,
-   "10143 European Handicap [fulltime, ligne -2.0]": 1,
-   "10226 Over Under Team 1 [fulltime, ligne 1.5]": 1,
-   "102462 Correct Score First Half [p1, ligne 0.0]": 1,
-   "102220 Over Under Team 2 First Half [p1, ligne 0.5]": 1,
-   "1060 Asian Handicap [fulltime, ligne -1.5]": 1,
-   "102206 Over Under Team 1 First Half [p1, ligne 0.5]": 1,
-   "10322 Draw No Bet Second Half [p2, ligne 0.0]": 1,
-   "102423 European Handicap First Half [p1, ligne 1.0]": 1,
-   "101919 Half Time / Full Time [None, ligne 0.0]": 1,
-   "10242 Over Under Team 2 [fulltime, ligne 1.5]": 1,
-   "10140 European Handicap [fulltime, ligne -1.0]": 1,
-   "10256 Over Under First Half [p1, ligne 0.5]": 1,
-   "102248 Over Under Team 2 Second Half [p2, ligne 0.5]": 1,
-   "10260 Over Under First Half [p1, ligne 2.5]": 1,
-   "102426 European Handicap First Half [p1, ligne -1.0]": 1,
-   "101902 Double Chance Full Time [fulltime, ligne 0.0]": 1,
-   "102238 Over Under Team 1 Second Half [p2, ligne 2.5]": 1,
-   "10258 Over Under First Half [p1, ligne 1.5]": 1,
-   "10320 Draw No Bet First Half [p1, ligne 0.0]": 1,
-   "10208 First Half Result [p1, ligne 0.0]": 1,
-   "1068 Asian Handicap [fulltime, ligne -0.5]": 1,
-   "10318 Team 2 Win To Nil [fulltime, ligne 0.0]": 1,
-   "10232 Over Under Team 1 [fulltime, ligne 4.5]": 1,
-   "10134 European Handicap [fulltime, ligne 2.0]": 1,
-   "10738 Player Assists (incl. overtime) [result, ligne 0.0]": 1,
-   "10733 Player Goals (incl. overtime) [result, ligne 0.0]": 1
+   "102206 Over Under Team 1 First Half [p1, ligne 0.5]": 18,
+   "10320 Draw No Bet First Half [p1, ligne 0.0]": 18,
+   "10318 Team 2 Win To Nil [fulltime, ligne 0.0]": 18,
+   "10258 Over Under First Half [p1, ligne 1.5]": 18,
+   "10214 Draw No Bet [fulltime, ligne 0.0]": 18,
+   "101902 Double Chance Full Time [fulltime, ligne 0.0]": 18,
+   "10211 Second Half Result [p2, ligne 0.0]": 18,
+   "101905 Double Chance First Half [p1, ligne 0.0]": 18,
+   "10208 First Half Result [p1, ligne 0.0]": 18,
+   "10226 Over Under Team 1 [fulltime, ligne 1.5]": 18,
+   "10300 Both Teams To Score First Half [p1, ligne 0.0]": 18,
+   "101919 Half Time / Full Time [None, ligne 0.0]": 18,
+   "10761 2Up - Full Time Result [fulltime, ligne 0.0]": 18,
+   "10316 Team 1 Win To Nil [fulltime, ligne 0.0]": 18,
+   "10336 Correct Score Full Time [fulltime, ligne 0.0]": 18,
+   "10242 Over Under Team 2 [fulltime, ligne 1.5]": 17,
+   "10272 Over Under Second Half [p2, ligne 1.5]": 17,
+   "10216 First Goal Full Time [fulltime, ligne 0.0]": 17,
+   "10244 Over Under Team 2 [fulltime, ligne 2.5]": 15,
+   "10137 European Handicap [fulltime, ligne 1.0]": 15,
+   "102220 Over Under Team 2 First Half [p1, ligne 0.5]": 15,
+   "10140 European Handicap [fulltime, ligne -1.0]": 14,
+   "10224 Over Under Team 1 [fulltime, ligne 0.5]": 14,
+   "10228 Over Under Team 1 [fulltime, ligne 2.5]": 13,
+   "10134 European Handicap [fulltime, ligne 2.0]": 13,
+   "1076 Asian Handicap [fulltime, ligne 0.5]": 13,
+   "10240 Over Under Team 2 [fulltime, ligne 0.5]": 13,
+   "1068 Asian Handicap [fulltime, ligne -0.5]": 13,
+   "10143 European Handicap [fulltime, ligne -2.0]": 11,
+   "1084 Asian Handicap [fulltime, ligne 1.5]": 8,
+   "1060 Asian Handicap [fulltime, ligne -1.5]": 5,
+   "10131 European Handicap [fulltime, ligne 3.0]": 5,
+   "10246 Over Under Team 2 [fulltime, ligne 3.5]": 5,
+   "1092 Asian Handicap [fulltime, ligne 2.5]": 4,
+   "10146 European Handicap [fulltime, ligne -3.0]": 3,
+   "10230 Over Under Team 1 [fulltime, ligne 3.5]": 3,
+   "10248 Over Under Team 2 [fulltime, ligne 4.5]": 3,
+   "102222 Over Under Team 2 First Half [p1, ligne 1.5]": 3,
+   "10128 European Handicap [fulltime, ligne 4.0]": 3,
+   "10149 European Handicap [fulltime, ligne -4.0]": 2,
+   "1052 Asian Handicap [fulltime, ligne -2.5]": 2,
+   "10274 Over Under Second Half [p2, ligne 2.5]": 2,
+   "10100 Asian Handicap [fulltime, ligne 3.5]": 1,
+   "10125 European Handicap [fulltime, ligne 5.0]": 1,
+   "10250 Over Under Team 2 [fulltime, ligne 5.5]": 1,
+   "10256 Over Under First Half [p1, ligne 0.5]": 1
   },
   "pokerstars": {
-   "10336 Correct Score Full Time [fulltime, ligne 0.0]": 1
+   "10336 Correct Score Full Time [fulltime, ligne 0.0]": 18,
+   "10216 First Goal Full Time [fulltime, ligne 0.0]": 3,
+   "101936 Winning Margin Full Time [fulltime, ligne 0.0]": 3,
+   "10256 Over Under First Half [p1, ligne 0.5]": 3,
+   "101919 Half Time / Full Time [None, ligne 0.0]": 3,
+   "102041 Highest Scoring Half [None, ligne 0.0]": 3,
+   "10258 Over Under First Half [p1, ligne 1.5]": 3,
+   "10300 Both Teams To Score First Half [p1, ligne 0.0]": 3,
+   "10260 Over Under First Half [p1, ligne 2.5]": 3,
+   "102462 Correct Score First Half [p1, ligne 0.0]": 3,
+   "10208 First Half Result [p1, ligne 0.0]": 3,
+   "102426 European Handicap First Half [p1, ligne -1.0]": 2,
+   "10140 European Handicap [fulltime, ligne -1.0]": 2,
+   "10262 Over Under First Half [p1, ligne 3.5]": 1,
+   "102423 European Handicap First Half [p1, ligne 1.0]": 1,
+   "10134 European Handicap [fulltime, ligne 2.0]": 1
   }
  },
  "par_bookmaker": {
   "bwin": {
-   "marches": 49,
-   "actifs": 49,
-   "reconnus": 19,
+   "marches": 882,
+   "actifs": 882,
+   "reconnus": 342,
    "suspendu": 0
   },
   "pmu": {
-   "marches": 68,
-   "actifs": 68,
-   "reconnus": 19,
+   "marches": 644,
+   "actifs": 644,
+   "reconnus": 261,
    "suspendu": 0
   },
   "pokerstars": {
-   "marches": 1,
-   "actifs": 1,
-   "reconnus": 0,
+   "marches": 77,
+   "actifs": 77,
+   "reconnus": 41,
    "suspendu": 0
   }
  },
  "competitions": [
   {
-   "nom": "Ligue 1",
-   "matchs": 1
+   "nom": "UEFA Champions League",
+   "matchs": 18
   }
  ]
 }
