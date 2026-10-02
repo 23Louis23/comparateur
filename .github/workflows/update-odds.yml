@@ -33,7 +33,7 @@ jobs:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
           ODDSPAPI_KEY: ${{ secrets.ODDSPAPI_KEY }}
           ODDSPAPI_MONTHLY_LIMIT: ${{ vars.ODDSPAPI_MONTHLY_LIMIT || '250' }}
-          ODDSPAPI_PER_RUN: ${{ vars.ODDSPAPI_PER_RUN || '8' }}
+          ODDSPAPI_PER_RUN: ${{ vars.ODDSPAPI_PER_RUN || '6' }}
           FORCE: ${{ inputs.force }}
         run: python scripts/fetch_odds.py
 

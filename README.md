@@ -20,7 +20,7 @@ data/coverage/           échantillons bruts pour vérifier la couverture réell
 | Source | Clé (secret GitHub) | Bookmakers | Marchés |
 |---|---|---|---|
 | [The Odds API](https://the-odds-api.com) | `ODDS_API_KEY` | Unibet, Winamax, PMU, Betclic | 1N2 / vainqueur (les marchés joueurs n'y existent que pour les bookmakers US) |
-| [OddsPapi](https://oddspapi.io) | `ODDSPAPI_KEY` | bwin.fr, PokerStars (à confirmer) + les autres | 1N2 et marchés joueurs selon disponibilité |
+| [OddsPapi](https://oddspapi.io) | `ODDSPAPI_KEY` | bwin.fr, PokerStars.fr, PMU, Unibet.fr, Winamax.fr (pas Betclic) | 1N2, buteur, premier buteur, passeur, paliers NBA (points, rebonds, passes, 3 pts, PRA), vainqueur des courses cyclistes |
 
 Offres gratuites : 500 crédits/mois (The Odds API), 250 requêtes/mois (OddsPapi).
 Le script répartit le quota restant sur le reste du mois : en gratuit, chaque
