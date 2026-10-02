@@ -1,5 +1,27 @@
 {
- "run": "2026-10-02T20:34:12Z",
+ "run": "2026-10-02T20:40:53Z",
  "fixtures": [],
- "unmapped": {}
+ "unmapped": {},
+ "competitions": [
+  {
+   "nom": "Premier League",
+   "matchs": 0
+  },
+  {
+   "nom": "NBA",
+   "matchs": 0
+  },
+  {
+   "nom": "Top 14",
+   "matchs": 0
+  },
+  {
+   "nom": "LaLiga",
+   "matchs": 0
+  },
+  {
+   "nom": "Euroleague",
+   "matchs": 0
+  }
+ ]
 }
