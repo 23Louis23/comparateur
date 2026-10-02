@@ -1,13 +1,13 @@
 {
  "theoddsapi": {
   "status": "ok",
-  "remaining": 464,
-  "lastRun": "2026-10-02T20:42:59Z"
+  "remaining": 455,
+  "lastRun": "2026-10-02T20:44:53Z"
  },
  "oddspapi": {
-  "status": "ok",
+  "status": "pas de clé",
   "month": "2026-10",
-  "used": 38,
+  "used": 45,
   "cache": {
    "books": {
     "bwin": "bwin.fr",

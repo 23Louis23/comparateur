@@ -1,0 +1,161 @@
+{
+ "date": "2026-10-02T20:44:42.977647+00:00",
+ "fixture_teste": "id1000003450955355",
+ "resultats": [
+  {
+   "path": "/fixtures",
+   "params": {
+    "tournamentId": 34,
+    "startTimeFrom": 1790973882,
+    "startTimeTo": 1791578682
+   },
+   "status": 200,
+   "headers": {},
+   "type": "list",
+   "count": 942,
+   "first_keys": [
+    "categoryName",
+    "categorySlug",
+    "externalProviders",
+    "fixtureId",
+    "hasOdds",
+    "participant1Abbr",
+    "participant1Id",
+    "participant1Name",
+    "participant1ShortName",
+    "participant2Abbr",
+    "participant2Id",
+    "participant2Name",
+    "participant2ShortName",
+    "seasonId",
+    "sportId",
+    "sportName",
+    "startTime",
+    "statusId",
+    "tournamentId",
+    "tournamentName",
+    "tournamentSlug",
+    "trueEndTime",
+    "trueStartTime",
+    "updatedAt"
+   ],
+   "extrait": "[{\"fixtureId\":\"id1000003450955355\",\"participant1Id\":1662,\"participant2Id\":1644,\"sportId\":10,\"tournamentId\":34,\"seasonId\":119835,\"statusId\":null,\"hasOdds\":false,\"startTime\":\"2024-08-16T18:45:00.000Z\",\"trueStartTime\":null,\"trueEndTime\":null,\"updatedAt\":\"2025-08-20T12:59:59.902Z\",\"externalProviders\":{\"betradarId\":50955355,\"mollybetId\":null,\"opticoddsId\":null,\"lsportsId\":null,\"txoddsId\":null,\"sofascoreId\":null,\"betgeniusId\":null,\"flashscoreId\":null,\"pinnacleId\":null,\"oddinId\":null},\"participant1Name\":\"Le Havre AC\",\"participant1ShortName\":\"Le Havre\",\"participant1Abbr\":\"HAC\",\"participant2Name\":\"Paris Saint-Germain\",\"participant2ShortName\":\"PSG\",\"participant2Abbr\":\"PSG\",\"sportName\":\"Soccer\",\"tournamentSlug\":\"ligue-1\",\"categorySlug\":\"france\",\"categoryName\":\"France\",\"tournamentName\":\"Ligue 1\"},{\"fixtureId\":\"id1000003450955341\",\"participant1Id\":1715,\"participant2Id\":1641,\"sportId\":10,\"tournamentId\":34,\"seasonId\":119835,\"statusId\":null,\"hasOdds\":false,\"startTime\":\"2024-08-17T15:00:00.000Z\",\"trueStartTime\":null,\"trueEndTime\":null,\"updatedAt\":\"2025-08-20T13:01:02.411Z\",\"externalProviders\":{\"betradarId\":50955341,\"mollybetId\":null,\"opticoddsId\":null,\"lsportsId\":null,\"txoddsId\":null,\"sofascoreId\":null,\"betgeniusId\":null,\"flashscoreId\":null,\"pinnacleId\":null,\"oddinId\":null},\"participant1Name\":\"Stade Brest 29\",\"participant1ShortName\":\"Stade Brest 29\",\"participant1Abbr\":\"STB\",\"participant2Name\":\"Olympique Marseille\",\"participant2ShortName\":\"Marseille\",\"participant2Abbr\":\"OLM\",\"sportName\":\"Soccer\",\"tournamentSlug\":\"ligue-1\",\"categorySlug\":\"france\",\"categoryName\":\"France\",\"tournamentName\":\"Ligue 1\"},{\"fixtureId\":\"id1000003450955351\",\"participant1Id\":1682,\"participant2Id\":1643,\"sportId\":10,\"tournamentId\":34,\"seasonId\":119835,\"statusId\":null,\"hasOdds\":false,\"startTime\":\"2024-08-17T17:00:00.000Z\",\"trueStartTime\":null,\"trueEndTime\":null,\"updatedAt\":\"2025-08-20T13:01:17.816Z\",\"externalProviders\":{\"betradarId\":50955351,\"mollybetId\":null,\"opticoddsId\":null,\"lsportsId\":null,\"txoddsId\":null,\"sofascoreId\":null,\"betgeniusId\":null,\"flashscoreId\":null,\"pinnacleId\":null,\"oddinId\":null},\"participant1Name\":\"Stade Reims\",\"participant1ShortName\":\"Reims\",\"participant1Abbr\":\"SDR\",\"participant2Name\":\"Lille OSC\",\"participant2ShortName\":\"Lille\",\"participant2Abbr\":\"LIL\",\"sportName\":\"Soccer\",\"tournamentSlug\":\"ligue-1\",\"categorySlug\":\"france\",\"categoryName\":\"France\",\"tournamentName\":\"Ligue 1\"},{\"fixtureId\":\"id1000003450955349\",\"participant1Id\":1653,\"participant2Id\":1678,\"sportId\":10,\"tournamentId\":34,\""
+  },
+  {
+   "path": "/fixtures",
+   "params": {
+    "sportId": 10,
+    "from": "2026-10-02",
+    "to": "2026-10-09",
+    "hasOdds": "true"
+   },
+   "status": 429,
+   "type": "dict",
+   "keys": [
+    "error"
+   ],
+   "extrait": "{\"error\":{\"message\":\"You are being rate limited. Please wait before making more requests to this endpoint.\",\"code\":\"RATE_LIMITED\",\"details\":\"Please wait 0.42 seconds before making another request to /v4/fixtures.\",\"retryAfter\":\"0.42 seconds\",\"retryMs\":422}}"
+  },
+  {
+   "path": "/fixtures/odds",
+   "params": {
+    "fixtureId": "id1000003450955355",
+    "bookmakers": "bwin.fr,pmu,pokerstars.fr,unibet.fr,winamax.fr"
+   },
+   "status": 404,
+   "type": "dict",
+   "keys": [
+    "error"
+   ],
+   "extrait": "{\"error\":{\"message\":\"Not Found\",\"code\":\"NOT_FOUND\",\"details\":\"The requested endpoint does not exist.\"}}"
+  },
+  {
+   "path": "/odds",
+   "params": {
+    "fixtureId": "id1000003450955355",
+    "bookmakers": "bwin.fr,pmu,pokerstars.fr,unibet.fr,winamax.fr"
+   },
+   "status": 200,
+   "headers": {},
+   "type": "dict",
+   "keys": [
+    "fixtureId",
+    "hasOdds",
+    "participant1Id",
+    "participant2Id",
+    "seasonId",
+    "sportId",
+    "startTime",
+    "statusId",
+    "tournamentId",
+    "trueEndTime",
+    "trueStartTime",
+    "updatedAt"
+   ],
+   "extrait": "{\"fixtureId\":\"id1000003450955355\",\"participant1Id\":1662,\"participant2Id\":1644,\"sportId\":10,\"tournamentId\":34,\"seasonId\":119835,\"statusId\":null,\"hasOdds\":false,\"startTime\":\"2024-08-16T18:45:00.000Z\",\"trueStartTime\":null,\"trueEndTime\":null,\"updatedAt\":\"2025-08-20T12:59:59.902Z\"}"
+  },
+  {
+   "path": "/odds",
+   "params": {
+    "fixtureId": "id1000003450955355"
+   },
+   "status": 200,
+   "headers": {},
+   "type": "dict",
+   "keys": [
+    "fixtureId",
+    "hasOdds",
+    "participant1Id",
+    "participant2Id",
+    "seasonId",
+    "sportId",
+    "startTime",
+    "statusId",
+    "tournamentId",
+    "trueEndTime",
+    "trueStartTime",
+    "updatedAt"
+   ],
+   "extrait": "{\"fixtureId\":\"id1000003450955355\",\"participant1Id\":1662,\"participant2Id\":1644,\"sportId\":10,\"tournamentId\":34,\"seasonId\":119835,\"statusId\":null,\"hasOdds\":false,\"startTime\":\"2024-08-16T18:45:00.000Z\",\"trueStartTime\":null,\"trueEndTime\":null,\"updatedAt\":\"2025-08-20T12:59:59.902Z\"}"
+  },
+  {
+   "path": "/odds-by-tournaments",
+   "params": {
+    "tournamentIds": 34,
+    "bookmaker": "bwin.fr"
+   },
+   "status": 200,
+   "headers": {},
+   "type": "list",
+   "count": 9,
+   "first_keys": [
+    "bookmakerOdds",
+    "fixtureId",
+    "hasOdds",
+    "participant1Id",
+    "participant2Id",
+    "seasonId",
+    "sportId",
+    "startTime",
+    "statusId",
+    "tournamentId",
+    "trueEndTime",
+    "trueStartTime",
+    "updatedAt"
+   ],
+   "extrait": "[{\"fixtureId\":\"id1000003472036204\",\"participant1Id\":1648,\"participant2Id\":1649,\"sportId\":10,\"tournamentId\":34,\"seasonId\":140780,\"statusId\":0,\"hasOdds\":true,\"startTime\":\"2026-10-09T18:45:00.000Z\",\"trueStartTime\":null,\"trueEndTime\":null,\"updatedAt\":\"2026-09-16T14:12:28.673Z\",\"bookmakerOdds\":{\"bwin.fr\":{\"bookmakerIsActive\":true,\"bookmakerFixtureId\":\"2:7868981\",\"fixturePath\":\"https://sports.bwin.fr/en/sports/events/2:7868981\",\"suspended\":false,\"markets\":{\"10262\":{\"bookmakerMarketId\":\"205093600\",\"marketActive\":true,\"outcomes\":{\"10263\":{\"players\":{\"0\":{\"active\":false,\"betslip\":\"https://sports.bwin.fr/en/sports/events/2:7868981?options=2:7868981-205093600-787858324&type=Single\",\"bookmakerOutcomeId\":\"787858324\",\"bookmakerChangedAt\":null,\"changedAt\":\"2026-09-21T07:55:41.113Z\",\"limit\":null,\"playerName\":null,\"price\":1.0,\"priceAmerican\":\"\",\"priceFractional\":\"\",\"mainLine\":false,\"exchangeMeta\":null}}},\"10262\":{\"players\":{\"0\":{\"active\":true,\"betslip\":\"https://sports.bwin.fr/en/sports/events/2:7868981?options=2:7868981-205093600-787858323&type=Single\",\"bookmakerOutcomeId\":\"787858323\",\"bookmakerChangedAt\":null,\"changedAt\":\"2026-10-01T12:09:00.295Z\",\"limit\":null,\"playerName\":null,\"price\":11.0,\"priceAmerican\":\"1000\",\"priceFractional\":\"10/1\",\"mainLine\":false,\"exchangeMeta\":null}}}}},\"10244\":{\"bookmakerMarketId\":\"205093611\",\"marketActive\":true,\"outcomes\":{\"10245\":{\"players\":{\"0\":{\"active\":true,\"betslip\":\"https://sports.bwin.fr/en/sports/events/2:7868981?options=2:7868981-205093611-787858346&type=Single\",\"bookmakerOutcomeId\":\"787858346\",\"bookmakerChangedAt\":null,\"changedAt\":\"2026-10-01T12:09:00.295Z\",\"limit\":null,\"playerName\":null,\"price\":1.16,\"priceAmerican\":\"-625\",\"priceFractional\":\"4/25\",\"mainLine\":false,\"exchangeMeta\":null}}},\"10244\":{\"players\":{\"0\":{\"active\":true,\"betslip\":\"https://sports.bwin.fr/en/sports/events/2:7868981?options=2:7868981-205093611-787858345&type=Single\",\"bookmakerOutcomeId\":\"787858345\",\"bookmakerChangedAt\":null,\"changedAt\":\"2026-10-01T12:09:00.295Z\",\"limit\":null,\"playerName\":null,\"price\":4.33,\"priceAmerican\":\"333\",\"priceFractional\":\"333/100\",\"mainLine\":false,\"exchangeMeta\":null}}}}},\"108\":{\"bookmakerMarketId\":\"205093592\",\"marketActive\":true,\"outcomes\":{\"109\":{\"players\":{\"0\":{\"active\":true,\"betslip\":\"https://sports.bwin.fr/en/sports/events/2:7868981?options=2:7868981-205093592-787858308&type=Single\",\"bookmakerOutcomeId\":\"787858308\",\"bookmakerChangedAt\":null,\"changedAt\":\"2026-10-01T12:09:00.295Z\",\"limit\":null,\"playerName\":null,\"price\":4.75,\"priceAmerican\""
+  },
+  {
+   "path": "/futures",
+   "params": {
+    "sportId": 68
+   },
+   "status": 404,
+   "type": "dict",
+   "keys": [
+    "error"
+   ],
+   "extrait": "{\"error\":{\"message\":\"Not Found\",\"code\":\"NOT_FOUND\",\"details\":\"The requested endpoint does not exist.\"}}"
+  }
+ ]
+}
