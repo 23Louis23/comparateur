@@ -311,7 +311,7 @@ OP_TOURNAMENTS = [
     ("football", r"^uefa champions league$", r""),
     ("football", r"^premier league$", r"england"),
     ("basket", r"^nba$", r"usa"),
-    ("rugby", r"top ?14", r""),
+    ("rugby", r"^top 14$", r""),
     ("football", r"^la ?liga$", r"spain"),
     ("basket", r"^euroleague$", r""),
     ("football", r"^serie a$", r"italy"),
@@ -340,7 +340,7 @@ OP_PROPS = [
 ]
 
 
-CATALOG_VERSION = 2  # à incrémenter quand les règles ci-dessus changent
+CATALOG_VERSION = 3  # à incrémenter quand les règles ci-dessus changent
 
 
 class Budget(Exception):
@@ -426,6 +426,12 @@ def run_oddspapi(store, state):
                 else:
                     found = run_oddspapi_tournament(call, budget, store, t, slug_to_book, slugs, cache, players, summary)
             except urllib.error.HTTPError as e:
+                body = ""
+                try:
+                    body = e.read().decode("utf-8", "replace")[:300]
+                except Exception:
+                    pass
+                summary.setdefault("erreurs", []).append({"nom": t["name"] if t else "Cyclisme", "code": e.code, "message": body})
                 if e.code != 404:
                     raise
                 found = False
@@ -450,8 +456,16 @@ def run_oddspapi(store, state):
 
 def run_oddspapi_tournament(call, budget, store, t, slug_to_book, slugs, cache, players, summary):
     """Cotes principales de toute la compétition (1 requête), puis marchés joueurs des matchs les plus proches."""
-    fixtures = call("/fixtures/odds/main", {"tournamentId": t["id"], "bookmakers": slugs}, fast=True)
-    fixtures = [f for f in as_list(fixtures) if NOW < (parse_dt(f.get("startTime")) or NOW) <= HORIZON]
+    raw = call("/fixtures/odds/main", {"tournamentId": t["id"], "bookmakers": slugs}, fast=True)
+    items = as_list(raw)
+    summary.setdefault("diagnostic", []).append({
+        "competition": t["name"], "type": type(raw).__name__, "elements": len(items),
+        "cles": sorted(raw.keys())[:15] if isinstance(raw, dict) else sorted(items[0].keys())[:20] if items and isinstance(items[0], dict) else None,
+        "dates": [str(i.get("startTime")) for i in items[:5] if isinstance(i, dict)],
+        "bookmakers_avec_cotes": sorted({b for i in items if isinstance(i, dict) for b in (i.get("odds") or {})})})
+    if not (COVERAGE_DIR / "oddspapi-brut.json").exists() or items:
+        (COVERAGE_DIR / "oddspapi-brut.json").write_text(json.dumps(raw, ensure_ascii=False, indent=1)[:150000])
+    fixtures = [f for f in items if NOW < (parse_dt(f.get("startTime")) or NOW) <= HORIZON]
     fixtures.sort(key=lambda f: f.get("startTime") or 0)
     for f in fixtures:
         ingest_fixture(store, f, t, slug_to_book, cache["markets"], players, summary)
