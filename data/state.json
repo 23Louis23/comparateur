@@ -1,13 +1,13 @@
 {
  "theoddsapi": {
   "status": "ok",
-  "remaining": 437,
-  "lastRun": "2026-10-02T20:48:54Z"
+  "remaining": 428,
+  "lastRun": "2026-10-02T20:50:17Z"
  },
  "oddspapi": {
   "status": "ok",
   "month": "2026-10",
-  "used": 75,
+  "used": 81,
   "cache": {
    "books": {
     "bwin": "bwin.fr",
@@ -2492,10 +2492,38 @@
    "unibet",
    "winamax"
   ],
-  "rotation": 0,
-  "lastRun": "2026-10-02T20:48:54Z",
+  "rotation": 1,
+  "lastRun": "2026-10-02T20:50:17Z",
   "players": {},
-  "teams": {},
+  "teams": {
+   "1662": "Le Havre AC",
+   "1644": "Paris Saint-Germain",
+   "1715": "Stade Brest 29",
+   "1641": "Olympique Marseille",
+   "1682": "Stade Reims",
+   "1643": "Lille OSC",
+   "1653": "AS Monaco",
+   "1678": "AS Saint-Etienne",
+   "1646": "AJ Auxerre",
+   "1661": "OGC Nice",
+   "1642": "Montpellier HSC",
+   "1659": "Strasbourg Alsace",
+   "1684": "Angers SCO",
+   "1648": "Racing Club De Lens",
+   "1681": "Toulouse FC",
+   "1647": "FC Nantes",
+   "1658": "Stade Rennais FC",
+   "1649": "Olympique Lyon",
+   "6918": "USL Dunkerque",
+   "1654": "EA Guingamp",
+   "1651": "FC Metz",
+   "6070": "Paris FC",
+   "1656": "FC Lorient",
+   "52874": "Red Star FC",
+   "6925": "Rodez Aveyron Football",
+   "1672": "Le Mans FC",
+   "1652": "ESTAC Troyes"
+  },
   "empty": {}
  }
 }
