@@ -434,7 +434,7 @@ def run_oddspapi(store, state):
                 summary.setdefault("erreurs", []).append({"nom": t["name"] if t else "Cyclisme", "code": e.code, "message": body})
                 if e.code != 404:
                     raise
-                found = False
+                continue  # erreur ≠ compétition vide : on ne la met pas en attente
             summary.setdefault("competitions", []).append({"nom": t["name"] if t else "Cyclisme", "matchs": found or 0})
             if found:
                 empty.pop(jid, None)
