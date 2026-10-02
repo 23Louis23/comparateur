@@ -491,17 +491,20 @@ def run_oddspapi_tournament(call, budget, store, t, slug_to_book, cache, teams, 
                 fetch(bk)
 
     fixtures = [f for f in merged.values() if NOW < (parse_dt(f.get("startTime")) or NOW) <= HORIZON]
-    missing = sorted({str(f.get(k)) for f in fixtures for k in ("participant1Id", "participant2Id")} - set(teams))
+    missing = {str(f.get(k)) for f in fixtures for k in ("participant1Id", "participant2Id")} - set(teams)
     if missing and budget[0] > 0:
+        # /fixtures (vérifié par la sonde) contient participant1Name / participant2Name
         try:
-            data = call("/participants", {"participantIds": ",".join(missing[:200])})
-            if isinstance(data, dict) and all(isinstance(v, str) for v in data.values()):
-                teams.update({str(k): v for k, v in data.items()})  # format réel : {"1641": "Olympique Marseille"}
-            else:
-                for p in as_list(data):
-                    teams[str(p.get("participantId"))] = p.get("name") or p.get("participantName")
-        except urllib.error.HTTPError:
-            pass
+            for fx in as_list(call("/fixtures", {"tournamentId": t["id"], "startTimeFrom": int(NOW.timestamp()),
+                                                  "startTimeTo": int(HORIZON.timestamp())})):
+                for i in ("1", "2"):
+                    if fx.get("participant%sId" % i) and fx.get("participant%sName" % i):
+                        teams[str(fx["participant%sId" % i])] = fx["participant%sName" % i]
+        except urllib.error.HTTPError as e:
+            summary.setdefault("erreurs", []).append({"nom": t["name"] + " (noms)", "code": e.code})
+    still = sorted({str(f.get(k)) for f in fixtures for k in ("participant1Id", "participant2Id")} - set(teams))
+    if still:
+        summary["noms_manquants"] = still[:20]
     for f in fixtures:
         ingest_fixture(store, f, t, slug_to_book, cache["markets"], teams, summary)
     return len(fixtures)
