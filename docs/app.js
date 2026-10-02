@@ -82,8 +82,13 @@ function ensureSelection() {
   const ev = currentEvent();
   if (!ev) return;
   if (!ev.markets.find(m => m.key === state.marketKey)) state.marketKey = sortedMarkets(ev)[0]?.key;
-  const lines = linesOf(currentMarket());
-  if (lines.length && !lines.includes(state.line)) state.line = lines[Math.max(0, Math.floor(lines.length / 2) - 1)];
+  const m = currentMarket();
+  const lines = linesOf(m);
+  if (lines.length && !lines.includes(state.line)) {
+    state.line = m.lineFmt === 'raw'  // plus/moins : ligne la plus jouée (2.5)
+      ? lines.reduce((a, b) => Math.abs(b - 2.5) < Math.abs(a - 2.5) ? b : a)
+      : lines[Math.max(0, Math.floor(lines.length / 2) - 1)];
+  }
 }
 
 // ---------------------------------------------------------------- rendu
@@ -162,7 +167,7 @@ function render() {
 
     <div class="controls">
       ${lines.length ? `<div class="chips">${lines.map(l =>
-        `<button class="chip mono ${l === state.line ? 'on' : ''}" data-line="${l}">${l}+</button>`).join('')}</div>` : ''}
+        `<button class="chip mono ${l === state.line ? 'on' : ''}" data-line="${l}">${l}${m.lineFmt === 'raw' ? '' : '+'}</button>`).join('')}</div>` : ''}
       ${m.selections.length > 4 ? `
         <input class="search" id="search" placeholder="Rechercher un joueur, une équipe…" value="${esc(state.search)}">
         <select id="sort" aria-label="Tri">
@@ -214,7 +219,7 @@ function renderTable(rows, books, m, lines) {
 
   return `<table>
     <thead><tr>
-      <th class="sel">Sélection${lines.length ? ` · ${state.line}+` : ''}</th>
+      <th class="sel">Sélection${lines.length && m.lineFmt !== 'raw' ? ` · ${state.line}+` : ''}</th>
       ${books.map(b => `<th class="book">${dot(b)}${b.name}</th>`).join('')}
       <th class="bestcol" style="text-align:left">Meilleure cote</th>
     </tr></thead>
