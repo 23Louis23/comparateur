@@ -311,7 +311,7 @@ OP_TOURNAMENTS = [
     ("football", r"^uefa champions league$", r""),
     ("football", r"^premier league$", r"england"),
     ("basket", r"^nba$", r"usa"),
-    ("rugby", r"^top 14$", r"france"),
+    ("rugby", r"top ?14", r""),
     ("football", r"^la ?liga$", r"spain"),
     ("basket", r"^euroleague$", r""),
     ("football", r"^serie a$", r"italy"),
@@ -338,6 +338,9 @@ OP_PROPS = [
     ("rugby", r"Anytime Try ?Scorer", "try_any", "Marqueur d'essai", "yes"),
     ("rugby", r"First Try ?Scorer", "try_first", "Premier marqueur d'essai", "yes"),
 ]
+
+
+CATALOG_VERSION = 2  # à incrémenter quand les règles ci-dessus changent
 
 
 class Budget(Exception):
@@ -372,6 +375,7 @@ def run_oddspapi(store, state):
     cache = st.get("cache") if isinstance(st.get("cache"), dict) and "tournaments" in st.get("cache", {}) else {}
     st["cache"] = cache
     players = st.setdefault("players", {})
+    empty = st.setdefault("empty", {})  # compétitions sans match → date de la prochaine vérification
 
     def call(path, params, fast=False, catalog=False):
         # le catalogue hebdomadaire ne compte pas dans le budget du passage (mais dans le quota du mois)
@@ -395,7 +399,7 @@ def run_oddspapi(store, state):
 
     summary = {"run": iso(NOW), "fixtures": [], "unmapped": {}}
     try:
-        if not parse_dt(cache.get("at")) or NOW - parse_dt(cache["at"]) > timedelta(days=7):
+        if cache.get("v") != CATALOG_VERSION or not parse_dt(cache.get("at")) or NOW - parse_dt(cache["at"]) > timedelta(days=7):
             refresh_oddspapi_catalog(lambda path, params: call(path, params, catalog=True), cache)
         books = cache.get("books", {})
         st["books"] = sorted(books)
@@ -406,24 +410,30 @@ def run_oddspapi(store, state):
         slugs = ",".join(books.values())
 
         jobs = [("t", t) for t in cache.get("tournaments", [])] + [("cycling", None)]
-        idx = st.get("rotation", 0) % len(jobs)
-        st["rotation"] = idx + 1
-        kind, t = jobs[idx]
-        if kind == "cycling":
-            run_oddspapi_cycling(call, store, slug_to_book, slugs, summary)
-        else:
-            fixtures = call("/fixtures/odds/main", {"tournamentId": t["id"], "bookmakers": slugs}, fast=True)
-            fixtures = [f for f in as_list(fixtures) if NOW < (parse_dt(f.get("startTime")) or NOW) <= HORIZON]
-            fixtures.sort(key=lambda f: f.get("startTime") or 0)
-            for f in fixtures:
-                ingest_fixture(store, f, t, slug_to_book, cache["markets"], players, summary)
-            # marchés joueurs : matchs les plus proches, tant qu'il reste du budget
-            # (on garde 1 requête pour les noms des joueurs)
-            for f in fixtures:
-                if budget[0] <= 1:
-                    break
-                full = call("/fixtures/odds", {"fixtureId": f["fixtureId"], "bookmakers": slugs}, fast=True)
-                ingest_fixture(store, full, t, slug_to_book, cache["markets"], players, summary)
+        start = st.get("rotation", 0)
+        for step in range(len(jobs)):  # une compétition par passage ; on saute celles sans match
+            if budget[0] <= 1:
+                break
+            idx = (start + step) % len(jobs)
+            kind, t = jobs[idx]
+            jid = str(t["id"]) if t else "cycling"
+            if parse_dt(empty.get(jid)) and NOW < parse_dt(empty[jid]):
+                continue  # sans match lors d'un passage récent : on ne repaie pas une requête
+            st["rotation"] = idx + 1
+            try:
+                if kind == "cycling":
+                    found = run_oddspapi_cycling(call, store, slug_to_book, slugs, summary)
+                else:
+                    found = run_oddspapi_tournament(call, budget, store, t, slug_to_book, slugs, cache, players, summary)
+            except urllib.error.HTTPError as e:
+                if e.code != 404:
+                    raise
+                found = False
+            summary.setdefault("competitions", []).append({"nom": t["name"] if t else "Cyclisme", "matchs": found or 0})
+            if found:
+                empty.pop(jid, None)
+                break
+            empty[jid] = iso(NOW + timedelta(hours=24))
         resolve_player_names(call, store, players)
         st["status"] = "ok"
     except Budget:
@@ -436,6 +446,21 @@ def run_oddspapi(store, state):
         st["players"] = dict(list(players.items())[-3000:])
     (COVERAGE_DIR / "oddspapi-dernier-passage.json").write_text(json.dumps(summary, indent=1, ensure_ascii=False))
     log("OddsPapi : %d requêtes utilisées ce mois / %d" % (st["used"], limit))
+
+
+def run_oddspapi_tournament(call, budget, store, t, slug_to_book, slugs, cache, players, summary):
+    """Cotes principales de toute la compétition (1 requête), puis marchés joueurs des matchs les plus proches."""
+    fixtures = call("/fixtures/odds/main", {"tournamentId": t["id"], "bookmakers": slugs}, fast=True)
+    fixtures = [f for f in as_list(fixtures) if NOW < (parse_dt(f.get("startTime")) or NOW) <= HORIZON]
+    fixtures.sort(key=lambda f: f.get("startTime") or 0)
+    for f in fixtures:
+        ingest_fixture(store, f, t, slug_to_book, cache["markets"], players, summary)
+    for f in fixtures:  # on garde 1 requête pour les noms des joueurs
+        if budget[0] <= 1:
+            break
+        full = call("/fixtures/odds", {"fixtureId": f["fixtureId"], "bookmakers": slugs}, fast=True)
+        ingest_fixture(store, full, t, slug_to_book, cache["markets"], players, summary)
+    return len(fixtures)
 
 
 def refresh_oddspapi_catalog(call, cache):
@@ -463,6 +488,8 @@ def refresh_oddspapi_catalog(call, cache):
                     tournaments.append({"id": t["tournamentId"], "sport": sport,
                                         "name": t["tournamentName"], "category": t.get("categoryName")})
                     break
+        if sport == "rugby":
+            cache["rugby_tournaments_seen"] = sorted({"%s (%s)" % (t.get("tournamentName"), t.get("categoryName")) for t in tlist})[:300]
         for m in as_list(call("/markets", {"sportId": sid})):
             entry = classify_market(sport, m)
             if entry:
@@ -473,9 +500,11 @@ def refresh_oddspapi_catalog(call, cache):
     cache["tournaments"] = tournaments
     cache["markets"] = markets
     cache["at"] = iso(NOW)
+    cache["v"] = CATALOG_VERSION
     (COVERAGE_DIR / "oddspapi-catalogue.json").write_text(json.dumps(
         {"bookmakers_dispo": [s for s in slugs if map_book(str(s))], "retenus": chosen,
-         "competitions": tournaments, "marches_utiles": len(markets)}, indent=1, ensure_ascii=False))
+         "competitions": tournaments, "marches_utiles": len(markets),
+         "competitions_rugby_dispo": cache.pop("rugby_tournaments_seen", [])}, indent=1, ensure_ascii=False))
 
 
 def classify_market(sport, m):
@@ -484,9 +513,10 @@ def classify_market(sport, m):
     period, hcp = m.get("period"), float(m.get("handicap") or 0)
     outs = {str(o["outcomeId"]): o.get("outcomeName") for o in m.get("outcomes") or []}
     if not m.get("playerProp"):
-        if mtype == "1x2" and period == "fulltime" and hcp == 0 and sport != "basket":
+        if mtype == "1x2" and period == "fulltime" and hcp == 0 and sport != "basket" \
+                and re.match(r"^(Full Time|Regular Time) Result$", name):
             return ["1x2", "Résultat 1N2", "main", None, outs]
-        if mtype == "moneyline" and period == "result" and sport == "basket":
+        if mtype == "moneyline" and sport == "basket" and re.match(r"^Winner \(incl\. overtime\)$", name):
             return ["ml", "Vainqueur", "main", None, outs]
         return None
     for psport, pat, k, label, kind in OP_PROPS:
@@ -558,6 +588,8 @@ def run_oddspapi_cycling(call, store, slug_to_book, slugs, summary):
                                         "startTimeTo": int(HORIZON.timestamp()), "bookmakers": slugs}))
     futures = [f for f in futures if str(f.get("futureId", "")).endswith("68001")]
     futures.sort(key=lambda f: f.get("startTime") or 0)
+    if not futures:
+        return 0
     names = {}
     for fut in futures[:2]:
         data = call("/futures/odds", {"futureId": fut["futureId"], "bookmakers": slugs}, fast=True)
@@ -578,6 +610,7 @@ def run_oddspapi_cycling(call, store, slug_to_book, slugs, summary):
         for book, pid, price in rows:
             store.set_odds(ev, "win", "Vainqueur", pid, names.get(pid, "Coureur #" + pid), book, price)
         summary["fixtures"].append({"course": race, "cotes": len(rows)})
+    return len(futures[:2])
 
 
 def first(d, *keys, default=None):
