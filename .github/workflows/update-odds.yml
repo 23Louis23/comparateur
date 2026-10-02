@@ -31,16 +31,10 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Sonde OddsPapi (temporaire, au changement de code)
-        if: github.event_name == 'push'
-        env:
-          ODDSPAPI_KEY: ${{ secrets.ODDSPAPI_KEY }}
-        run: python scripts/probe_oddspapi.py
-
       - name: Récupérer les cotes
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
-          ODDSPAPI_KEY: ${{ github.event_name != 'push' && secrets.ODDSPAPI_KEY || '' }}
+          ODDSPAPI_KEY: ${{ secrets.ODDSPAPI_KEY }}
           ODDSPAPI_MONTHLY_LIMIT: ${{ vars.ODDSPAPI_MONTHLY_LIMIT || '250' }}
           ODDSPAPI_PER_RUN: ${{ vars.ODDSPAPI_PER_RUN || '6' }}
           FORCE: ${{ inputs.force || github.event_name == 'push' }}

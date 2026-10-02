@@ -319,6 +319,7 @@ OP_TOURNAMENTS = [
     ("football", r"^uefa europa league$", r""),
     ("rugby", r"champions cup", r""),
     ("basket", r"betclic elite|^pro a$|^lnb", r"france"),
+    ("cyclisme", r"lombardia|paris.?tours|tour de france|giro|vuelta|roubaix|flandre|flanders|sanremo|li[eè]ge|amstel|fl[eè]che|paris.?nice|dauphin|world", r""),
 ]
 
 # Marchés joueurs : (sport, motif sur marketName, clé, libellé, type)
@@ -337,10 +338,13 @@ OP_PROPS = [
     ("basket", r"^Over Under Player Points \+ Assists \+ Rebounds \(incl", "pra", "Pts + Reb + Pas", "over"),
     ("rugby", r"Anytime Try ?Scorer", "try_any", "Marqueur d'essai", "yes"),
     ("rugby", r"First Try ?Scorer", "try_first", "Premier marqueur d'essai", "yes"),
+    ("cyclisme", r"^Winner|^Outright", "win", "Vainqueur", "any"),
+    ("cyclisme", r"Top ?3|Podium", "podium", "Top 3", "any"),
+    ("cyclisme", r"Top ?10", "top10", "Top 10", "any"),
 ]
 
 
-CATALOG_VERSION = 3  # à incrémenter quand les règles ci-dessus changent
+CATALOG_VERSION = 4  # à incrémenter quand les règles ci-dessus changent
 
 
 class Budget(Exception):
@@ -375,6 +379,7 @@ def run_oddspapi(store, state):
     cache = st.get("cache") if isinstance(st.get("cache"), dict) and "tournaments" in st.get("cache", {}) else {}
     st["cache"] = cache
     players = st.setdefault("players", {})
+    teams = st.setdefault("teams", {})
     empty = st.setdefault("empty", {})  # compétitions sans match → date de la prochaine vérification
 
     def call(path, params, fast=False, catalog=False):
@@ -407,40 +412,39 @@ def run_oddspapi(store, state):
             st["status"] = "aucun de nos bookmakers trouvé"
             return
         slug_to_book = {v: k for k, v in books.items()}
-        slugs = ",".join(books.values())
 
-        jobs = [("t", t) for t in cache.get("tournaments", [])] + [("cycling", None)]
+        jobs = [("t", t) for t in cache.get("tournaments", [])]
         start = st.get("rotation", 0)
         for step in range(len(jobs)):  # une compétition par passage ; on saute celles sans match
             if budget[0] <= 1:
                 break
             idx = (start + step) % len(jobs)
             kind, t = jobs[idx]
-            jid = str(t["id"]) if t else "cycling"
+            jid = str(t["id"])
             if parse_dt(empty.get(jid)) and NOW < parse_dt(empty[jid]):
                 continue  # sans match lors d'un passage récent : on ne repaie pas une requête
             st["rotation"] = idx + 1
             try:
-                if kind == "cycling":
-                    found = run_oddspapi_cycling(call, store, slug_to_book, slugs, summary)
-                else:
-                    found = run_oddspapi_tournament(call, budget, store, t, slug_to_book, slugs, cache, players, summary)
+                found = run_oddspapi_tournament(call, budget, store, t, slug_to_book, cache, teams, summary)
             except urllib.error.HTTPError as e:
                 body = ""
                 try:
                     body = e.read().decode("utf-8", "replace")[:300]
                 except Exception:
                     pass
-                summary.setdefault("erreurs", []).append({"nom": t["name"] if t else "Cyclisme", "code": e.code, "message": body})
+                summary.setdefault("erreurs", []).append({"nom": t["name"], "code": e.code, "message": body})
                 if e.code != 404:
                     raise
                 continue  # erreur ≠ compétition vide : on ne la met pas en attente
-            summary.setdefault("competitions", []).append({"nom": t["name"] if t else "Cyclisme", "matchs": found or 0})
+            summary.setdefault("competitions", []).append({"nom": t["name"], "matchs": found or 0})
             if found:
                 empty.pop(jid, None)
                 break
             empty[jid] = iso(NOW + timedelta(hours=24))
-        resolve_player_names(call, store, players)
+        try:
+            resolve_player_names(call, store, players)
+        except urllib.error.HTTPError:
+            pass
         st["status"] = "ok"
     except Budget:
         st["status"] = "ok (budget du passage épuisé)"
@@ -448,32 +452,52 @@ def run_oddspapi(store, state):
         st["status"] = "erreur %s" % e.code
         log("OddsPapi : erreur", e.code)
     st["lastRun"] = iso(NOW)
-    if len(players) > 4000:  # garde le cache de noms compact
-        st["players"] = dict(list(players.items())[-3000:])
+    for k in ("players", "teams"):  # garde les caches de noms compacts
+        if len(st.get(k, {})) > 4000:
+            st[k] = dict(list(st[k].items())[-3000:])
     (COVERAGE_DIR / "oddspapi-dernier-passage.json").write_text(json.dumps(summary, indent=1, ensure_ascii=False))
     log("OddsPapi : %d requêtes utilisées ce mois / %d" % (st["used"], limit))
 
 
-def run_oddspapi_tournament(call, budget, store, t, slug_to_book, slugs, cache, players, summary):
-    """Cotes principales de toute la compétition (1 requête), puis marchés joueurs des matchs les plus proches."""
-    raw = call("/fixtures/odds/main", {"tournamentId": t["id"], "bookmakers": slugs}, fast=True)
-    items = as_list(raw)
-    summary.setdefault("diagnostic", []).append({
-        "competition": t["name"], "type": type(raw).__name__, "elements": len(items),
-        "cles": sorted(raw.keys())[:15] if isinstance(raw, dict) else sorted(items[0].keys())[:20] if items and isinstance(items[0], dict) else None,
-        "dates": [str(i.get("startTime")) for i in items[:5] if isinstance(i, dict)],
-        "bookmakers_avec_cotes": sorted({b for i in items if isinstance(i, dict) for b in (i.get("odds") or {})})})
-    if not (COVERAGE_DIR / "oddspapi-brut.json").exists() or items:
-        (COVERAGE_DIR / "oddspapi-brut.json").write_text(json.dumps(raw, ensure_ascii=False, indent=1)[:150000])
-    fixtures = [f for f in items if NOW < (parse_dt(f.get("startTime")) or NOW) <= HORIZON]
-    fixtures.sort(key=lambda f: f.get("startTime") or 0)
+def run_oddspapi_tournament(call, budget, store, t, slug_to_book, cache, teams, summary):
+    """/odds-by-tournaments : tous les matchs à venir d'une compétition, tous marchés, pour un bookmaker.
+    On tente d'abord tous les bookmakers en une requête ; si l'API n'en renvoie qu'un, on passe à un par un."""
+    merged = {}
+
+    def fetch(bk):
+        data = call("/odds-by-tournaments", {"tournamentIds": t["id"], "bookmaker": bk}, fast=True)
+        for f in as_list(data):
+            if isinstance(f, dict) and f.get("fixtureId"):
+                m = merged.setdefault(f["fixtureId"], {**f, "bookmakerOdds": {}})
+                m["bookmakerOdds"].update(f.get("bookmakerOdds") or {})
+
+    slugs = list(slug_to_book)
+    if cache.get("multi") is not False:
+        try:
+            fetch(",".join(slugs))
+        except urllib.error.HTTPError as e:
+            if e.code not in (400, 404, 422):
+                raise
+        got = {b for f in merged.values() for b in f["bookmakerOdds"]}
+        if cache.get("multi") is None:
+            cache["multi"] = len(got) > 1
+    if not cache.get("multi"):
+        for bk in slugs:
+            if budget[0] <= 1:  # on garde 1 requête pour les noms d'équipes
+                break
+            if not any(bk in f["bookmakerOdds"] for f in merged.values()):
+                fetch(bk)
+
+    fixtures = [f for f in merged.values() if NOW < (parse_dt(f.get("startTime")) or NOW) <= HORIZON]
+    missing = sorted({str(f.get(k)) for f in fixtures for k in ("participant1Id", "participant2Id")} - set(teams))
+    if missing and budget[0] > 0:
+        try:
+            for p in as_list(call("/participants", {"participantIds": ",".join(missing[:200])})):
+                teams[str(p.get("participantId"))] = p.get("name") or p.get("participantName")
+        except urllib.error.HTTPError:
+            pass
     for f in fixtures:
-        ingest_fixture(store, f, t, slug_to_book, cache["markets"], players, summary)
-    for f in fixtures:  # on garde 1 requête pour les noms des joueurs
-        if budget[0] <= 1:
-            break
-        full = call("/fixtures/odds", {"fixtureId": f["fixtureId"], "bookmakers": slugs}, fast=True)
-        ingest_fixture(store, full, t, slug_to_book, cache["markets"], players, summary)
+        ingest_fixture(store, f, t, slug_to_book, cache["markets"], teams, summary)
     return len(fixtures)
 
 
@@ -490,8 +514,6 @@ def refresh_oddspapi_catalog(call, cache):
 
     tournaments, markets = [], {}
     for sport, sid in OP_SPORT_IDS.items():
-        if sport == "cyclisme":
-            continue
         tlist = as_list(call("/tournaments", {"sportId": sid}))
         for tsport, name_pat, cat_pat in OP_TOURNAMENTS:
             if tsport != sport:
@@ -501,7 +523,8 @@ def refresh_oddspapi_catalog(call, cache):
                         re.search(cat_pat, str(t.get("categoryName", "")).lower()):
                     tournaments.append({"id": t["tournamentId"], "sport": sport,
                                         "name": t["tournamentName"], "category": t.get("categoryName")})
-                    break
+                    if sport != "cyclisme":
+                        break
         if sport == "rugby":
             cache["rugby_tournaments_seen"] = sorted({"%s (%s)" % (t.get("tournamentName"), t.get("categoryName")) for t in tlist})[:300]
         for m in as_list(call("/markets", {"sportId": sid})):
@@ -526,7 +549,7 @@ def classify_market(sport, m):
     name, mtype = m.get("marketName") or "", m.get("marketType")
     period, hcp = m.get("period"), float(m.get("handicap") or 0)
     outs = {str(o["outcomeId"]): o.get("outcomeName") for o in m.get("outcomes") or []}
-    if not m.get("playerProp"):
+    if not m.get("playerProp") and sport != "cyclisme":
         if mtype == "1x2" and period == "fulltime" and hcp == 0 and sport != "basket" \
                 and re.match(r"^(Full Time|Regular Time) Result$", name):
             return ["1x2", "Résultat 1N2", "main", None, outs]
@@ -540,9 +563,10 @@ def classify_market(sport, m):
     return None
 
 
-def ingest_fixture(store, f, t, slug_to_book, markets, players, summary):
-    parts = f.get("participants") or {}
-    home, away = parts.get("participant1Name"), parts.get("participant2Name")
+def ingest_fixture(store, f, t, slug_to_book, markets, teams, summary):
+    """bookmakerOdds → slug → markets → marketId → outcomes → outcomeId → players → playerId → {price, playerName}"""
+    home = f.get("participant1Name") or teams.get(str(f.get("participant1Id")))
+    away = f.get("participant2Name") or teams.get(str(f.get("participant2Id")))
     date = parse_dt(f.get("startTime"))
     if not (home and away and date):
         return
@@ -550,35 +574,41 @@ def ingest_fixture(store, f, t, slug_to_book, markets, players, summary):
     ev = store.find_or_create(t["sport"], comp, date, home, away)
     by_outcome = {oid: mid for mid, m in markets.items() for oid in m[4]}
     n = 0
-    for sl, rows in (f.get("odds") or {}).items():
+    for sl, bdata in (f.get("bookmakerOdds") or {}).items():
         book = slug_to_book.get(sl)
-        if not book or not isinstance(rows, dict):
+        if not book or not isinstance(bdata, dict) or bdata.get("suspended"):
             continue
-        for row in rows.values():
-            if not row.get("active", True) or row.get("marketActive") is False:
+        for mid, mk in (bdata.get("markets") or {}).items():
+            if not isinstance(mk, dict) or mk.get("marketActive") is False:
                 continue
-            m = markets.get(str(row.get("marketId"))) or markets.get(by_outcome.get(str(row.get("outcomeId")), ""))
-            if not m:
-                mid = str(row.get("marketId"))
-                summary["unmapped"][mid] = summary["unmapped"].get(mid, 0) + 1
-                continue
-            key, label, kind, line, outs = m
-            side = outs.get(str(row.get("outcomeId")))
-            pid = str(row.get("playerId") or 0)
-            if kind == "main":
-                k, name, order = {"1": ("home", ev["home"], 0), "X": ("draw", "Match nul", 1),
-                                  "2": ("away", ev["away"], 2)}.get(side, (None, None, None))
-                if k:
-                    store.set_odds(ev, key, label, k, name, book, row.get("price"), complete=True, order=order)
+            for oid, out in (mk.get("outcomes") or {}).items():
+                m = markets.get(str(mid)) or markets.get(by_outcome.get(str(oid), ""))
+                if not m:
+                    summary["unmapped"][str(mid)] = summary["unmapped"].get(str(mid), 0) + 1
+                    break
+                key, label, kind, line, outs = m
+                side = outs.get(str(oid))
+                for pid, row in ((out or {}).get("players") or {}).items():
+                    if not isinstance(row, dict) or not row.get("active", True):
+                        continue
+                    price = row.get("price")
+                    if kind == "main":
+                        k, name, order = {"1": ("home", ev["home"], 0), "X": ("draw", "Match nul", 1),
+                                          "2": ("away", ev["away"], 2)}.get(side, (None, None, None))
+                        if k:
+                            store.set_odds(ev, key, label, k, name, book, price, complete=True, order=order)
+                            n += 1
+                        continue
+                    if (kind == "yes" and side != "Yes") or (kind == "over" and side != "Over"):
+                        continue
+                    if kind in ("yes", "over") and str(pid) == "0":
+                        continue
+                    name = player_name(row.get("playerName")) or (side if kind == "any" else "#" + str(pid))
+                    store.set_odds(ev, key, label, "%s|%s|%s" % (oid if kind == "any" else "", pid, line if line is not None else ""),
+                                   name, book, price, line=line)
                     n += 1
-                continue
-            if (kind == "yes" and side != "Yes") or (kind == "over" and side != "Over") or pid == "0":
-                continue
-            name = players.get(pid) or "#" + pid
-            store.set_odds(ev, key, label, "%s|%s" % (pid, line if line is not None else ""), name, book,
-                           row.get("price"), line=line)
-            n += 1
-    summary["fixtures"].append({"match": "%s - %s" % (home, away), "cotes": n})
+    summary["fixtures"].append({"match": "%s - %s" % (home, away), "cotes": n,
+                                "bookmakers": sorted(slug_to_book.get(b, b) for b in (f.get("bookmakerOdds") or {}))})
 
 
 def resolve_player_names(call, store, players):
@@ -593,38 +623,6 @@ def resolve_player_names(call, store, players):
             for s in m["selections"].values():
                 if s["name"].startswith("#"):
                     s["name"] = players.get(s["name"][1:], s["name"])
-
-
-def run_oddspapi_cycling(call, store, slug_to_book, slugs, summary):
-    """Courses cyclistes = « futures » (marché vainqueur, participant = coureur)."""
-    futures = as_list(call("/futures", {"sportId": OP_SPORT_IDS["cyclisme"],
-                                        "startTimeFrom": int(NOW.timestamp()) - 86400,
-                                        "startTimeTo": int(HORIZON.timestamp()), "bookmakers": slugs}))
-    futures = [f for f in futures if str(f.get("futureId", "")).endswith("68001")]
-    futures.sort(key=lambda f: f.get("startTime") or 0)
-    if not futures:
-        return 0
-    names = {}
-    for fut in futures[:2]:
-        data = call("/futures/odds", {"futureId": fut["futureId"], "bookmakers": slugs}, fast=True)
-        date = parse_dt(fut.get("startTime"))
-        race = (fut.get("season") or {}).get("seasonName") or (fut.get("tournament") or {}).get("tournamentName") or "Course"
-        comp = (fut.get("tournament") or {}).get("tournamentName") or "Cyclisme"
-        ev = store.find_or_create("cyclisme", comp, date, race, "Vainqueur de la course")
-        rows = []
-        for sl, b in (data.get("bookmakers") or {}).items():
-            book = slug_to_book.get(sl)
-            for o in (b.get("odds") or []) if book else []:
-                if o.get("active", True) and o.get("futureOutcomeId") in (0, None):
-                    rows.append((book, str(o.get("participantId")), o.get("price")))
-        ids = sorted({r[1] for r in rows} - set(names))
-        if ids:
-            for p in as_list(call("/participants", {"participantIds": ",".join(ids[:200])})):
-                names[str(p.get("participantId"))] = p.get("name")
-        for book, pid, price in rows:
-            store.set_odds(ev, "win", "Vainqueur", pid, names.get(pid, "Coureur #" + pid), book, price)
-        summary["fixtures"].append({"course": race, "cotes": len(rows)})
-    return len(futures[:2])
 
 
 def first(d, *keys, default=None):
