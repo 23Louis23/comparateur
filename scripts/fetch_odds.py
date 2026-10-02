@@ -447,6 +447,7 @@ def run_oddspapi(store, state):
             resolve_player_names(call, store, players)
         except urllib.error.HTTPError:
             pass
+        name_unmapped_markets(lambda path, params: call(path, params, catalog=True), summary)
         st["status"] = "ok"
     except Budget:
         st["status"] = "ok (budget du passage épuisé)"
@@ -585,16 +586,24 @@ def ingest_fixture(store, f, t, slug_to_book, markets, teams, summary):
     n = 0
     for sl, bdata in (f.get("bookmakerOdds") or {}).items():
         book = slug_to_book.get(sl)
-        if not book or not isinstance(bdata, dict) or bdata.get("suspended"):
+        if not book or not isinstance(bdata, dict):
+            continue
+        stats = summary.setdefault("par_bookmaker", {}).setdefault(book, {"marches": 0, "actifs": 0, "reconnus": 0, "suspendu": 0})
+        stats["marches"] += len(bdata.get("markets") or {})
+        if bdata.get("suspended"):
+            stats["suspendu"] += 1
             continue
         for mid, mk in (bdata.get("markets") or {}).items():
             if not isinstance(mk, dict) or mk.get("marketActive") is False:
                 continue
+            stats["actifs"] += 1
             for oid, out in (mk.get("outcomes") or {}).items():
                 m = markets.get(str(mid)) or markets.get(by_outcome.get(str(oid), ""))
                 if not m:
-                    summary["unmapped"][str(mid)] = summary["unmapped"].get(str(mid), 0) + 1
+                    u = summary["unmapped"].setdefault(book, {})
+                    u[str(mid)] = u.get(str(mid), 0) + 1
                     break
+                stats["reconnus"] += 1
                 key, label, kind, line, outs = m
                 side = outs.get(str(oid))
                 for pid, row in ((out or {}).get("players") or {}).items():
@@ -618,6 +627,24 @@ def ingest_fixture(store, f, t, slug_to_book, markets, teams, summary):
                     n += 1
     summary["fixtures"].append({"match": "%s - %s" % (home, away), "cotes": n,
                                 "bookmakers": sorted(slug_to_book.get(b, b) for b in (f.get("bookmakerOdds") or {}))})
+
+
+def name_unmapped_markets(call, summary):
+    """Diagnostic : récupère le nom des marchés non reconnus les plus fréquents."""
+    ids = {}
+    for book, u in summary["unmapped"].items():
+        for mid, n in u.items():
+            ids[mid] = ids.get(mid, 0) + n
+    top = sorted(ids, key=lambda k: -ids[k])[:60]
+    if not top:
+        return
+    try:
+        names = {str(m.get("marketId")): "%s [%s, ligne %s]" % (m.get("marketName"), m.get("period"), m.get("handicap"))
+                 for m in as_list(call("/markets", {"marketIds": ",".join(top)}))}
+    except (urllib.error.HTTPError, Budget):
+        return
+    summary["unmapped"] = {book: {"%s %s" % (mid, names.get(mid, "?")): n for mid, n in sorted(u.items(), key=lambda x: -x[1])}
+                           for book, u in summary["unmapped"].items()}
 
 
 def resolve_player_names(call, store, players):
