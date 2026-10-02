@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CoteRadar</title>
+<meta name="description" content="Comparateur de cotes Unibet, Winamax, PMU, Betclic, bwin, PokerStars">
+<meta name="theme-color" content="#0b0f14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CoteRadar">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0b0f14; --panel: #121820; --panel-2: #18202a; --line: #232d39;
+    --text: #e7edf3; --muted: #8796a8; --accent: #b6f23a; --accent-ink: #0b0f14;
+    --up: #3ddc84; --down: #ff6b6b; --warn: #ffb547;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--bg); color: var(--text); font: 14px/1.45 Inter, system-ui, sans-serif; }
+  button, input, select { font: inherit; color: inherit; }
+  .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+
+  /* header */
+  header { position: sticky; top: 0; z-index: 10; background: rgba(11,15,20,.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+  .bar { max-width: 1400px; margin: 0 auto; padding: 12px 16px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+  .logo { font-weight: 800; font-size: 18px; letter-spacing: -.02em; display: flex; align-items: center; gap: 8px; }
+  .logo b { color: var(--accent); }
+  .sports { display: flex; gap: 6px; overflow-x: auto; flex: 1; min-width: 0; }
+  .sports button { background: var(--panel); border: 1px solid var(--line); padding: 8px 14px; border-radius: 999px; cursor: pointer; white-space: nowrap; font-weight: 600; }
+  .sports button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .tools { display: flex; gap: 8px; align-items: center; }
+  .stake { display: flex; align-items: center; gap: 6px; background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 4px 6px 4px 12px; color: var(--muted); }
+  .stake input { width: 64px; background: transparent; border: 0; outline: 0; text-align: right; color: var(--text); font-weight: 700; }
+  .btn { background: var(--panel-2); border: 1px solid var(--line); border-radius: 999px; padding: 8px 14px; cursor: pointer; font-weight: 600; }
+  .btn:hover { border-color: var(--muted); }
+
+  #status { max-width: 1400px; margin: 12px auto 0; padding: 0 16px; }
+  .status { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; font-size: 13px; color: var(--muted); }
+  .status b { color: var(--text); }
+  .status.demo { background: rgba(255,181,71,.08); border-color: rgba(255,181,71,.3); color: var(--warn); }
+  .status a { color: var(--accent); }
+  .src::before { content: ''; display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; background: var(--up); vertical-align: 1px; }
+  .src.ko::before { background: var(--down); }
+  .covs { display: flex; gap: 8px; margin-left: auto; }
+  .cov { display: inline-flex; align-items: center; gap: 4px; font-weight: 700; color: var(--text); }
+  .cov .dot { width: 16px; height: 16px; font-size: 8px; }
+  .cov.none { opacity: .35; }
+  .count { margin-left: 6px; font-size: 11px; opacity: .65; }
+  .event .sub { font-weight: 500; color: var(--muted); font-size: 12px; }
+  .vs { color: var(--muted); font-weight: 500; }
+  .small { font-size: 12px; color: var(--muted); }
+
+  /* layout */
+  .layout { max-width: 1400px; margin: 0 auto; padding: 16px; display: grid; grid-template-columns: 290px 1fr; gap: 16px; }
+  aside { display: flex; flex-direction: column; gap: 8px; }
+  .event { text-align: left; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; cursor: pointer; width: 100%; }
+  .event:hover { border-color: #33414f; }
+  .event.on { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+  .event .comp { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); display: flex; justify-content: space-between; }
+  .event .teams { font-weight: 700; margin-top: 4px; }
+  .event .teams span { display: block; }
+
+  main { min-width: 0; }
+  .ev-head { background: linear-gradient(135deg, var(--panel-2), var(--panel)); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 20px; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; align-items: end; }
+  .ev-head h1 { margin: 2px 0 0; font-size: 24px; letter-spacing: -.02em; }
+  .ev-head .comp { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+  .ev-head .when { color: var(--muted); }
+
+  .markets { display: flex; gap: 6px; margin: 16px 0 10px; overflow-x: auto; padding-bottom: 2px; }
+  .markets button { background: transparent; border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; cursor: pointer; white-space: nowrap; color: var(--muted); font-weight: 600; }
+  .markets button.on { background: var(--panel-2); color: var(--text); border-color: #3a4757; }
+
+  .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip { background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; cursor: pointer; font-weight: 700; }
+  .chip.on { background: var(--text); color: var(--bg); border-color: var(--text); }
+  .search { flex: 1; min-width: 180px; background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 8px 14px; outline: none; }
+  .search:focus { border-color: var(--muted); }
+  select { background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 8px 12px; }
+  .hint { color: var(--muted); font-size: 13px; margin: -4px 0 10px; }
+
+  .books { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .book-toggle { display: flex; align-items: center; gap: 6px; background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 5px 10px 5px 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
+  .book-toggle.off { opacity: .4; text-decoration: line-through; }
+  .dot { width: 18px; height: 18px; border-radius: 50%; display: inline-grid; place-items: center; font-size: 9px; font-weight: 800; color: #fff; }
+
+  /* table */
+  .table-wrap { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; min-width: 760px; }
+  th, td { padding: 10px 8px; border-bottom: 1px solid var(--line); text-align: center; }
+  th { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 600; position: sticky; top: 0; background: var(--panel); }
+  th.book { min-width: 78px; }
+  th.book .dot { margin: 0 auto 4px; display: grid; }
+  td.sel, th.sel { text-align: left; padding-left: 16px; position: sticky; left: 0; background: var(--panel); z-index: 1; }
+  td.sel .name { font-weight: 600; }
+  td.sel .team { color: var(--muted); font-size: 12px; }
+  tbody tr:hover td { background: var(--panel-2); }
+  .odd { display: inline-flex; align-items: center; gap: 3px; min-width: 62px; justify-content: center; padding: 6px 8px; border-radius: 8px; background: var(--bg); border: 1px solid var(--line); font-weight: 700; }
+  .odd.best { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .odd.worst { color: var(--muted); }
+  .na { color: #4a5767; }
+  .arr { font-size: 9px; }
+  .arr.up { color: var(--up); } .arr.down { color: var(--down); }
+  .odd.best .arr { color: var(--accent-ink); }
+  td.bestcol { text-align: left; padding-left: 14px; border-left: 1px solid var(--line); }
+  .bestcol .v { font-weight: 800; font-size: 15px; color: var(--accent); }
+  .bestcol .s { font-size: 12px; color: var(--muted); }
+  .edge { font-size: 12px; font-weight: 700; color: var(--up); }
+  tfoot td { font-size: 12px; color: var(--muted); border-bottom: 0; background: var(--panel-2); }
+  tfoot td.sel { background: var(--panel-2); }
+  tfoot .trj-good { color: var(--up); font-weight: 700; }
+  .surebet { display: inline-block; background: var(--up); color: var(--bg); padding: 2px 8px; border-radius: 999px; font-weight: 800; font-size: 11px; margin-left: 6px; }
+  .empty { padding: 40px; text-align: center; color: var(--muted); background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); }
+  .table-wrap .empty { border: 0; }
+  .empty a { color: var(--accent); }
+
+  .summary { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-top: 16px; }
+  .sum-card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  .sum-card .t { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 13px; }
+  .sum-card .n { font-size: 20px; font-weight: 800; margin-top: 4px; }
+  .sum-card .l { font-size: 11px; color: var(--muted); }
+  .bar-mini { height: 4px; background: var(--line); border-radius: 2px; margin-top: 6px; overflow: hidden; }
+  .bar-mini i { display: block; height: 100%; background: var(--accent); }
+  .section-title { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 20px 0 0; }
+
+  footer { max-width: 1400px; margin: 0 auto; padding: 8px 16px 32px; color: var(--muted); font-size: 12px; }
+
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+    aside { flex-direction: row; overflow-x: auto; padding-bottom: 4px; }
+    .event { min-width: 220px; }
+    .summary { grid-template-columns: repeat(3, 1fr); }
+    .ev-head h1 { font-size: 20px; }
+  }
+  @media (max-width: 520px) {
+    .summary { grid-template-columns: repeat(2, 1fr); }
+    .tools { width: 100%; justify-content: space-between; }
+    .covs { margin-left: 0; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <div class="logo">📡 Cote<b>Radar</b></div>
+    <nav class="sports" id="sports"></nav>
+    <div class="tools">
+      <label class="stake">Mise <input id="stake" type="number" min="1" value="10" class="mono"> €</label>
+      <button class="btn" id="refresh" title="Rafraîchir les cotes">↻ Rafraîchir</button>
+    </div>
+  </div>
+</header>
+<div id="status"></div>
+
+<div class="layout">
+  <aside id="events"></aside>
+  <main id="main"></main>
+</div>
+<footer>Les jeux d'argent et de hasard peuvent être dangereux : pertes d'argent, conflits familiaux, addiction… Appelez le 09 74 75 13 13 (appel non surtaxé). Interdit aux moins de 18 ans.</footer>
+
+<script src="demo.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

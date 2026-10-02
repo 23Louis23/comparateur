@@ -1,0 +1,50 @@
+name: Mise à jour des cotes
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"   # toutes les 15 min (GitHub peut décaler de quelques minutes)
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Ignorer le dosage du quota et tout récupérer maintenant"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-odds
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Récupérer les cotes
+        env:
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+          ODDSPAPI_KEY: ${{ secrets.ODDSPAPI_KEY }}
+          ODDSPAPI_MONTHLY_LIMIT: ${{ vars.ODDSPAPI_MONTHLY_LIMIT || '250' }}
+          ODDSPAPI_PER_RUN: ${{ vars.ODDSPAPI_PER_RUN || '8' }}
+          FORCE: ${{ inputs.force }}
+        run: python scripts/fetch_odds.py
+
+      - name: Publier si les cotes ont changé
+        run: |
+          git config user.name "coteradar-bot"
+          git config user.email "coteradar-bot@users.noreply.github.com"
+          git add docs/odds.json data/
+          if git diff --cached --quiet; then
+            echo "Aucun changement."
+          else
+            git commit -m "Cotes $(date -u +'%Y-%m-%d %H:%M') UTC"
+            git push
+          fi
