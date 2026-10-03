@@ -185,6 +185,7 @@ class Store:
         if price <= 1.0:
             return
         m = ev["markets"].setdefault(mkey, {"key": mkey, "label": label, "complete": complete, "selections": {}})
+        m["label"] = label  # un libellé corrigé s'applique aussi aux matchs déjà stockés
         if extra:
             m.update(extra)
         s = m["selections"].setdefault(sel_key, {"key": sel_key, "name": sel_name, "odds": {}, "prev": {}})
