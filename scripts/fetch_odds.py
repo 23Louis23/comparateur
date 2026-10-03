@@ -357,7 +357,7 @@ OP_PROPS = [
 ]
 
 
-CATALOG_VERSION = 7  # à incrémenter quand les règles ci-dessus changent
+CATALOG_VERSION = 8  # à incrémenter quand les règles ci-dessus changent
 
 
 class Budget(Exception):
@@ -504,7 +504,12 @@ def run_oddspapi_tournament(call, budget, store, t, slug_to_book, cache, teams, 
     merged = {}
 
     def fetch(bk):
-        data = call("/odds-by-tournaments", {"tournamentIds": t["id"], "bookmaker": bk}, fast=True)
+        try:
+            data = call("/odds-by-tournaments", {"tournamentIds": t["id"], "bookmaker": bk}, fast=True)
+        except urllib.error.HTTPError as e:
+            if e.code == 404:  # « No fixtures found for … bookmaker » : ce bookmaker ne couvre pas la compétition
+                return
+            raise
         for f in as_list(data):
             if isinstance(f, dict) and f.get("fixtureId"):
                 m = merged.setdefault(f["fixtureId"], {**f, "bookmakerOdds": {}})
@@ -594,7 +599,7 @@ def classify_market(sport, m):
     outs = {str(o["outcomeId"]): o.get("outcomeName") for o in m.get("outcomes") or []}
     if not m.get("playerProp") and sport != "cyclisme":
         if mtype == "1x2" and period == "fulltime" and hcp == 0 and sport != "basket" \
-                and re.match(r"^(Full Time|Regular Time) Result$", name):
+                and re.match(r"^((Full Time|Regular Time) Result|1X2)$", name):
             return ["1x2", "Résultat 1N2", "main", None, outs]
         if mtype == "bothteamsscore" and period == "fulltime" and sport == "football":
             return ["btts", "Les deux équipes marquent", "pair", None, outs]
