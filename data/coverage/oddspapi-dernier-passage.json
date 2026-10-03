@@ -1,9 +1,9 @@
 {
- "run": "2026-10-03T09:45:35Z",
+ "run": "2026-10-03T09:46:55Z",
  "fixtures": [
   {
    "match": "Union Bordeaux Begles - Lyon Ou",
-   "cotes": 0,
+   "cotes": 4,
    "bookmakers": [
     "bwin",
     "pmu"
@@ -11,7 +11,7 @@
   },
   {
    "match": "Aviron Bayonne - Stade Francais Paris",
-   "cotes": 0,
+   "cotes": 6,
    "bookmakers": [
     "bwin",
     "pmu"
@@ -19,14 +19,14 @@
   },
   {
    "match": "Stade Rochelais - Asm Clermont Auvergne",
-   "cotes": 0,
+   "cotes": 3,
    "bookmakers": [
     "bwin"
    ]
   },
   {
    "match": "Racing 92 - USA Perpignan",
-   "cotes": 0,
+   "cotes": 6,
    "bookmakers": [
     "bwin",
     "pmu"
@@ -34,7 +34,7 @@
   },
   {
    "match": "Rugby Club Vannes - Section Paloise",
-   "cotes": 0,
+   "cotes": 6,
    "bookmakers": [
     "bwin",
     "pmu"
@@ -42,7 +42,7 @@
   },
   {
    "match": "Castres Olympique - Stade Toulousain",
-   "cotes": 0,
+   "cotes": 3,
    "bookmakers": [
     "bwin",
     "pmu"
@@ -50,7 +50,7 @@
   },
   {
    "match": "Montpellier Herault Rugby - RC Toulonnais",
-   "cotes": 0,
+   "cotes": 6,
    "bookmakers": [
     "bwin",
     "pmu"
@@ -58,104 +58,91 @@
   }
  ],
  "unmapped": {
-  "bwin": {
-   "263 1X2 [fulltime, ligne 0.0]": 6,
-   "26300 Handicap [fulltime, ligne -11.5]": 3,
-   "26308 Handicap [fulltime, ligne -9.5]": 2,
-   "26292 Handicap [fulltime, ligne -13.5]": 2,
-   "26296 Handicap [fulltime, ligne -12.5]": 2,
-   "26316 Handicap [fulltime, ligne -7.5]": 1,
-   "26312 Handicap [fulltime, ligne -8.5]": 1,
-   "26284 Handicap [fulltime, ligne -15.5]": 1,
-   "26288 Handicap [fulltime, ligne -14.5]": 1,
-   "26352 Handicap [fulltime, ligne 1.5]": 1,
-   "26348 Handicap [fulltime, ligne 0.5]": 1
-  },
   "pmu": {
    "26300 Handicap [fulltime, ligne -11.5]": 6,
    "26296 Handicap [fulltime, ligne -12.5]": 6,
-   "263 1X2 [fulltime, ligne 0.0]": 6,
    "26304 Handicap [fulltime, ligne -10.5]": 5,
-   "26272 Handicap [fulltime, ligne -18.5]": 4,
+   "26292 Handicap [fulltime, ligne -13.5]": 4,
+   "26288 Handicap [fulltime, ligne -14.5]": 4,
    "26264 Handicap [fulltime, ligne -20.5]": 4,
    "26280 Handicap [fulltime, ligne -16.5]": 4,
-   "26288 Handicap [fulltime, ligne -14.5]": 4,
-   "26284 Handicap [fulltime, ligne -15.5]": 4,
+   "26272 Handicap [fulltime, ligne -18.5]": 4,
    "26276 Handicap [fulltime, ligne -17.5]": 4,
-   "26292 Handicap [fulltime, ligne -13.5]": 4,
    "26268 Handicap [fulltime, ligne -19.5]": 4,
-   "26328 Handicap [fulltime, ligne -4.5]": 4,
+   "26284 Handicap [fulltime, ligne -15.5]": 4,
    "26352 Handicap [fulltime, ligne 1.5]": 4,
-   "26312 Handicap [fulltime, ligne -8.5]": 4,
-   "26340 Handicap [fulltime, ligne -1.5]": 4,
-   "26336 Handicap [fulltime, ligne -2.5]": 4,
-   "26320 Handicap [fulltime, ligne -6.5]": 4,
-   "26324 Handicap [fulltime, ligne -5.5]": 4,
-   "26308 Handicap [fulltime, ligne -9.5]": 4,
+   "26328 Handicap [fulltime, ligne -4.5]": 4,
    "26316 Handicap [fulltime, ligne -7.5]": 4,
+   "26340 Handicap [fulltime, ligne -1.5]": 4,
    "26332 Handicap [fulltime, ligne -3.5]": 4,
+   "26320 Handicap [fulltime, ligne -6.5]": 4,
+   "26312 Handicap [fulltime, ligne -8.5]": 4,
+   "26308 Handicap [fulltime, ligne -9.5]": 4,
+   "26324 Handicap [fulltime, ligne -5.5]": 4,
+   "26336 Handicap [fulltime, ligne -2.5]": 4,
    "26260 Handicap [fulltime, ligne -21.5]": 3,
    "26248 Handicap [fulltime, ligne -24.5]": 3,
    "26252 Handicap [fulltime, ligne -23.5]": 3,
    "26256 Handicap [fulltime, ligne -22.5]": 3,
-   "26356 Handicap [fulltime, ligne 2.5]": 3,
-   "26364 Handicap [fulltime, ligne 4.5]": 3,
    "26360 Handicap [fulltime, ligne 3.5]": 3,
+   "26364 Handicap [fulltime, ligne 4.5]": 3,
+   "26356 Handicap [fulltime, ligne 2.5]": 3,
    "26368 Handicap [fulltime, ligne 5.5]": 3,
    "26156 Total [fulltime, ligne 57.5]": 2,
    "26180 Total [fulltime, ligne 63.5]": 2,
-   "26380 Handicap [fulltime, ligne 8.5]": 2,
-   "26168 Total [fulltime, ligne 60.5]": 2,
    "26124 Total [fulltime, ligne 49.5]": 2,
-   "26372 Handicap [fulltime, ligne 6.5]": 2,
-   "26376 Handicap [fulltime, ligne 7.5]": 2,
    "26384 Handicap [fulltime, ligne 9.5]": 2,
+   "26168 Total [fulltime, ligne 60.5]": 2,
+   "26372 Handicap [fulltime, ligne 6.5]": 2,
    "26148 Total [fulltime, ligne 55.5]": 2,
+   "26376 Handicap [fulltime, ligne 7.5]": 2,
+   "26380 Handicap [fulltime, ligne 8.5]": 2,
    "26204 Total [fulltime, ligne 69.5]": 1,
    "26160 Total [fulltime, ligne 58.5]": 1,
    "26120 Total [fulltime, ligne 48.5]": 1,
    "26140 Total [fulltime, ligne 53.5]": 1,
-   "26132 Total [fulltime, ligne 51.5]": 1,
    "26176 Total [fulltime, ligne 62.5]": 1,
-   "26412 Handicap [fulltime, ligne 16.5]": 1,
+   "26132 Total [fulltime, ligne 51.5]": 1,
    "26128 Total [fulltime, ligne 50.5]": 1,
-   "26392 Handicap [fulltime, ligne 11.5]": 1,
+   "26396 Handicap [fulltime, ligne 12.5]": 1,
    "26408 Handicap [fulltime, ligne 15.5]": 1,
    "26388 Handicap [fulltime, ligne 10.5]": 1,
+   "26392 Handicap [fulltime, ligne 11.5]": 1,
+   "26400 Handicap [fulltime, ligne 13.5]": 1,
    "26404 Handicap [fulltime, ligne 14.5]": 1,
-   "26396 Handicap [fulltime, ligne 12.5]": 1,
-   "26400 Handicap [fulltime, ligne 13.5]": 1
+   "26412 Handicap [fulltime, ligne 16.5]": 1
+  },
+  "bwin": {
+   "26300 Handicap [fulltime, ligne -11.5]": 3,
+   "26308 Handicap [fulltime, ligne -9.5]": 2,
+   "26296 Handicap [fulltime, ligne -12.5]": 2,
+   "26292 Handicap [fulltime, ligne -13.5]": 2,
+   "26316 Handicap [fulltime, ligne -7.5]": 1,
+   "26312 Handicap [fulltime, ligne -8.5]": 1,
+   "26288 Handicap [fulltime, ligne -14.5]": 1,
+   "26284 Handicap [fulltime, ligne -15.5]": 1,
+   "26348 Handicap [fulltime, ligne 0.5]": 1,
+   "26352 Handicap [fulltime, ligne 1.5]": 1
   }
  },
- "erreurs": [
-  {
-   "nom": "Euroleague",
-   "code": 404,
-   "message": "{\"error\":{\"message\":\"No fixtures found for the specified tournament IDs and bookmaker.\",\"code\":\"FIXTURE_NOT_FOUND\",\"details\":\"Please check the provided tournament IDs and try again.\"}}"
-  }
- ],
- "competitions": [
-  {
-   "nom": "NBA",
-   "matchs": 0
-  },
-  {
-   "nom": "Top 14",
-   "matchs": 14
-  }
- ],
  "par_bookmaker": {
   "bwin": {
    "marches": 24,
    "actifs": 21,
-   "reconnus": 0,
+   "reconnus": 18,
    "suspendu": 1
   },
   "pmu": {
    "marches": 151,
    "actifs": 151,
-   "reconnus": 0,
+   "reconnus": 17,
    "suspendu": 0
   }
- }
+ },
+ "competitions": [
+  {
+   "nom": "Top 14",
+   "matchs": 14
+  }
+ ]
 }
