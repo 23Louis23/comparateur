@@ -435,11 +435,16 @@ def run_oddspapi(store, state):
             soon = nxt is None or nxt <= NOW + timedelta(days=3)  # inconnu = à découvrir
             return (0 if soon else 1, parse_dt(info.get("last")) or datetime(2000, 1, 1, tzinfo=timezone.utc))
 
-        for t in sorted(cache.get("tournaments", []), key=priority):
+        focus = st.pop("focus", None)  # demande ponctuelle : ces compétitions d'abord
+        ordered = sorted(cache.get("tournaments", []), key=priority)
+        if focus:
+            ordered = [t for t in ordered if re.search(focus, t["name"], re.I)] + \
+                      [t for t in ordered if not re.search(focus, t["name"], re.I)]
+        for t in ordered:
             if budget[0] < 2:
                 break
             jid = str(t["id"])
-            if parse_dt(empty.get(jid)) and NOW < parse_dt(empty[jid]):
+            if parse_dt(empty.get(jid)) and NOW < parse_dt(empty[jid]) and not (focus and re.search(focus, t["name"], re.I)):
                 continue  # sans match lors d'un passage récent : on ne repaie pas une requête
             try:
                 found, nxt = run_oddspapi_tournament(call, budget, store, t, slug_to_book, cache, teams, summary, st)
@@ -683,7 +688,9 @@ def name_unmapped_markets(call, summary):
     if not top:
         return
     try:
-        names = {str(m.get("marketId")): "%s [%s, ligne %s]" % (m.get("marketName"), m.get("period"), m.get("handicap"))
+        names = {str(m.get("marketId")): "%s [%s, ligne %s%s]" % (
+                     m.get("marketName"), m.get("period"), m.get("handicap"),
+                     ", issues : " + "/".join(str(o.get("outcomeName")) for o in m.get("outcomes") or []) if m.get("playerProp") else "")
                  for m in as_list(call("/markets", {"marketIds": ",".join(top)}))}
     except (urllib.error.HTTPError, Budget):
         return
