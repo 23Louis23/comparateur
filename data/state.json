@@ -1,13 +1,13 @@
 {
  "theoddsapi": {
   "status": "ok",
-  "remaining": 340,
-  "lastRun": "2026-10-03T09:49:18Z"
+  "remaining": 328,
+  "lastRun": "2026-10-03T09:50:24Z"
  },
  "oddspapi": {
   "status": "ok",
   "month": "2026-10",
-  "used": 156,
+  "used": 163,
   "cache": {
    "books": {
     "bwin": "bwin.fr",
@@ -3370,7 +3370,7 @@
    "unibet",
    "winamax"
   ],
-  "lastRun": "2026-10-03T09:49:18Z",
+  "lastRun": "2026-10-03T09:50:24Z",
   "players": {},
   "teams": {
    "1662": "Le Havre AC",
@@ -3481,7 +3481,22 @@
    "5752": "Castres Olympique",
    "4217": "Stade Toulousain",
    "5754": "Montpellier Herault Rugby",
-   "5760": "RC Toulonnais"
+   "5760": "RC Toulonnais",
+   "2830": "Malaga CF",
+   "2814": "Espanyol Barcelona",
+   "2818": "Rayo Vallecano",
+   "2825": "Athletic Bilbao",
+   "2885": "Deportivo Alaves",
+   "2859": "Getafe CF",
+   "2846": "Elche CF",
+   "2821": "RC Celta de Vigo",
+   "2824": "Real Sociedad San Sebastian",
+   "2832": "RC Deportivo de A Coruna",
+   "2820": "CA Osasuna",
+   "2835": "Racing Santander",
+   "2828": "Valencia CF",
+   "2849": "Levante UD",
+   "2833": "Sevilla FC"
   },
   "empty": {
    "132": "2026-10-18T19:00:00Z"
@@ -3508,8 +3523,12 @@
     "next": "2026-10-03T12:30:00Z"
    },
    "138": {
-    "last": "2026-10-03T09:49:18Z",
+    "last": "2026-10-03T09:50:24Z",
     "next": "2026-10-07T18:45:00Z"
+   },
+   "8": {
+    "last": "2026-10-03T09:50:24Z",
+    "next": "2026-10-09T19:00:00Z"
    }
   },
   "miss": {
@@ -3517,7 +3536,6 @@
    "138:bwin.fr": "2026-10-05T09:49:18Z",
    "138:pmu": "2026-10-05T09:49:18Z",
    "138:pokerstars.fr": "2026-10-05T09:49:18Z"
-  },
-  "focus": "^euroleague$"
+  }
  }
 }
