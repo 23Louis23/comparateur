@@ -357,7 +357,7 @@ OP_PROPS = [
 ]
 
 
-CATALOG_VERSION = 8   # à incrémenter quand les règles ci-dessus changent
+CATALOG_VERSION = 9   # à incrémenter quand les règles ci-dessus changent
 
 
 class Budget(Exception):
@@ -575,10 +575,16 @@ def refresh_oddspapi_catalog(call, cache):
                         break
         if sport == "rugby":
             cache["rugby_tournaments_seen"] = sorted({"%s (%s)" % (t.get("tournamentName"), t.get("categoryName")) for t in tlist})[:300]
-        for m in as_list(call("/markets", {"sportId": sid})):
-            entry = classify_market(sport, m)
-            if entry:
-                markets[str(m["marketId"])] = entry
+
+    # /markets renvoie les marchés de tous les sports, quel que soit le filtre : une seule requête,
+    # et le sport de chaque marché est lu dans le marché lui-même (sportId, sinon 2 premiers chiffres de l'id)
+    by_sid = {v: k for k, v in OP_SPORT_IDS.items()}
+    for m in as_list(call("/markets", {})):
+        mid = str(m.get("marketId", ""))
+        sport = by_sid.get(m.get("sportId")) or by_sid.get(int(mid[:2]) if mid[:2].isdigit() else -1)
+        entry = classify_market(sport, m) if sport else None
+        if entry:
+            markets[mid] = entry
     order = {(s, n): i for i, (s, n, _) in enumerate(OP_TOURNAMENTS)}
     tournaments.sort(key=lambda t: next((i for (s, n), i in order.items()
                                          if s == t["sport"] and re.search(n, t["name"].lower())), 99))
@@ -598,9 +604,9 @@ def classify_market(sport, m):
     period, hcp = m.get("period"), float(m.get("handicap") or 0)
     outs = {str(o["outcomeId"]): o.get("outcomeName") for o in m.get("outcomes") or []}
     if not m.get("playerProp") and sport != "cyclisme":
-        if mtype == "1x2" and period == "fulltime" and hcp == 0 and sport != "basket" \
+        if mtype == "1x2" and period == "fulltime" and hcp == 0 \
                 and re.match(r"^((Full Time|Regular Time) Result|1X2)$", name):
-            return ["1x2", "Résultat 1N2", "main", None, outs]
+            return ["1x2", "1N2 (temps réglementaire)" if sport == "basket" else "Résultat 1N2", "main", None, outs]
         if mtype == "bothteamsscore" and period == "fulltime" and sport == "football":
             return ["btts", "Les deux équipes marquent", "pair", None, outs]
         if mtype == "totals" and period == "fulltime" and sport == "football" and name == "Over Under Full Time":
