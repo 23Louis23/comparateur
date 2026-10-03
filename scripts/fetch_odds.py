@@ -357,7 +357,7 @@ OP_PROPS = [
 ]
 
 
-CATALOG_VERSION = 8  # à incrémenter quand les règles ci-dessus changent
+CATALOG_VERSION = 8   # à incrémenter quand les règles ci-dessus changent
 
 
 class Budget(Exception):

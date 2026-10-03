@@ -3510,6 +3510,7 @@
   },
   "miss": {
    "420:pokerstars.fr": "2026-10-05T09:46:55Z"
-  }
+  },
+  "focus": "^euroleague$"
  }
 }
