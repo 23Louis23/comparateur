@@ -400,7 +400,7 @@ def run_oddspapi(store, state):
         if (budget[0] <= 0 and not catalog) or st["used"] >= limit:
             raise Budget()
         for attempt in (1, 2):
-            time.sleep(0.15 if fast else 0.7)
+            time.sleep(1.1)  # OddsPapi impose ~1 s entre deux appels à la même adresse
             if not catalog:
                 budget[0] -= 1
             st["used"] += 1
