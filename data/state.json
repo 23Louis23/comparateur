@@ -1,13 +1,13 @@
 {
  "theoddsapi": {
   "status": "ok",
-  "remaining": 352,
-  "lastRun": "2026-10-03T09:46:55Z"
+  "remaining": 340,
+  "lastRun": "2026-10-03T09:49:18Z"
  },
  "oddspapi": {
   "status": "ok",
   "month": "2026-10",
-  "used": 150,
+  "used": 156,
   "cache": {
    "books": {
     "bwin": "bwin.fr",
@@ -3370,7 +3370,7 @@
    "unibet",
    "winamax"
   ],
-  "lastRun": "2026-10-03T09:46:55Z",
+  "lastRun": "2026-10-03T09:49:18Z",
   "players": {},
   "teams": {
    "1662": "Le Havre AC",
@@ -3506,11 +3506,17 @@
    "420": {
     "last": "2026-10-03T09:46:55Z",
     "next": "2026-10-03T12:30:00Z"
+   },
+   "138": {
+    "last": "2026-10-03T09:49:18Z",
+    "next": "2026-10-07T18:45:00Z"
    }
   },
   "miss": {
-   "420:pokerstars.fr": "2026-10-05T09:46:55Z"
-  },
-  "focus": "^euroleague$"
+   "420:pokerstars.fr": "2026-10-05T09:46:55Z",
+   "138:bwin.fr": "2026-10-05T09:49:18Z",
+   "138:pmu": "2026-10-05T09:49:18Z",
+   "138:pokerstars.fr": "2026-10-05T09:49:18Z"
+  }
  }
 }
