@@ -1,13 +1,13 @@
 {
  "theoddsapi": {
   "status": "ok",
-  "remaining": 376,
-  "lastRun": "2026-10-02T21:04:05Z"
+  "remaining": 364,
+  "lastRun": "2026-10-03T09:45:35Z"
  },
  "oddspapi": {
   "status": "ok",
   "month": "2026-10",
-  "used": 126,
+  "used": 134,
   "cache": {
    "books": {
     "bwin": "bwin.fr",
@@ -2864,7 +2864,7 @@
    "unibet",
    "winamax"
   ],
-  "lastRun": "2026-10-02T21:04:05Z",
+  "lastRun": "2026-10-03T09:45:35Z",
   "players": {},
   "teams": {
    "1662": "Le Havre AC",
@@ -2941,9 +2941,45 @@
    "96": "Hull City",
    "48": "Everton FC",
    "11": "Coventry City",
-   "39": "Newcastle United"
+   "39": "Newcastle United",
+   "476414": "Paris Basketball",
+   "3536": "ASVEL Lyon-Villeurbanne",
+   "6655": "Maccabi Tel-Aviv",
+   "3580": "Olimpia Milano",
+   "1149035": "Dubai Basketball",
+   "57183": "KK Crvena zvezda Belgrade",
+   "26071": "Bayern Munich",
+   "5621": "Virtus Bologna",
+   "3508": "Panathinaikos BC",
+   "3514": "Fenerbahce Istanbul",
+   "3545": "Valencia Basket",
+   "82179": "Hapoel Tel-Aviv",
+   "3540": "Real Madrid",
+   "6637": "KK Partizan Belgrade",
+   "3501": "BC Olympiakos Piraeus",
+   "3515": "Anadolu Efes SK",
+   "3553": "Baskonia Vitoria-Gasteiz",
+   "6678": "Besiktas JK",
+   "3543": "FC Barcelona",
+   "6662": "BC Zalgiris Kaunas",
+   "52813": "Union Bordeaux Begles",
+   "52812": "Lyon Ou",
+   "5748": "Aviron Bayonne",
+   "5758": "Stade Francais Paris",
+   "43847": "Stade Rochelais",
+   "5753": "Asm Clermont Auvergne",
+   "36538": "Racing 92",
+   "4220": "USA Perpignan",
+   "275029": "Rugby Club Vannes",
+   "78973": "Section Paloise",
+   "5752": "Castres Olympique",
+   "4217": "Stade Toulousain",
+   "5754": "Montpellier Herault Rugby",
+   "5760": "RC Toulonnais"
   },
-  "empty": {},
+  "empty": {
+   "132": "2026-10-18T19:00:00Z"
+  },
   "tinfo": {
    "34": {
     "last": "2026-10-02T20:57:08Z",
@@ -2956,9 +2992,16 @@
    "17": {
     "last": "2026-10-02T21:04:05Z",
     "next": "2026-10-10T11:30:00Z"
+   },
+   "132": {
+    "last": "2026-10-03T09:45:35Z",
+    "next": "2026-10-20T19:00:00Z"
+   },
+   "420": {
+    "last": "2026-10-03T09:45:35Z",
+    "next": "2026-10-03T12:30:00Z"
    }
   },
-  "miss": {},
-  "focus": "euroleague"
+  "miss": {}
  }
 }
