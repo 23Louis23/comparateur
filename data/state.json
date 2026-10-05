@@ -1,13 +1,13 @@
 {
  "theoddsapi": {
   "status": "ok",
-  "remaining": 304,
-  "lastRun": "2026-10-04T14:30:07Z"
+  "remaining": 292,
+  "lastRun": "2026-10-05T20:54:32Z"
  },
  "oddspapi": {
   "status": "ok",
   "month": "2026-10",
-  "used": 176,
+  "used": 182,
   "cache": {
    "books": {
     "bwin": "bwin.fr",
@@ -1924,7 +1924,7 @@
    "unibet",
    "winamax"
   ],
-  "lastRun": "2026-10-03T09:51:57Z",
+  "lastRun": "2026-10-05T20:54:32Z",
   "players": {},
   "teams": {
    "1662": "Le Havre AC",
@@ -2066,7 +2066,21 @@
    "2686": "Atalanta BC",
    "2688": "Venezia FC",
    "2696": "Torino FC",
-   "2695": "Udinese Calcio"
+   "2695": "Udinese Calcio",
+   "2534": "Werder Bremen",
+   "2569": "TSG Hoffenheim",
+   "2676": "Hamburger SV",
+   "2600": "FC Augsburg",
+   "2556": "FSV Mainz",
+   "2681": "Bayer Leverkusen",
+   "2547": "Union Berlin",
+   "2598": "SV 07 Elversberg",
+   "2561": "SC Paderborn 07",
+   "2674": "Eintracht Frankfurt",
+   "2671": "1. FC Cologne",
+   "2527": "Borussia Monchengladbach",
+   "2538": "SC Freiburg",
+   "2530": "Schalke 04"
   },
   "empty": {
    "132": "2026-10-18T19:00:00Z"
@@ -2103,6 +2117,10 @@
    "23": {
     "last": "2026-10-03T09:51:57Z",
     "next": "2026-10-10T13:00:00Z"
+   },
+   "35": {
+    "last": "2026-10-05T20:54:32Z",
+    "next": "2026-10-09T18:30:00Z"
    }
   },
   "miss": {
