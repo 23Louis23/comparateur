@@ -1,466 +1,328 @@
 {
- "run": "2026-10-05T20:54:32Z",
+ "run": "2026-10-08T01:11:03Z",
  "fixtures": [
   {
-   "match": "Borussia Dortmund - Werder Bremen",
-   "cotes": 221,
+   "match": "Sparta Prague - Lillestroem SK",
+   "cotes": 117,
+   "bookmakers": [
+    "bwin",
+    "pmu",
+    "pokerstars"
+   ]
+  },
+  {
+   "match": "AZ Alkmaar - Hapoel Be`er Sheva FC",
+   "cotes": 106,
+   "bookmakers": [
+    "bwin",
+    "pmu",
+    "pokerstars"
+   ]
+  },
+  {
+   "match": "FC Salzburg - AC Milan",
+   "cotes": 109,
+   "bookmakers": [
+    "bwin",
+    "pmu",
+    "pokerstars"
+   ]
+  },
+  {
+   "match": "KKS Lech Poznan - Bayer Leverkusen",
+   "cotes": 155,
    "bookmakers": [
     "bwin",
     "pmu",
     "pokerstars",
-    "unibet",
     "winamax"
    ]
   },
   {
-   "match": "TSG Hoffenheim - Hamburger SV",
-   "cotes": 192,
+   "match": "NK Celje - AC Omonia Nicosia",
+   "cotes": 119,
+   "bookmakers": [
+    "bwin",
+    "pmu",
+    "pokerstars"
+   ]
+  },
+  {
+   "match": "Olympique Lyon - Crystal Palace",
+   "cotes": 99,
+   "bookmakers": [
+    "bwin",
+    "pmu",
+    "pokerstars"
+   ]
+  },
+  {
+   "match": "Union Saint-Gilloise - Real Sociedad San Sebastian",
+   "cotes": 100,
    "bookmakers": [
     "bwin",
     "pmu",
     "pokerstars",
-    "unibet",
     "winamax"
    ]
   },
   {
-   "match": "FC Augsburg - Bayern Munich",
-   "cotes": 209,
+   "match": "SCU Torreense - Sunderland AFC",
+   "cotes": 98,
    "bookmakers": [
     "bwin",
     "pmu",
     "pokerstars",
-    "unibet",
     "winamax"
    ]
   },
   {
-   "match": "FSV Mainz - Bayer Leverkusen",
-   "cotes": 200,
+   "match": "AFC Bournemouth - SK Sturm Graz",
+   "cotes": 110,
+   "bookmakers": [
+    "bwin",
+    "pmu",
+    "pokerstars"
+   ]
+  },
+  {
+   "match": "Ferencvarosi Budapest - FC Viktoria Plzen",
+   "cotes": 156,
    "bookmakers": [
     "bwin",
     "pmu",
     "pokerstars",
-    "unibet",
     "winamax"
    ]
   },
   {
-   "match": "Union Berlin - SV 07 Elversberg",
-   "cotes": 199,
+   "match": "GNK Dinamo Zagreb - RSC Anderlecht",
+   "cotes": 109,
    "bookmakers": [
     "bwin",
     "pmu",
     "pokerstars",
-    "unibet",
     "winamax"
    ]
   },
   {
-   "match": "SC Paderborn 07 - VfB Stuttgart",
-   "cotes": 206,
+   "match": "Jagiellonia Bialystok - FC Ararat-Armenia",
+   "cotes": 117,
+   "bookmakers": [
+    "bwin",
+    "pmu",
+    "pokerstars"
+   ]
+  },
+  {
+   "match": "NEC Nijmegen - PFC Levski Sofia",
+   "cotes": 106,
    "bookmakers": [
     "bwin",
     "pmu",
     "pokerstars",
-    "unibet",
     "winamax"
    ]
   },
   {
-   "match": "RB Leipzig - Eintracht Frankfurt",
-   "cotes": 198,
+   "match": "Olympique Marseille - Olympiacos Piraeus",
+   "cotes": 152,
    "bookmakers": [
     "bwin",
     "pmu",
     "pokerstars",
-    "unibet",
     "winamax"
    ]
   },
   {
-   "match": "1. FC Cologne - Borussia Monchengladbach",
-   "cotes": 202,
+   "match": "RC Celta de Vigo - Juventus Turin",
+   "cotes": 113,
+   "bookmakers": [
+    "bwin",
+    "pmu",
+    "pokerstars"
+   ]
+  },
+  {
+   "match": "SL Benfica - Celtic Glasgow",
+   "cotes": 114,
    "bookmakers": [
     "bwin",
     "pmu",
     "pokerstars",
-    "unibet",
     "winamax"
    ]
   },
   {
-   "match": "SC Freiburg - Schalke 04",
-   "cotes": 212,
+   "match": "Stade Rennais FC - OFI Crete",
+   "cotes": 150,
+   "bookmakers": [
+    "bwin",
+    "pmu",
+    "winamax"
+   ]
+  },
+  {
+   "match": "TSG Hoffenheim - Besiktas Istanbul",
+   "cotes": 112,
    "bookmakers": [
     "bwin",
     "pmu",
     "pokerstars",
-    "unibet",
-    "winamax"
-   ]
-  },
-  {
-   "match": "Union Berlin - Borussia Dortmund",
-   "cotes": 0,
-   "bookmakers": [
-    "pokerstars",
-    "unibet",
-    "winamax"
-   ]
-  },
-  {
-   "match": "Hamburger SV - VfB Stuttgart",
-   "cotes": 0,
-   "bookmakers": [
-    "pokerstars",
-    "unibet",
-    "winamax"
-   ]
-  },
-  {
-   "match": "Werder Bremen - SC Paderborn 07",
-   "cotes": 0,
-   "bookmakers": [
-    "pokerstars",
-    "unibet",
-    "winamax"
-   ]
-  },
-  {
-   "match": "Schalke 04 - FSV Mainz",
-   "cotes": 0,
-   "bookmakers": [
-    "pokerstars",
-    "winamax"
-   ]
-  },
-  {
-   "match": "SV 07 Elversberg - FC Augsburg",
-   "cotes": 0,
-   "bookmakers": [
-    "pokerstars",
-    "unibet",
-    "winamax"
-   ]
-  },
-  {
-   "match": "Bayern Munich - RB Leipzig",
-   "cotes": 0,
-   "bookmakers": [
-    "pokerstars",
-    "unibet",
-    "winamax"
-   ]
-  },
-  {
-   "match": "Bayer Leverkusen - SC Freiburg",
-   "cotes": 0,
-   "bookmakers": [
-    "pokerstars",
-    "unibet",
-    "winamax"
-   ]
-  },
-  {
-   "match": "Borussia Monchengladbach - TSG Hoffenheim",
-   "cotes": 0,
-   "bookmakers": [
-    "pokerstars",
-    "unibet",
-    "winamax"
-   ]
-  },
-  {
-   "match": "Eintracht Frankfurt - 1. FC Cologne",
-   "cotes": 0,
-   "bookmakers": [
-    "unibet",
     "winamax"
    ]
   }
  ],
  "unmapped": {
   "bwin": {
-   "10226": 9,
-   "10224": 9,
-   "10264": 9,
-   "10256": 9,
-   "10324": 9,
-   "102041": 9,
-   "101913": 9,
-   "102250": 9,
-   "10228": 9,
-   "102252": 9,
-   "101905": 9,
-   "10326": 9,
-   "10262": 9,
-   "10230": 9,
-   "10316": 9,
-   "101917": 9,
-   "102220": 9,
-   "10258": 9,
-   "10318": 9,
-   "10246": 9,
-   "10208": 9,
-   "102248": 9,
-   "10300": 9,
-   "10260": 9,
-   "101911": 9,
-   "10244": 9,
-   "101919": 9,
-   "10274": 9,
-   "10336": 9,
-   "101908": 9,
-   "102224": 9,
-   "10276": 9,
-   "101915": 9,
-   "10242": 8,
-   "102222": 9,
-   "10272": 9,
-   "101902": 9,
-   "10270": 9,
-   "10214": 9,
-   "10240": 7,
-   "10732": 1,
-   "10733": 1,
-   "10248": 2,
-   "10250": 1
+   "101905": 18,
+   "102041": 18,
+   "10228": 17,
+   "101919": 18,
+   "10242": 18,
+   "10230": 17,
+   "10260": 18,
+   "10258": 18,
+   "10326": 18,
+   "10256": 18,
+   "10264": 18,
+   "10324": 17,
+   "10208": 18,
+   "10318": 18,
+   "101911": 18,
+   "101917": 18,
+   "102220": 18,
+   "10300": 18,
+   "102248": 18,
+   "101913": 18,
+   "10272": 18,
+   "102224": 18,
+   "10316": 17,
+   "10336": 18,
+   "10246": 18,
+   "10226": 17,
+   "101915": 18,
+   "10214": 18,
+   "10224": 16,
+   "102250": 18,
+   "102252": 18,
+   "101908": 18,
+   "10240": 17,
+   "102222": 18,
+   "10244": 18,
+   "10262": 18,
+   "10270": 18,
+   "101902": 18,
+   "10274": 18,
+   "10276": 18,
+   "10248": 1,
+   "10232": 1
   },
   "pmu": {
-   "102426": 9,
-   "10146": 5,
-   "102462": 9,
-   "10226": 9,
-   "10306": 9,
-   "10230": 9,
-   "10318": 9,
-   "102248": 9,
-   "10228": 9,
-   "10270": 6,
-   "10761": 9,
-   "102238": 7,
-   "10336": 9,
-   "102220": 9,
-   "102206": 9,
-   "102423": 9,
-   "10140": 8,
-   "101919": 9,
-   "1052": 3,
-   "10137": 9,
-   "10242": 9,
-   "10302": 9,
-   "10256": 9,
-   "10320": 9,
-   "101905": 9,
-   "10276": 5,
-   "102208": 9,
-   "102236": 9,
-   "10260": 9,
-   "10316": 9,
-   "10322": 9,
-   "10211": 9,
-   "102240": 3,
-   "10244": 9,
-   "10258": 9,
-   "101908": 9,
-   "1060": 6,
-   "1068": 8,
-   "10234": 3,
-   "102210": 5,
-   "10272": 9,
-   "10149": 3,
-   "10240": 9,
-   "10143": 7,
-   "10232": 6,
-   "102222": 9,
-   "10274": 9,
-   "102429": 6,
-   "102250": 9,
-   "10262": 7,
-   "10214": 9,
-   "10224": 9,
-   "10216": 8,
-   "101902": 9,
-   "102234": 9,
-   "10300": 9,
-   "10208": 9,
-   "10304": 9,
-   "10733": 9,
-   "10738": 9,
-   "10246": 8,
-   "10134": 5,
-   "102256": 1,
-   "102224": 2,
-   "102417": 1,
-   "102226": 1,
+   "10140": 18,
+   "10300": 18,
+   "10306": 18,
+   "101908": 18,
+   "1060": 13,
+   "102462": 18,
+   "10260": 18,
+   "10143": 15,
+   "1068": 17,
+   "102234": 18,
+   "10214": 18,
+   "10240": 18,
+   "102426": 18,
+   "10256": 18,
+   "102206": 18,
+   "10208": 18,
+   "10230": 17,
+   "102236": 13,
+   "102220": 18,
+   "10226": 18,
+   "102210": 6,
+   "10244": 18,
+   "10216": 18,
+   "10232": 12,
+   "10224": 18,
+   "10149": 6,
+   "10272": 18,
+   "10137": 16,
+   "101905": 18,
+   "10320": 18,
+   "10270": 18,
+   "10234": 6,
+   "10274": 18,
+   "10228": 18,
+   "10258": 18,
+   "102429": 12,
+   "102248": 18,
+   "10322": 18,
+   "101919": 18,
+   "102423": 16,
+   "10316": 18,
+   "10146": 12,
+   "10302": 18,
+   "10242": 18,
+   "10336": 18,
+   "10318": 18,
+   "101902": 18,
+   "10304": 18,
+   "10761": 18,
+   "1052": 6,
+   "102208": 18,
+   "10211": 18,
+   "10733": 18,
+   "10738": 18,
    "102420": 3,
-   "10254": 1,
-   "1076": 5,
-   "10131": 3,
-   "1092": 2,
-   "102254": 1,
-   "10250": 2,
-   "10252": 1,
    "10248": 3,
-   "102252": 4,
-   "10128": 1,
-   "10100": 1,
-   "1084": 3,
-   "10125": 1
+   "10134": 10,
+   "102222": 12,
+   "1084": 4,
+   "1076": 12,
+   "102250": 5,
+   "10246": 12,
+   "10131": 3,
+   "102224": 2,
+   "1092": 1,
+   "10262": 4,
+   "10250": 1,
+   "102432": 1,
+   "1044": 1,
+   "10236": 1
   },
   "pokerstars": {
    "10336": 17
-  },
-  "unibet": {
-   "102250": 9,
-   "10304": 9,
-   "10242": 9,
-   "10272": 9,
-   "101936": 9,
-   "102453": 7,
-   "102220": 9,
-   "102462": 9,
-   "1052": 4,
-   "102423": 9,
-   "102526": 9,
-   "10256": 9,
-   "101930": 9,
-   "10682": 8,
-   "10232": 7,
-   "102041": 9,
-   "10208": 9,
-   "102447": 9,
-   "10246": 9,
-   "10260": 9,
-   "10308": 9,
-   "10302": 9,
-   "102456": 4,
-   "102044": 9,
-   "102161": 9,
-   "10320": 9,
-   "102222": 9,
-   "10298": 9,
-   "102053": 9,
-   "10143": 7,
-   "102426": 9,
-   "101934": 9,
-   "10228": 9,
-   "10306": 9,
-   "101919": 9,
-   "10230": 9,
-   "10312": 9,
-   "101902": 9,
-   "10318": 9,
-   "10600": 8,
-   "101928": 9,
-   "10592": 4,
-   "10240": 8,
-   "10314": 9,
-   "10310": 9,
-   "10214": 9,
-   "10316": 9,
-   "10216": 9,
-   "10274": 9,
-   "101908": 9,
-   "10244": 9,
-   "102432": 4,
-   "10146": 5,
-   "10137": 9,
-   "10296": 9,
-   "10300": 9,
-   "10226": 9,
-   "10149": 3,
-   "10336": 9,
-   "1044": 1,
-   "101932": 9,
-   "102206": 9,
-   "102252": 9,
-   "101905": 9,
-   "102450": 9,
-   "10140": 8,
-   "10224": 9,
-   "10248": 7,
-   "10322": 9,
-   "102236": 9,
-   "10674": 4,
-   "102210": 7,
-   "10324": 9,
-   "102116": 9,
-   "102238": 9,
-   "10270": 9,
-   "10219": 9,
-   "1060": 7,
-   "102248": 9,
-   "102208": 9,
-   "10258": 9,
-   "102429": 7,
-   "10326": 9,
-   "102234": 9,
-   "1068": 8,
-   "10211": 9,
-   "102047": 9,
-   "10732": 9,
-   "1076": 8,
-   "10128": 1,
-   "10276": 2,
-   "10250": 1,
-   "102417": 2,
-   "1084": 5,
-   "10131": 3,
-   "1092": 2,
-   "10100": 1,
-   "10690": 7,
-   "102444": 5,
-   "102420": 5,
-   "10134": 5,
-   "10262": 1,
-   "10616": 2,
-   "10125": 1,
-   "10608": 7,
-   "10698": 2,
-   "102441": 2,
-   "102224": 4
-  },
-  "winamax": {
-   "10596": 1
   }
  },
  "par_bookmaker": {
   "bwin": {
-   "marches": 444,
-   "actifs": 444,
-   "reconnus": 168,
+   "marches": 876,
+   "actifs": 876,
+   "reconnus": 342,
    "suspendu": 0
   },
   "pmu": {
-   "marches": 636,
-   "actifs": 636,
-   "reconnus": 177,
+   "marches": 1158,
+   "actifs": 1158,
+   "reconnus": 329,
    "suspendu": 0
   },
   "pokerstars": {
-   "marches": 18,
-   "actifs": 18,
-   "reconnus": 2,
-   "suspendu": 0
-  },
-  "unibet": {
-   "marches": 895,
-   "actifs": 878,
-   "reconnus": 144,
+   "marches": 17,
+   "actifs": 17,
+   "reconnus": 0,
    "suspendu": 0
   },
   "winamax": {
-   "marches": 1099,
-   "actifs": 1,
-   "reconnus": 0,
-   "suspendu": 7
+   "marches": 616,
+   "actifs": 5,
+   "reconnus": 6,
+   "suspendu": 3
   }
  },
  "competitions": [
   {
-   "nom": "Bundesliga",
+   "nom": "UEFA Europa League",
    "matchs": 18
   }
  ]

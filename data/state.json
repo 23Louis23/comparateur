@@ -1,13 +1,13 @@
 {
  "theoddsapi": {
   "status": "ok",
-  "remaining": 280,
-  "lastRun": "2026-10-06T23:26:55Z"
+  "remaining": 268,
+  "lastRun": "2026-10-08T01:11:03Z"
  },
  "oddspapi": {
   "status": "ok",
   "month": "2026-10",
-  "used": 182,
+  "used": 188,
   "cache": {
    "books": {
     "bwin": "bwin.fr",
@@ -1924,7 +1924,7 @@
    "unibet",
    "winamax"
   ],
-  "lastRun": "2026-10-05T20:54:32Z",
+  "lastRun": "2026-10-08T01:11:03Z",
   "players": {},
   "teams": {
    "1662": "Le Havre AC",
@@ -2080,7 +2080,31 @@
    "2671": "1. FC Cologne",
    "2527": "Borussia Monchengladbach",
    "2538": "SC Freiburg",
-   "2530": "Schalke 04"
+   "2530": "Schalke 04",
+   "2218": "Sparta Prague",
+   "664": "Lillestroem SK",
+   "2950": "AZ Alkmaar",
+   "5202": "Hapoel Be`er Sheva FC",
+   "2046": "FC Salzburg",
+   "3121": "KKS Lech Poznan",
+   "2413": "NK Celje",
+   "3395": "AC Omonia Nicosia",
+   "4860": "Union Saint-Gilloise",
+   "25787": "SCU Torreense",
+   "2051": "SK Sturm Graz",
+   "1925": "Ferencvarosi Budapest",
+   "4502": "FC Viktoria Plzen",
+   "2032": "GNK Dinamo Zagreb",
+   "2900": "RSC Anderlecht",
+   "7691": "Jagiellonia Bialystok",
+   "364472": "FC Ararat-Armenia",
+   "2962": "NEC Nijmegen",
+   "3273": "PFC Levski Sofia",
+   "3245": "Olympiacos Piraeus",
+   "3006": "SL Benfica",
+   "2352": "Celtic Glasgow",
+   "3241": "OFI Crete",
+   "3050": "Besiktas Istanbul"
   },
   "empty": {
    "132": "2026-10-18T19:00:00Z"
@@ -2121,13 +2145,18 @@
    "35": {
     "last": "2026-10-05T20:54:32Z",
     "next": "2026-10-09T18:30:00Z"
+   },
+   "679": {
+    "last": "2026-10-08T01:11:03Z",
+    "next": "2026-10-15T16:45:00Z"
    }
   },
   "miss": {
    "420:pokerstars.fr": "2026-10-05T09:46:55Z",
    "138:bwin.fr": "2026-10-05T09:49:18Z",
    "138:pmu": "2026-10-05T09:49:18Z",
-   "138:pokerstars.fr": "2026-10-05T09:49:18Z"
+   "138:pokerstars.fr": "2026-10-05T09:49:18Z",
+   "679:unibet.fr": "2026-10-10T01:11:03Z"
   }
  }
 }
