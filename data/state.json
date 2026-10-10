@@ -1,13 +1,13 @@
 {
  "theoddsapi": {
   "status": "ok",
-  "remaining": 256,
-  "lastRun": "2026-10-09T06:24:28Z"
+  "remaining": 244,
+  "lastRun": "2026-10-10T08:42:59Z"
  },
  "oddspapi": {
   "status": "ok",
   "month": "2026-10",
-  "used": 188,
+  "used": 194,
   "cache": {
    "books": {
     "bwin": "bwin.fr",
@@ -1924,7 +1924,7 @@
    "unibet",
    "winamax"
   ],
-  "lastRun": "2026-10-08T01:11:03Z",
+  "lastRun": "2026-10-10T08:42:59Z",
   "players": {},
   "teams": {
    "1662": "Le Havre AC",
@@ -2104,7 +2104,16 @@
    "3006": "SL Benfica",
    "2352": "Celtic Glasgow",
    "3241": "OFI Crete",
-   "3050": "Besiktas Istanbul"
+   "3050": "Besiktas Istanbul",
+   "1680": "Clermont Foot 63",
+   "1686": "Dijon FCO",
+   "234888": "FC Annecy",
+   "1675": "Nancy-Lorraine",
+   "1671": "Grenoble Foot",
+   "1711": "US Boulogne",
+   "1685": "Pau FC",
+   "1673": "Stade Lavallois MFC",
+   "1657": "Sochaux-Montbeliard"
   },
   "empty": {
    "132": "2026-10-18T19:00:00Z"
@@ -2149,6 +2158,10 @@
    "679": {
     "last": "2026-10-08T01:11:03Z",
     "next": "2026-10-15T16:45:00Z"
+   },
+   "182": {
+    "last": "2026-10-10T08:42:59Z",
+    "next": "2026-10-10T12:00:00Z"
    }
   },
   "miss": {
