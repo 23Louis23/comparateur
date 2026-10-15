@@ -7,7 +7,7 @@
  "oddspapi": {
   "status": "ok",
   "month": "2026-10",
-  "used": 206,
+  "used": 212,
   "cache": {
    "books": {
     "bwin": "bwin.fr",
@@ -1924,7 +1924,7 @@
    "unibet",
    "winamax"
   ],
-  "lastRun": "2026-10-12T16:59:59Z",
+  "lastRun": "2026-10-15T01:49:45Z",
   "players": {},
   "teams": {
    "1662": "Le Havre AC",
@@ -2144,7 +2144,23 @@
    "116312": "FC Iberia 1999",
    "2205": "FK Jablonec",
    "1159": "SK Brann",
-   "126304": "Lincoln Red Imps"
+   "126304": "Lincoln Red Imps",
+   "4202": "Gloucester Rugby",
+   "4195": "Sale Sharks",
+   "4214": "Glasgow Warriors",
+   "312136": "Bulls",
+   "4210": "Leinster",
+   "4188": "Stormers",
+   "4191": "Bristol Bears",
+   "8083": "Connacht Rugby",
+   "4197": "Saracens FC",
+   "4184": "Lions",
+   "4203": "Munster",
+   "4196": "Bath Rugby",
+   "4193": "Leicester Tigers",
+   "43335": "Exeter RC Chiefs",
+   "4194": "Northampton Saints",
+   "4215": "Cardiff Rugby"
   },
   "empty": {
    "132": "2026-10-18T19:00:00Z"
@@ -2197,6 +2213,10 @@
    "34480": {
     "last": "2026-10-12T16:59:59Z",
     "next": "2026-10-15T16:45:00Z"
+   },
+   "401": {
+    "last": "2026-10-15T01:49:45Z",
+    "next": "2026-10-16T19:00:00Z"
    }
   },
   "miss": {
@@ -2205,7 +2225,8 @@
    "138:pmu": "2026-10-05T09:49:18Z",
    "138:pokerstars.fr": "2026-10-05T09:49:18Z",
    "679:unibet.fr": "2026-10-10T01:11:03Z",
-   "34480:unibet.fr": "2026-10-14T16:59:59Z"
+   "34480:unibet.fr": "2026-10-14T16:59:59Z",
+   "401:winamax.fr": "2026-10-17T01:49:45Z"
   }
  }
 }

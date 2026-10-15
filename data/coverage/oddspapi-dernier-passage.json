@@ -1,390 +1,192 @@
 {
- "run": "2026-10-12T16:59:59Z",
+ "run": "2026-10-15T01:49:45Z",
  "fixtures": [
   {
-   "match": "FC Lugano - FK Crvena Zvezda Belgrade",
-   "cotes": 159,
+   "match": "Gloucester Rugby - Union Bordeaux Begles",
+   "cotes": 12,
    "bookmakers": [
     "bwin",
     "pmu",
     "pokerstars",
-    "winamax"
+    "unibet"
    ]
   },
   {
-   "match": "HNK Hajduk Split - Ajax Amsterdam",
-   "cotes": 183,
+   "match": "Sale Sharks - Glasgow Warriors",
+   "cotes": 12,
    "bookmakers": [
     "bwin",
     "pmu",
     "pokerstars",
-    "winamax"
+    "unibet"
    ]
   },
   {
-   "match": "KAA Gent - AGF Aarhus",
-   "cotes": 298,
+   "match": "Bulls - Stade Francais Paris",
+   "cotes": 10,
    "bookmakers": [
     "bwin",
     "pmu",
     "pokerstars",
-    "winamax"
+    "unibet"
    ]
   },
   {
-   "match": "KF Egnatia Rrogozhine - FC Midtjylland",
-   "cotes": 163,
+   "match": "Asm Clermont Auvergne - Leinster",
+   "cotes": 9,
+   "bookmakers": [
+    "bwin",
+    "pokerstars",
+    "unibet"
+   ]
+  },
+  {
+   "match": "Stormers - Bristol Bears",
+   "cotes": 12,
    "bookmakers": [
     "bwin",
     "pmu",
     "pokerstars",
-    "winamax"
+    "unibet"
    ]
   },
   {
-   "match": "Kuopion Palloseura - Trabzonspor",
-   "cotes": 328,
+   "match": "Connacht Rugby - Saracens FC",
+   "cotes": 12,
    "bookmakers": [
     "bwin",
     "pmu",
     "pokerstars",
-    "winamax"
+    "unibet"
    ]
   },
   {
-   "match": "Mjallby AIF - Inter Club de Escaldes",
-   "cotes": 88,
+   "match": "Stade Rochelais - Lions",
+   "cotes": 12,
    "bookmakers": [
     "bwin",
     "pmu",
     "pokerstars",
-    "winamax"
+    "unibet"
    ]
   },
   {
-   "match": "Panathinaikos Athens - FK Borac Banja Luka",
-   "cotes": 254,
+   "match": "Munster - Racing 92",
+   "cotes": 12,
    "bookmakers": [
     "bwin",
     "pmu",
     "pokerstars",
-    "winamax"
+    "unibet"
    ]
   },
   {
-   "match": "PFC CSKA Sofia - AS Monaco",
-   "cotes": 95,
+   "match": "Bath Rugby - Montpellier Herault Rugby",
+   "cotes": 12,
    "bookmakers": [
     "bwin",
     "pmu",
     "pokerstars",
-    "winamax"
+    "unibet"
    ]
   },
   {
-   "match": "Riga FC - FC Kairat Almaty",
-   "cotes": 143,
+   "match": "Section Paloise - Leicester Tigers",
+   "cotes": 9,
+   "bookmakers": [
+    "bwin",
+    "pokerstars",
+    "unibet"
+   ]
+  },
+  {
+   "match": "Stade Toulousain - Exeter RC Chiefs",
+   "cotes": 9,
    "bookmakers": [
     "bwin",
     "pmu",
     "pokerstars",
-    "winamax"
+    "unibet"
    ]
   },
   {
-   "match": "CS Universitatea Craiova - Getafe CF",
-   "cotes": 170,
+   "match": "Northampton Saints - Cardiff Rugby",
+   "cotes": 11,
    "bookmakers": [
     "bwin",
     "pmu",
     "pokerstars",
-    "winamax"
-   ]
-  },
-  {
-   "match": "Atalanta BC - Pafos FC",
-   "cotes": 107,
-   "bookmakers": [
-    "bwin",
-    "pmu",
-    "pokerstars"
-   ]
-  },
-  {
-   "match": "Brighton & Hove Albion - FK Kauno Zalgiris",
-   "cotes": 352,
-   "bookmakers": [
-    "bwin",
-    "pmu",
-    "pokerstars",
-    "winamax"
-   ]
-  },
-  {
-   "match": "FC Copenhagen - SC Braga",
-   "cotes": 355,
-   "bookmakers": [
-    "bwin",
-    "pmu",
-    "pokerstars",
-    "winamax"
-   ]
-  },
-  {
-   "match": "FC Twente Enschede - FC Thun",
-   "cotes": 189,
-   "bookmakers": [
-    "bwin",
-    "pmu",
-    "pokerstars",
-    "winamax"
-   ]
-  },
-  {
-   "match": "Heart of Midlothian FC - FC Nordsjaelland",
-   "cotes": 257,
-   "bookmakers": [
-    "bwin",
-    "pmu",
-    "pokerstars",
-    "winamax"
-   ]
-  },
-  {
-   "match": "St. Truidense VV - FC Iberia 1999",
-   "cotes": 96,
-   "bookmakers": [
-    "bwin",
-    "pmu",
-    "pokerstars"
-   ]
-  },
-  {
-   "match": "SC Freiburg - FK Jablonec",
-   "cotes": 331,
-   "bookmakers": [
-    "bwin",
-    "pmu",
-    "pokerstars",
-    "winamax"
-   ]
-  },
-  {
-   "match": "SK Brann - Lincoln Red Imps",
-   "cotes": 92,
-   "bookmakers": [
-    "bwin",
-    "pmu",
-    "pokerstars"
+    "unibet"
    ]
   }
  ],
  "unmapped": {
   "bwin": {
-   "10256": 18,
-   "101902": 18,
-   "10272": 18,
-   "10262": 18,
-   "102248": 18,
-   "10326": 18,
-   "101908": 18,
-   "101905": 18,
-   "10224": 15,
-   "102222": 18,
-   "10300": 18,
-   "10270": 18,
-   "10226": 17,
-   "10324": 18,
-   "10246": 18,
-   "10264": 18,
-   "102041": 18,
-   "10258": 18,
-   "10230": 18,
-   "10276": 18,
-   "102224": 18,
-   "10244": 18,
-   "10240": 17,
-   "10274": 18,
-   "10336": 18,
-   "10208": 18,
-   "10260": 18,
-   "101919": 18,
-   "102220": 18,
-   "102252": 18,
-   "102250": 18,
-   "10242": 18,
-   "10228": 18,
-   "10248": 1,
-   "10732": 8,
-   "10232": 3,
-   "10234": 1
+   "26396": 1,
+   "26392": 1,
+   "26364": 1,
+   "26360": 2,
+   "26368": 1,
+   "26372": 1,
+   "26248": 1,
+   "26388": 1,
+   "26280": 1,
+   "26272": 1,
+   "26288": 1,
+   "26304": 1,
+   "26312": 2,
+   "26256": 1
   },
   "pmu": {
-   "10240": 15,
-   "101908": 18,
-   "101905": 18,
-   "10244": 9,
-   "10304": 18,
-   "102423": 13,
-   "102426": 18,
-   "1068": 9,
-   "102206": 15,
-   "10316": 18,
-   "10260": 18,
-   "101902": 17,
-   "10137": 12,
-   "10761": 18,
-   "10242": 15,
-   "10224": 10,
-   "10143": 14,
-   "10216": 18,
-   "10306": 18,
-   "10134": 8,
-   "10272": 17,
-   "102462": 18,
-   "10211": 18,
-   "10256": 18,
-   "10140": 17,
-   "10320": 18,
-   "10336": 18,
-   "101919": 18,
-   "10208": 18,
-   "10258": 18,
-   "10226": 17,
-   "1076": 8,
-   "10300": 18,
-   "10322": 18,
-   "10318": 17,
-   "10214": 18,
-   "102220": 18,
-   "10733": 18,
-   "102208": 7,
-   "102250": 2,
-   "10228": 13,
-   "10131": 4,
-   "102248": 4,
-   "10128": 1,
-   "102222": 4,
-   "10270": 4,
-   "10274": 5,
-   "1092": 1,
-   "10248": 2,
-   "102234": 4,
-   "102224": 1,
-   "10262": 5,
-   "10302": 4,
-   "10250": 1,
-   "10246": 4,
-   "102420": 5,
-   "1084": 5,
-   "10738": 4,
-   "10146": 10,
-   "102429": 10,
-   "1060": 9,
-   "10232": 4,
-   "102236": 1,
-   "102210": 1,
-   "10230": 11,
-   "1052": 7,
-   "10149": 7,
-   "1036": 1,
-   "1044": 1,
-   "10155": 1,
-   "10234": 1,
-   "102432": 3,
-   "10152": 3,
-   "102435": 1
+   "26396": 1,
+   "26392": 1,
+   "26400": 1,
+   "26364": 1,
+   "26368": 1,
+   "26248": 1,
+   "26288": 2,
+   "26284": 2,
+   "26280": 1,
+   "26276": 1,
+   "26360": 1,
+   "26304": 1,
+   "26312": 1,
+   "26256": 1
   },
-  "pokerstars": {
-   "10336": 18,
-   "10733": 10
-  },
-  "winamax": {
-   "102095": 6,
-   "10260": 7,
-   "102220": 6,
-   "10310": 5,
-   "101928": 6,
-   "10219": 7,
-   "10604": 6,
-   "10226": 6,
-   "10298": 6,
-   "10612": 3,
-   "102116": 7,
-   "10312": 6,
-   "10214": 7,
-   "102206": 6,
-   "10242": 7,
-   "10248": 6,
-   "10224": 6,
-   "102224": 6,
-   "101902": 7,
-   "102462": 7,
-   "10306": 7,
-   "10216": 6,
-   "101936": 7,
-   "102053": 7,
-   "10230": 7,
-   "10336": 7,
-   "10256": 7,
-   "10316": 6,
-   "101930": 6,
-   "10240": 7,
-   "101905": 6,
-   "101919": 7,
-   "10318": 6,
-   "10228": 7,
-   "102074": 6,
-   "10304": 7,
-   "10246": 6,
-   "10300": 6,
-   "10296": 6,
-   "10320": 7,
-   "102208": 6,
-   "10258": 7,
-   "10314": 6,
-   "10308": 7,
-   "102222": 6,
-   "10244": 7,
-   "10208": 7,
-   "102210": 5,
-   "10596": 3,
-   "10232": 5,
-   "10588": 1,
-   "10236": 1,
-   "10234": 1
+  "unibet": {
+   "261": 11
   }
  },
  "par_bookmaker": {
   "bwin": {
-   "marches": 780,
-   "actifs": 780,
-   "reconnus": 358,
+   "marches": 28,
+   "actifs": 28,
+   "reconnus": 36,
    "suspendu": 0
   },
   "pmu": {
-   "marches": 917,
-   "actifs": 917,
-   "reconnus": 287,
+   "marches": 26,
+   "actifs": 26,
+   "reconnus": 28,
    "suspendu": 0
   },
   "pokerstars": {
-   "marches": 48,
-   "actifs": 48,
-   "reconnus": 20,
+   "marches": 12,
+   "actifs": 12,
+   "reconnus": 36,
    "suspendu": 0
   },
-  "winamax": {
-   "marches": 900,
-   "actifs": 409,
-   "reconnus": 187,
-   "suspendu": 8
+  "unibet": {
+   "marches": 23,
+   "actifs": 23,
+   "reconnus": 36,
+   "suspendu": 0
   }
  },
  "competitions": [
   {
-   "nom": "UEFA Conference League",
-   "matchs": 36
+   "nom": "European Rugby Champions Cup",
+   "matchs": 12
   }
  ]
 }
