@@ -7,7 +7,7 @@
  "oddspapi": {
   "status": "ok",
   "month": "2026-10",
-  "used": 212,
+  "used": 218,
   "cache": {
    "books": {
     "bwin": "bwin.fr",
@@ -1924,7 +1924,7 @@
    "unibet",
    "winamax"
   ],
-  "lastRun": "2026-10-15T01:49:45Z",
+  "lastRun": "2026-10-17T12:24:26Z",
   "players": {},
   "teams": {
    "1662": "Le Havre AC",
@@ -2160,7 +2160,21 @@
    "4193": "Leicester Tigers",
    "43335": "Exeter RC Chiefs",
    "4194": "Northampton Saints",
-   "4215": "Cardiff Rugby"
+   "4215": "Cardiff Rugby",
+   "5632": "Sluc Nancy Basket",
+   "53125": "Nanterre 92",
+   "3533": "Elan Bearnais Pau-Lacq-Orthez",
+   "81901": "Saint Quentin",
+   "3539": "Cholet Basket",
+   "3538": "Elan Chalon",
+   "44238": "Limoges CSP",
+   "3532": "BCM Gravelines Dunkerque",
+   "5627": "JDA Dijon Basket",
+   "75779": "Boulazac Basket Dordogne",
+   "3537": "Le Mans Sarthe Basket",
+   "5628": "JL Bourg Basket",
+   "3535": "SIG Strasbourg",
+   "5631": "Roanne Chorale"
   },
   "empty": {
    "132": "2026-10-18T19:00:00Z"
@@ -2217,6 +2231,10 @@
    "401": {
     "last": "2026-10-15T01:49:45Z",
     "next": "2026-10-16T19:00:00Z"
+   },
+   "156": {
+    "last": "2026-10-17T12:24:26Z",
+    "next": "2026-10-17T16:00:00Z"
    }
   },
   "miss": {
@@ -2226,7 +2244,8 @@
    "138:pokerstars.fr": "2026-10-05T09:49:18Z",
    "679:unibet.fr": "2026-10-10T01:11:03Z",
    "34480:unibet.fr": "2026-10-14T16:59:59Z",
-   "401:winamax.fr": "2026-10-17T01:49:45Z"
+   "401:winamax.fr": "2026-10-17T01:49:45Z",
+   "156:bwin.fr": "2026-10-19T12:24:26Z"
   }
  }
 }
