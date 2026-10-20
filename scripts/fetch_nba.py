@@ -218,6 +218,7 @@ def collect(api, st, games, diag):
                 if fx.get("participant%sId" % i) and fx.get("participant%sName" % i):
                     teams[str(fx["participant%sId" % i])] = fx["participant%sName" % i]
 
+    seen = set()
     for f in merged.values():
         date = parse_dt(f.get("startTime"))
         if not date or date < NOW - timedelta(hours=4) or date > NOW + timedelta(days=4):
@@ -266,10 +267,18 @@ def collect(api, st, games, diag):
                             continue
                         p = g["players"].setdefault(str(pid), {"id": str(pid), "name": None, "stats": {}})
                         p["name"] = player_name(row.get("playerName")) or p["name"] or "Joueur %s" % pid
-                        cell = p["stats"].setdefault(stat, {}).setdefault(str(line if line is not None else 1), {"o": {}, "p": {}})
+                        cut = str(line if line is not None else 1)
+                        cell = p["stats"].setdefault(stat, {}).setdefault(cut, {"o": {}, "p": {}})
+                        key = (gid, pid, stat, cut, book)
+                        if key in seen:  # déjà vu ce passage (ex. « Over 24.5 » et « 25+ ») : la meilleure cote
+                            cell["o"][book] = max(cell["o"][book], price)
+                            continue
+                        seen.add(key)
                         old = cell["o"].get(book)
                         if old is not None and old != price:
                             cell["p"][book] = old
+                        else:
+                            cell["p"].pop(book, None)
                         cell["o"][book] = price
                         stats[stat] = stats.get(stat, 0) + 1
 
@@ -291,8 +300,9 @@ def main():
     if not KEY:
         st["status"] = "pas de clé ODDSPAPI_KEY"
     else:
-        books = max(1, len(st["cache"].get("books", BOOKS)))
-        per_run = int(os.environ.get("ODDSPAPI_PER_RUN", str(books + 1)))
+        miss = st.get("miss", {})
+        active = [sl for sl in st["cache"].get("books", {}).values() if not (parse_dt(miss.get(sl)) and NOW < parse_dt(miss[sl]))]
+        per_run = int(os.environ.get("ODDSPAPI_PER_RUN", str(max(1, len(active) or len(BOOKS)))))
         remaining = LIMIT - st["used"]
         hours_left = max(1.0, ((NOW.replace(day=1) + timedelta(days=32)).replace(day=1, hour=0, minute=0, second=0)
                                - NOW).total_seconds() / 3600)
@@ -300,7 +310,8 @@ def main():
         earned = (NOW - last).total_seconds() / 3600 * remaining / hours_left if last else per_run
         next_game = parse_dt(st.get("nextGame"))
         game_soon = next_game is None or next_game < NOW + timedelta(hours=36)
-        if FORCE or (remaining >= per_run and earned >= per_run and game_soon):
+        in_window = 12 <= NOW.hour <= 23  # 14 h – 1 h à Paris : props publiées, cotes qui bougent avant les matchs
+        if FORCE or (remaining >= per_run and earned >= per_run and game_soon and in_window):
             api = Api(st, per_run)
             try:
                 c = st["cache"]
@@ -317,8 +328,8 @@ def main():
             st["lastRun"] = iso(NOW)
             DIAG.write_text(json.dumps(diag, indent=1, ensure_ascii=False))
         else:
-            log("Pas de passage : reste %d requêtes, %.1f gagnées / %d nécessaires, match proche : %s"
-                % (remaining, earned, per_run, game_soon))
+            log("Pas de passage : reste %d requêtes, %.1f gagnées / %d nécessaires, match proche : %s, créneau : %s"
+                % (remaining, earned, per_run, game_soon, in_window))
 
     out_games = []
     for g in sorted(games.values(), key=lambda g: g.get("date", "")):
