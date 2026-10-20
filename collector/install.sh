@@ -28,7 +28,7 @@ cat > "$PLIST" <<PL
   <key>ProgramArguments</key>
   <array><string>$PY</string><string>$DEST/collect.py</string></array>
   <key>WorkingDirectory</key><string>$DEST</string>
-  <key>StartInterval</key><integer>300</integer>
+  <key>StartInterval</key><integer>120</integer>
   <key>RunAtLoad</key><true/>
   <key>ProcessType</key><string>Background</string>
   <key>LowPriorityIO</key><true/>
@@ -39,4 +39,4 @@ cat > "$PLIST" <<PL
 </plist>
 PL
 launchctl bootstrap "gui/$(id -u)" "$PLIST"
-echo "Collecte automatique installée (toutes les 5 min). Journal : ~/Library/Logs/CoteRadar.log"
+echo "Collecte automatique installée (toutes les 2 min). Journal : ~/Library/Logs/CoteRadar.log"

@@ -9,9 +9,20 @@ const BOOKS = {
 const STAT_ORDER = ['pts', 'reb', 'ast', '3pt', 'pra', 'pr', 'pa', 'ra', 'stl', 'blk', 'sb', 'tov', 'dd', 'td'];
 const YES_STATS = new Set(['dd', 'td']);  // marchés oui/non : pas de palier
 const DEMO = new URLSearchParams(location.search).has('demo');
-const POLL_MS = 60 * 1000;
+const POLL_MS = 75 * 1000;  // l'API GitHub autorise 60 requêtes/heure sans compte : une toutes les 75 s
 // Cotes publiées par l'iMac (branche « data ») ; à défaut, celles de GitHub Actions (OddsPapi)
-const DATA_URLS = ['https://raw.githubusercontent.com/23Louis23/comparateur/data/nba.json', 'nba.json'];
+const REPO = '23Louis23/comparateur';
+const RAW_DATA = `https://raw.githubusercontent.com/${REPO}/data/nba.json`;  // mis en cache ~5 min par GitHub
+let lastSha = null;
+
+// Adresse de la dernière publication de l'iMac : figée par son identifiant, donc jamais servie en cache.
+async function latestDataUrl() {
+  try {
+    const r = await fetch(`https://api.github.com/repos/${REPO}/commits/data`, { headers: { Accept: 'application/vnd.github.sha' }, cache: 'no-store' });
+    if (r.ok) { const sha = (await r.text()).trim(); if (/^[0-9a-f]{40}$/.test(sha)) return { url: `https://raw.githubusercontent.com/${REPO}/${sha}/nba.json`, sha }; }
+  } catch {}
+  return { url: RAW_DATA + '?t=' + Date.now(), sha: null };
+}
 
 const state = { data: null, error: null, gameId: null, playerId: null, search: '', off: new Set() };
 try { JSON.parse(localStorage.getItem('off') || '[]').forEach(b => state.off.add(b)); } catch {}
@@ -44,15 +55,19 @@ async function load() {
   try {
     if (DEMO) state.data = buildNbaDemo();
     else {
+      const latest = await latestDataUrl();
+      if (latest.sha && latest.sha === lastSha && state.data) { render(); return; }  // rien de neuf depuis le dernier passage
       let last;
-      for (const url of DATA_URLS) {
+      for (const url of [latest.url, 'nba.json?t=' + Date.now()]) {
         try {
-          const r = await fetch(url + '?t=' + Date.now(), { cache: 'no-store' });
+          const r = await fetch(url, { cache: 'no-store' });
           if (!r.ok) throw new Error('HTTP ' + r.status);
           const d = await r.json();
-          // la copie de l'iMac n'est retenue que si elle est récente (iMac éteint → repli)
-          if (url !== 'nba.json' && Date.now() - new Date(d.generatedAt) > 3 * 3600e3) throw new Error('données anciennes');
-          state.data = d; last = null; break;
+          // la copie de l'iMac n'est retenue que si elle est récente (iMac éteint → repli sur OddsPapi)
+          if (!url.startsWith('nba.json') && Date.now() - new Date(d.generatedAt) > 3 * 3600e3) throw new Error('données anciennes');
+          state.data = d; last = null;
+          if (url === latest.url) lastSha = latest.sha;
+          break;
         } catch (e) { last = e; }
       }
       if (last) throw last;
