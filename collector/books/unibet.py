@@ -76,12 +76,18 @@ def fetch(memo, horizon_hours=48):
                         mm = re.match(r"^(.*\S)\s+(\d+)\+$", d)
                         if mm:
                             g.add(mm.group(1), stat, int(mm.group(2)), o.get("price"))
-                    elif kind == "combo":
-                        mm = re.match(r"^(.*\S)\s+\+\s*de\s+([\d.,]+)$", d)
+                    elif kind == "combo":  # « Cade Cunningham + de 36.5 » / « - de 36.5 »
+                        mm = re.match(r"^(.*\S)\s+([+-])\s*de\s+([\d.,]+)$", d)
                         if mm:
-                            g.add(mm.group(1), stat, over_cut(mm.group(2)), o.get("price"))
-                    elif kind == "ou" and d.startswith("Plus"):
+                            side = "over" if mm.group(2) == "+" else "under"
+                            g.add_line(mm.group(1), stat, mm.group(3), side, o.get("price"))
+                            if side == "over":
+                                g.add(mm.group(1), stat, over_cut(mm.group(3)), o.get("price"))
+                    elif kind == "ou" and d.startswith(("Plus", "Moins")):
                         player = (market.get("description") or "").rsplit(" - ", 1)[-1]
-                        g.add(player, stat, over_cut(o.get("spread")), o.get("price"))
+                        side = "over" if d.startswith("Plus") else "under"
+                        g.add_line(player, stat, o.get("spread"), side, o.get("price"))
+                        if side == "over":
+                            g.add(player, stat, over_cut(o.get("spread")), o.get("price"))
         games.append(g)
     return games

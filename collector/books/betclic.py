@@ -100,6 +100,11 @@ def add_row(g, row):
     if stat in ("dd", "td"):
         if label.lower() in ("oui", "") or not label:
             g.add(name or text, stat, 1, odds)
+    elif re.search(r"([+-])\s*de\s+([\d.,]+)$", text) and "palier" not in (row.get("title") or "").lower():
+        sign, line = re.search(r"([+-])\s*de\s+([\d.,]+)$", text).groups()
+        g.add_line(player, stat, line, "over" if sign == "+" else "under", odds)
+        if sign == "+":
+            g.add(player, stat, over_cut(line), odds)
     elif over:
         g.add(player, stat, over_cut(over.group(1)), odds)
     elif mile and not re.search(r"-\s*de", text):

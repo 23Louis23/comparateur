@@ -32,7 +32,16 @@ function buildNbaDemo() {
           if (Object.keys(cell.o).length) stats[k][c] = cell;
         }
       }
-      return { id: `${gi}-${pi}`, name, team, stats };
+      const lines = {};
+      for (const k of ['pts', 'reb', 'ast', '3pt', 'pra']) {
+        const line = Math.round(means[k]) - 0.5, cell = { over: {}, under: {} };
+        for (const b of books) {
+          const o = Math.round((1.86 + (r() - .5) * .16) * 100) / 100;
+          cell.over[b] = o; cell.under[b] = Math.round((1 / (1.08 - 1 / o)) * 100) / 100;
+        }
+        if (books.length) lines[k] = { [line]: cell };
+      }
+      return { id: `${gi}-${pi}`, name, team, stats, lines };
     });
     return { id: 'demo' + gi, date: new Date(now + inH * 3600e3).toISOString(), home, away, players, updated: {} };
   });

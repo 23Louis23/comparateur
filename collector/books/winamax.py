@@ -48,9 +48,12 @@ def fetch(memo, horizon_hours=48):
                 if not o.get("available", True):
                     continue
                 label = o.get("label") or ""
-                plus = re.match(r"^Plus de ([\d.,]+)$", label)
-                if plus and player:
-                    g.add(player, stat, over_cut(plus.group(1)), odds.get(str(oid)))
+                ou = re.match(r"^(Plus|Moins) de ([\d.,]+)$", label)
+                if ou and player:
+                    if "(paliers)" not in title:
+                        g.add_line(player, stat, ou.group(2), "over" if ou.group(1) == "Plus" else "under", odds.get(str(oid)))
+                    if ou.group(1) == "Plus":
+                        g.add(player, stat, over_cut(ou.group(2)), odds.get(str(oid)))
                 elif stat in ("dd", "td") and not label.startswith(("Plus", "Moins", "Non")):
                     g.add(player if label in ("Oui", "Yes") else label, stat, 1, odds.get(str(oid)))
         games.append(g)

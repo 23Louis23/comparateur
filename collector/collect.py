@@ -68,6 +68,13 @@ class Board:
         return g
 
     @staticmethod
+    def add_line(g, player, stat, line, side, book, odds):
+        key = norm_name(player)
+        p = g["players"].setdefault(key, {"id": key, "name": player, "stats": {}})
+        cell = p.setdefault("lines", {}).setdefault(stat, {}).setdefault(line, {"over": {}, "under": {}})
+        cell[side][book] = max(odds, cell[side].get(book, 0))
+
+    @staticmethod
     def add(g, player, stat, cut, book, odds):
         key = norm_name(player)
         p = g["players"].setdefault(key, {"id": key, "name": player, "stats": {}})
@@ -136,8 +143,8 @@ def publish(path):
 
 
 def save_games(path, games):
-    path.write_text(json.dumps([{"start": g.start.isoformat(), "home": g.home, "away": g.away, "players": g.players}
-                                for g in games], ensure_ascii=False))
+    path.write_text(json.dumps([{"start": g.start.isoformat(), "home": g.home, "away": g.away, "players": g.players,
+                                 "lines": g.lines} for g in games], ensure_ascii=False))
 
 
 def load_games(path):
@@ -145,6 +152,7 @@ def load_games(path):
     for d in load(path, []):
         g = Game(datetime.fromisoformat(d["start"]), d["home"], d["away"])
         g.players = {p: {s: {int(c): o for c, o in cuts.items()} for s, cuts in stats.items()} for p, stats in d["players"].items()}
+        g.lines = d.get("lines", {})
         games.append(g)
     return games
 
@@ -171,6 +179,11 @@ def main():
                 if not g:
                     continue
                 g["updated"][book.NAME] = at
+                for player, stats in bg.lines.items():
+                    for stat, lines in stats.items():
+                        for line, sides in lines.items():
+                            for side, odds in sides.items():
+                                board.add_line(g, player, stat, line, side, book.NAME, odds)
                 for player, stats in bg.players.items():
                     for stat, cuts in stats.items():
                         for cut, odds in cuts.items():
@@ -193,7 +206,7 @@ def main():
     apply_history(board, load(out_path, {}))
     games = []
     for g in sorted(board.games.values(), key=lambda g: g["date"]):
-        players = sorted((p for p in g["players"].values() if p["stats"]), key=lambda p: p["name"])
+        players = sorted((p for p in g["players"].values() if p["stats"] or p.get("lines")), key=lambda p: p["name"])
         games.append({k: v for k, v in g.items() if not k.startswith("_")} | {"players": players})
     books = sorted({b for g in games for b in g["updated"]})
     out = {"generatedAt": iso(now()), "source": {"status": "ok", "lastRun": iso(now()), "collector": "imac", "books": status},

@@ -13,7 +13,7 @@ const POLL_MS = 60 * 1000;
 // Cotes publiées par l'iMac (branche « data ») ; à défaut, celles de GitHub Actions (OddsPapi)
 const DATA_URLS = ['https://raw.githubusercontent.com/23Louis23/comparateur/data/nba.json', 'nba.json'];
 
-const state = { data: null, error: null, gameId: null, stat: null, side: 'all', search: '', off: new Set() };
+const state = { data: null, error: null, gameId: null, playerId: null, search: '', off: new Set() };
 try { JSON.parse(localStorage.getItem('off') || '[]').forEach(b => state.off.add(b)); } catch {}
 
 const $ = id => document.getElementById(id);
@@ -68,8 +68,36 @@ async function load() {
 }
 
 const game = () => state.data?.games.find(g => g.id === state.gameId);
-const statsOf = g => STAT_ORDER.filter(s => g.players.some(p => p.stats[s] && Object.keys(p.stats[s]).length));
 const teamOf = (g, p) => p.team === 'home' ? findTeam(g.home) : p.team === 'away' ? findTeam(g.away) : null;
+const label = s => (state.data?.stats || {})[s] || s;
+const on = b => !state.off.has(b);
+
+// Ligne « à l'équilibre » d'un bookmaker : celle où Plus et Moins sont les plus proches
+function balancedLines(lines) {
+  const byBook = {};
+  for (const [line, sides] of Object.entries(lines || {})) {
+    for (const b of Object.keys(sides.over || {})) {
+      const o = sides.over[b], u = sides.under?.[b];
+      if (u == null || !on(b)) continue;
+      const gap = Math.abs(o - u);
+      if (!byBook[b] || gap < byBook[b].gap) byBook[b] = { line, gap };
+    }
+  }
+  const main = new Set(Object.values(byBook).map(x => x.line));
+  const all = Object.keys(lines || {}).filter(l => Object.keys(lines[l].over || {}).concat(Object.keys(lines[l].under || {})).some(on));
+  if (!main.size && all.length) main.add(all[0]);  // un seul côté publié : on montre quand même
+  const sort = arr => arr.sort((x, y) => Number(x) - Number(y));
+  return { main: sort([...main]), others: sort(all.filter(l => !main.has(l))) };
+}
+// Valeur de référence d'un joueur (pour le classer) : sa ligne de points à l'équilibre
+function rankOf(p) {
+  const { main } = balancedLines(p.lines?.pts);
+  if (main.length) return Number(main[0]);
+  const cuts = Object.entries(p.stats?.pts || {}).map(([c, cell]) => [Number(c), Math.max(...Object.values(cell.o))]);
+  const near = cuts.reduce((best, c) => !best || Math.abs(c[1] - 1.9) < Math.abs(best[1] - 1.9) ? c : best, null);
+  return near ? near[0] : 0;
+}
+const statsOfPlayer = p => STAT_ORDER.filter(s => (p.stats?.[s] && Object.keys(p.stats[s]).length) || (p.lines?.[s] && Object.keys(p.lines[s]).length));
 
 // ------------------------------------------------------------ rendu
 function render() {
@@ -77,7 +105,6 @@ function render() {
   $('demo').innerHTML = DEMO ? `<div class="demo-flag">⚠️ Mode démo : joueurs réels, cotes fictives. <a href="./">Voir les vraies cotes</a></div>` : '';
   const games = state.data?.games || [];
 
-  // bandeau des matchs, groupés par jour
   let html = '', lastDay = '';
   for (const g of games) {
     const d = new Date(g.date), day = dayLabel(d), h = findTeam(g.home), a = findTeam(g.away);
@@ -99,17 +126,19 @@ function render() {
       : 'Aucun match NBA à venir dans les données pour le moment.'}<br><a href="?demo=1">Voir la démo</a></div>`;
     return;
   }
-  const stats = statsOf(g);
-  if (!stats.includes(state.stat)) state.stat = stats[0] || null;
-  $('match').innerHTML = renderHero(g) + (stats.length ? renderControls(g, stats) + renderPlayers(g) : `
-    <div class="empty"><div class="big">⏳</div>Les bookmakers n'ont pas encore publié les props de ce match.<br>
-    Elles apparaissent en général la veille ou le jour du match.<br><a href="?demo=1">Voir à quoi ça ressemblera</a></div>`);
+  if (!g.players.length) {
+    $('match').innerHTML = renderHero(g) + `<div class="empty"><div class="big">⏳</div>Les bookmakers n'ont pas encore publié les props de ce match.<br>
+      Elles apparaissent en général la veille ou le jour du match.<br><a href="?demo=1">Voir à quoi ça ressemblera</a></div>`;
+    return;
+  }
+  const players = [...g.players].sort((x, y) => rankOf(y) - rankOf(x) || x.name.localeCompare(y.name));
+  if (!players.find(p => p.id === state.playerId)) state.playerId = players[0].id;
+  $('match').innerHTML = renderHero(g) + renderPicker(g, players) + renderPlayer(g, players.find(p => p.id === state.playerId));
 }
 
 function renderHero(g) {
   const h = findTeam(g.home), a = findTeam(g.away), d = new Date(g.date);
   const books = Object.keys(g.updated || {}).filter(b => BOOKS[b]);
-  const cotes = g.players.reduce((s, p) => s + Object.values(p.stats).reduce((t, cuts) => t + Object.values(cuts).reduce((u, c) => u + Object.keys(c.o).length, 0), 0), 0);
   return `<div class="hero">
     <div class="hero-bg" style="background:linear-gradient(100deg,${a.c1} 0%,${a.c1} 38%,${h.c1} 62%,${h.c1} 100%)"></div>
     <div class="hero-in">
@@ -117,60 +146,72 @@ function renderHero(g) {
       <div class="vs"><div class="t num">${timeFmt.format(d)}</div><div class="d">${esc(dayLabel(d))}</div></div>
       <div class="side right">${badge(h)}<div><div class="city">${esc(h.city)}</div><div class="nick">${esc(h.nick)}</div></div></div>
     </div>
-    <div class="hero-meta"><span><b>${g.players.length}</b> joueurs</span><span><b>${cotes}</b> cotes</span>
+    <div class="hero-meta"><span><b>${g.players.length}</b> joueurs</span>
       ${books.length ? `<span>Mis à jour : ${books.map(b => `${BOOKS[b].name} ${ago(g.updated[b])}`).join(' · ')}</span>` : ''}</div>
   </div>`;
 }
 
-function renderControls(g, stats) {
-  const count = s => g.players.filter(p => p.stats[s] && Object.keys(p.stats[s]).length).length;
-  const label = s => (state.data.stats || {})[s] || s;
-  const h = findTeam(g.home), a = findTeam(g.away);
-  const hasTeams = g.players.some(p => p.team);
-  const present = new Set(g.players.flatMap(p => Object.values(p.stats).flatMap(c => Object.values(c).flatMap(x => Object.keys(x.o)))));
+function renderPicker(g, players) {
+  const q = state.search.trim().toLowerCase();
+  const present = new Set(g.players.flatMap(p => [
+    ...Object.values(p.stats || {}).flatMap(c => Object.values(c).flatMap(x => Object.keys(x.o))),
+    ...Object.values(p.lines || {}).flatMap(l => Object.values(l).flatMap(x => [...Object.keys(x.over || {}), ...Object.keys(x.under || {})]))]));
+  const list = players.filter(p => !q || p.name.toLowerCase().includes(q));
   return `
-    <div class="tabs">${stats.map(s => `<button class="tab ${s === state.stat ? 'on' : ''}" data-stat="${s}">${esc(label(s))}<span class="n">${count(s)}</span></button>`).join('')}</div>
     <div class="controls">
-      ${hasTeams ? `<div class="seg">
-        <button class="${state.side === 'all' ? 'on' : ''}" data-side="all">Tous</button>
-        <button class="${state.side === 'away' ? 'on' : ''}" data-side="away">${badge(a)}${esc(a.abbr)}</button>
-        <button class="${state.side === 'home' ? 'on' : ''}" data-side="home">${badge(h)}${esc(h.abbr)}</button>
-      </div>` : ''}
       <input class="search" id="search" placeholder="Rechercher un joueur…" value="${esc(state.search)}" autocomplete="off">
+      <div class="books">${Object.keys(BOOKS).map(b => present.has(b)
+        ? `<button class="book ${state.off.has(b) ? 'off' : ''}" data-book="${b}">${bk(b)}${BOOKS[b].name}</button>`
+        : `<span class="book na" title="Pas de cotes pour ce match">${bk(b)}${BOOKS[b].name}</span>`).join('')}</div>
     </div>
-    <div class="books">${Object.keys(BOOKS).map(b => present.has(b)
-      ? `<button class="book ${state.off.has(b) ? 'off' : ''}" data-book="${b}">${bk(b)}${BOOKS[b].name}</button>`
-      : `<span class="book na" title="Pas de cotes pour ce match">${bk(b)}${BOOKS[b].name}</span>`).join('')}</div>`;
+    <div class="picker">${list.map(p => {
+      const t = teamOf(g, p), r = rankOf(p);
+      return `<button class="pchip ${p.id === state.playerId ? 'on' : ''}" data-player="${esc(p.id)}" style="${t ? `--tc:${t.c1}` : ''}">
+        <span class="avatar sm">${esc(initials(p.name))}</span>
+        <span class="pc-name">${esc(p.name)}</span>
+        ${r ? `<span class="pc-ref num">${r} pts</span>` : ''}
+      </button>`;
+    }).join('') || '<div class="small">Aucun joueur pour cette recherche.</div>'}</div>`;
 }
 
-function renderPlayers(g) {
-  const q = state.search.trim().toLowerCase();
-  const yes = YES_STATS.has(state.stat);
-  const rows = g.players
-    .filter(p => p.stats[state.stat] && Object.keys(p.stats[state.stat]).length)
-    .filter(p => state.side === 'all' || p.team === state.side)
-    .filter(p => !q || p.name.toLowerCase().includes(q))
-    .map(p => {
-      const cuts = Object.entries(p.stats[state.stat])
-        .map(([cut, cell]) => ({ cut: Number(cut), cell, books: Object.entries(cell.o).filter(([b]) => !state.off.has(b)).sort((x, y) => y[1] - x[1]) }))
-        .filter(c => c.books.length)
-        .sort((x, y) => x.cut - y.cut);
-      // tri : joueurs dont le palier « principal » (cote la plus proche de 1.90) est le plus haut d'abord
-      const main = cuts.reduce((best, c) => !best || Math.abs(c.books[0][1] - 1.9) < Math.abs(best.books[0][1] - 1.9) ? c : best, null);
-      return { p, cuts, rank: main ? main.cut : 0 };
-    })
-    .filter(r => r.cuts.length)
-    .sort((x, y) => y.rank - x.rank || x.p.name.localeCompare(y.p.name));
+function renderPlayer(g, p) {
+  if (!p) return '';
+  const t = teamOf(g, p);
+  const stats = statsOfPlayer(p);
+  return `<section class="player" style="${t ? `--tc:${t.c1}` : ''}">
+    <div class="ph">
+      <div class="avatar lg">${esc(initials(p.name))}</div>
+      <div><div class="ph-name">${esc(p.name)}</div><div class="pteam">${t ? `${esc(t.city)} ${esc(t.nick)} · ` : ''}${stats.length} catégories</div></div>
+    </div>
+    ${stats.map(s => renderStat(p, s)).join('')}
+  </section>`;
+}
 
-  if (!rows.length) return `<div class="empty">Aucun joueur pour ce filtre.</div>`;
-  return `<div class="players">${rows.map(({ p, cuts }) => {
-    const t = teamOf(g, p);
-    return `<div class="prow" style="${t ? `--tc:${t.c1}` : ''}">
-      <div class="pid"><div class="avatar">${esc(initials(p.name))}</div>
-        <div style="min-width:0"><div class="pname">${esc(p.name)}</div>${t ? `<div class="pteam">${esc(t.city)} ${esc(t.nick)}</div>` : ''}</div></div>
-      <div class="cuts">${cuts.map(c => renderCut(c, yes)).join('')}</div>
-    </div>`;
-  }).join('')}</div>`;
+function renderStat(p, s) {
+  const yes = YES_STATS.has(s);
+  const lines = p.lines?.[s] || {};
+  const { main, others } = balancedLines(lines);
+  const cuts = Object.entries(p.stats?.[s] || {})
+    .map(([cut, cell]) => ({ cut: Number(cut), cell, books: Object.entries(cell.o).filter(([b]) => on(b)).sort((x, y) => y[1] - x[1]) }))
+    .filter(c => c.books.length).sort((x, y) => x.cut - y.cut);
+  if (!main.length && !cuts.length) return '';
+  return `<div class="stat">
+    <div class="stat-h"><h3>${esc(label(s))}</h3>${main.length ? `<span class="small">ligne à l'équilibre</span>` : ''}</div>
+    ${main.map(l => renderLine(l, lines[l])).join('')}
+    ${others.length ? `<details class="more"><summary>Autres lignes (${others.length})</summary>${others.map(l => renderLine(l, lines[l])).join('')}</details>` : ''}
+    ${cuts.length ? `<div class="sub">${yes ? 'Cotes' : 'Paliers'}</div><div class="cuts">${cuts.map(c => renderCut(c, yes)).join('')}</div>` : ''}
+  </div>`;
+}
+
+function renderLine(line, sides) {
+  const side = (key, sign) => {
+    const books = Object.entries(sides?.[key] || {}).filter(([b]) => on(b)).sort((x, y) => y[1] - x[1]);
+    if (!books.length) return `<div class="ou-side"><div class="ou-lab">${sign} ${line}</div><span class="small">—</span></div>`;
+    const best = books[0][1], tie = books.length > 1 && best === books[books.length - 1][1];
+    return `<div class="ou-side"><div class="ou-lab"><b class="num">${sign}${line}</b></div><div class="ou-books">${books.map(([b, o]) =>
+      `<span class="ou ${o === best && !tie && books.length > 1 ? 'best' : ''}">${bk(b)}<span class="num">${fmt(o)}</span></span>`).join('')}</div></div>`;
+  };
+  return `<div class="ouline">${side('over', '+')}${side('under', '−')}</div>`;
 }
 
 function renderCut({ cut, cell, books }, yes) {
@@ -202,9 +243,8 @@ document.addEventListener('click', e => {
   const t = e.target.closest('button');
   if (!t) return;
   if (t.id === 'refresh') return load();
-  if (t.dataset.game) { state.gameId = t.dataset.game; state.search = ''; state.side = 'all'; }
-  else if (t.dataset.stat) state.stat = t.dataset.stat;
-  else if (t.dataset.side) state.side = t.dataset.side;
+  if (t.dataset.game) { state.gameId = t.dataset.game; state.playerId = null; state.search = ''; }
+  else if (t.dataset.player) { state.playerId = t.dataset.player; requestAnimationFrame(() => document.querySelector('.player')?.scrollIntoView({ behavior: 'smooth', block: 'start' })); }
   else if (t.dataset.book) {
     const b = t.dataset.book;
     state.off.has(b) ? state.off.delete(b) : state.off.add(b);

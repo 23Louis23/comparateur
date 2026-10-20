@@ -40,8 +40,11 @@ def fetch(memo, horizon_hours=48):
                 if o.get("status") != "OPEN" or not o.get("participant"):
                     continue
                 odds = o.get("odds", 0) / 1000
-                if o.get("type") == "OT_OVER" and o.get("line") is not None:
-                    g.add(o["participant"], stat, over_cut(o["line"] / 1000), odds)
+                if o.get("type") in ("OT_OVER", "OT_UNDER") and o.get("line") is not None:
+                    side = "over" if o["type"] == "OT_OVER" else "under"
+                    g.add_line(o["participant"], stat, o["line"] / 1000, side, odds)
+                    if side == "over":
+                        g.add(o["participant"], stat, over_cut(o["line"] / 1000), odds)
                 elif o.get("type") == "OT_YES":
                     cut = 1 if stat in ("dd", "td") else int(milestone.group(1)) if milestone else None
                     g.add(o["participant"], stat, cut, odds)

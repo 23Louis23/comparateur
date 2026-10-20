@@ -73,6 +73,7 @@ class Game:
     def __init__(self, start, home, away):
         self.start, self.home, self.away = start, home, away
         self.players = {}  # nom affiché → {stat: {palier: cote}}
+        self.lines = {}    # nom affiché → {stat: {"9.5": {"over": cote, "under": cote}}}
 
     def add(self, player, stat, cut, odds):
         odds = price(odds)
@@ -80,6 +81,18 @@ class Game:
             return
         cell = self.players.setdefault(player.strip(), {}).setdefault(stat, {})
         cell[int(cut)] = max(odds, cell.get(int(cut), 0))  # même palier via deux marchés : la meilleure
+
+    def add_line(self, player, stat, line, side, odds):
+        """Ligne plus/moins (« Plus de 9,5 » / « Moins de 9,5 ») : side = "over" ou "under"."""
+        odds = price(odds)
+        try:
+            key = "%g" % float(str(line).replace(",", "."))
+        except (TypeError, ValueError):
+            return
+        if not player or odds is None:
+            return
+        cell = self.lines.setdefault(player.strip(), {}).setdefault(stat, {}).setdefault(key, {})
+        cell[side] = max(odds, cell.get(side, 0))
 
     def count(self):
         return sum(len(c) for p in self.players.values() for c in p.values())
