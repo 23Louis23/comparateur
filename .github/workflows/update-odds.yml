@@ -1,8 +1,8 @@
-name: Mise à jour des cotes
+name: Mise à jour des props NBA
 
 on:
   schedule:
-    - cron: "*/15 * * * *"   # toutes les 15 min (GitHub peut décaler de quelques minutes)
+    - cron: "*/15 * * * *"   # le script décide s'il dépense une requête (quota, match proche)
   push:                      # relance immédiate quand le code de collecte change
     branches: [main]
     paths: ["scripts/**", ".github/workflows/**"]
@@ -31,23 +31,22 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Récupérer les cotes
+      - name: Récupérer les props NBA
         env:
-          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
           ODDSPAPI_KEY: ${{ secrets.ODDSPAPI_KEY }}
           ODDSPAPI_MONTHLY_LIMIT: ${{ vars.ODDSPAPI_MONTHLY_LIMIT || '250' }}
-          ODDSPAPI_PER_RUN: ${{ vars.ODDSPAPI_PER_RUN || '6' }}
           FORCE: ${{ inputs.force || github.event_name == 'push' }}
-        run: python scripts/fetch_odds.py
+        run: python scripts/fetch_nba.py
 
       - name: Publier si les cotes ont changé
         run: |
           git config user.name "coteradar-bot"
           git config user.email "coteradar-bot@users.noreply.github.com"
-          git add docs/odds.json data/
+          git add docs/nba.json data/
           if git diff --cached --quiet; then
             echo "Aucun changement."
           else
-            git commit -m "Cotes $(date -u +'%Y-%m-%d %H:%M') UTC"
+            git commit -m "Props NBA $(date -u +'%Y-%m-%d %H:%M') UTC"
+            git pull --rebase -X ours -q || true
             git push
           fi

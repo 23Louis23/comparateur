@@ -1,57 +1,37 @@
-# CoteRadar — comparateur de cotes
+# CoteRadar NBA — comparateur de props joueurs
 
-Compare les cotes de Unibet, Winamax, PMU, Betclic, bwin et PokerStars.
-Le site est hébergé gratuitement sur GitHub Pages ; une tâche GitHub Actions
-récupère les cotes automatiquement et met le site à jour.
+Site : https://23louis23.github.io/comparateur/ (démo : `?demo=1`)
+
+Pour chaque match NBA, une ligne par joueur avec tous les paliers (cuts) proposés
+par Unibet, Winamax, PMU, bwin et PokerStars, et la cote de chaque bookmaker.
+Statistiques : points, rebonds, passes, paniers à 3 pts, combinaisons (P+R+A, P+R,
+P+A, R+A), interceptions, contres, balles perdues, double-double, triple-double.
 
 ```
-docs/                    le site (servi par GitHub Pages)
-  index.html, app.js     interface
-  odds.json              cotes, réécrit à chaque mise à jour
-  demo.js                cotes fictives (index.html?demo=1)
-scripts/fetch_odds.py    collecte des cotes (Python, sans dépendance)
-data/state.json          quotas consommés, horodatages
-data/coverage/           échantillons bruts pour vérifier la couverture réelle
-.github/workflows/       planification (toutes les 15 min)
+docs/                    le site (GitHub Pages)
+  index.html, nba.js     interface
+  nba-teams.js           équipes (abréviations, couleurs)
+  nba-demo.js            données fictives pour ?demo=1
+  nba.json               props, réécrit à chaque mise à jour
+scripts/fetch_nba.py     collecte OddsPapi (Python, sans dépendance)
+data/nba-state.json      quota consommé, caches (catalogue, équipes)
+data/nba-diagnostic.json ce que chaque bookmaker a renvoyé au dernier passage
 ```
 
-## Sources de cotes
+## Source
 
-| Source | Clé (secret GitHub) | Bookmakers | Marchés |
-|---|---|---|---|
-| [The Odds API](https://the-odds-api.com) | `ODDS_API_KEY` | Unibet, Winamax, PMU, Betclic | 1N2 / vainqueur (les marchés joueurs n'y existent que pour les bookmakers US) |
-| [OddsPapi](https://oddspapi.io) | `ODDSPAPI_KEY` | bwin.fr, PokerStars.fr, PMU, Unibet.fr, Winamax.fr (pas Betclic) | 1N2, buteur, premier buteur, passeur, paliers NBA (points, rebonds, passes, 3 pts, PRA), vainqueur des courses cyclistes |
+[OddsPapi](https://oddspapi.io), secret GitHub `ODDSPAPI_KEY`. Betclic n'y est pas
+disponible. Un « Over 24.5 points » est affiché comme le palier **25+**.
 
-Offres gratuites : 500 crédits/mois (The Odds API), 250 requêtes/mois (OddsPapi).
-Le script répartit le quota restant sur le reste du mois : en gratuit, chaque
-source passe quelques fois par jour ; avec un abonnement, la fréquence monte
-toute seule (jusqu'à toutes les 15 min, rythme de la tâche planifiée).
-
-Avec un quota OddsPapi plus élevé, ajuster dans GitHub → Settings → Secrets and
-variables → Actions → **Variables** : `ODDSPAPI_MONTHLY_LIMIT` et `ODDSPAPI_PER_RUN`.
-
-## Mise en ligne (une fois)
-
-1. Créer un dépôt **public** sur GitHub (GitHub Pages est gratuit pour les dépôts publics ; les clés restent secrètes).
-2. Pousser ce dossier sur la branche `main`.
-3. Settings → Pages → *Deploy from a branch* → `main` / `/docs`.
-4. Settings → Secrets and variables → Actions → *New repository secret* : `ODDS_API_KEY`, `ODDSPAPI_KEY`.
-5. Actions → « Mise à jour des cotes » → *Run workflow* (cocher *force* pour le premier passage).
-
-Le site est alors sur `https://<utilisateur>.github.io/<dépôt>/`. Sur iPhone :
-Safari → Partager → « Sur l'écran d'accueil » pour l'avoir comme une application.
+Offre gratuite : 250 requêtes/mois. Une mise à jour complète coûte environ
+5 requêtes (une par bookmaker) ; le script répartit le quota sur le mois et ne
+dépense rien s'il n'y a pas de match dans les 36 h. Avec un abonnement, régler
+`ODDSPAPI_MONTHLY_LIMIT` dans GitHub → Settings → Secrets and variables → Actions
+→ Variables : la fréquence augmente toute seule.
 
 ## En local
 
 ```bash
-ODDS_API_KEY=... ODDSPAPI_KEY=... python3 scripts/fetch_odds.py --force
+ODDSPAPI_KEY=... python3 scripts/fetch_nba.py --force
 python3 -m http.server 5173 --directory docs
 ```
-
-## Après le test gratuit
-
-Regarder la barre d'état du site (nombre de matchs par bookmaker) et
-`data/coverage/` (réponses brutes d'OddsPapi) pour voir ce qui est réellement
-disponible, puis choisir l'abonnement. Les marchés OddsPapi autres que le 1N2
-apparaissent sous leur nom d'origine ; une fois l'échantillon reçu, on pourra les
-renommer et regrouper les paliers (buteur, passeur, cuts NBA, top 3/10…).
