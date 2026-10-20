@@ -24,9 +24,9 @@ import unibet  # noqa: E402
 from common import Blocked, iso, norm_name, now  # noqa: E402
 from teams import team  # noqa: E402
 
-ROOT = HERE.parent
 BUILD = HERE / "build"          # dépôt local de la branche « data » (ignoré par git)
 STATE = HERE / "state.json"     # mémoire entre deux passages (ignoré par git)
+REMOTE = "https://github.com/23Louis23/comparateur.git"
 LOCAL_BOOKS = [unibet, betclic]
 FALLBACK_URL = "https://raw.githubusercontent.com/23Louis23/comparateur/main/docs/nba.json"
 ARROW_MINUTES = 60              # durée d'affichage d'une variation de cote
@@ -121,11 +121,9 @@ def apply_history(board, previous):
 
 def publish(path):
     """Branche « data » : un seul commit, remplacé à chaque passage (pas d'historique qui grossit)."""
-    remote = subprocess.run(["git", "-C", str(ROOT), "remote", "get-url", "origin"],
-                            capture_output=True, text=True, check=True).stdout.strip()
     if not (BUILD / ".git").exists():
         subprocess.run(["git", "init", "-q", "-b", "data", str(BUILD)], check=True)
-        subprocess.run(["git", "-C", str(BUILD), "remote", "add", "origin", remote], check=True)
+        subprocess.run(["git", "-C", str(BUILD), "remote", "add", "origin", REMOTE], check=True)
     run = lambda *a: subprocess.run(["git", "-C", str(BUILD), *a], capture_output=True, text=True)
     run("add", "nba.json")
     run("-c", "user.name=coteradar-imac", "-c", "user.email=coteradar-imac@users.noreply.github.com",
