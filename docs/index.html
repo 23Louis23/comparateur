@@ -175,9 +175,9 @@
   .tbl .tbl-name { position: sticky; left: 0; z-index: 1; background: var(--panel); border-right: 1px solid var(--line); text-align: left; }
   .tbl thead .tbl-name { z-index: 3; background: var(--panel-2); }
   .tbl tbody tr:hover td, .tbl tbody tr:hover .tbl-name { background: var(--panel-2); }
-  .tbl-player { display: flex; align-items: center; gap: 8px; background: linear-gradient(90deg, var(--tc, transparent) -300%, transparent 80%); border: 0; padding: 20px 12px; font-weight: 700; font-size: 13.5px; width: 100%; text-align: left; }
+  .tbl-player { display: flex; align-items: center; gap: 8px; background: linear-gradient(90deg, var(--tc, transparent) -300%, transparent 80%); border: 0; padding: 24px 12px; font-weight: 700; font-size: 13.5px; width: 100%; text-align: left; }
   .avatar.xs { width: 26px; height: 26px; font-size: 10px; }
-  .tc { display: flex; align-items: center; gap: 8px; background: none; border: 0; padding: 20px 12px; width: 100%; font-size: 12px; }
+  .tc { display: flex; align-items: center; gap: 10px; background: none; border: 0; padding: 16px 12px; width: 100%; font-size: 12px; }
   .tc:hover { background: var(--panel-3); }
   .tc-line { font-family: 'Barlow Condensed'; font-weight: 800; font-size: 17px; min-width: 40px; text-align: center; color: var(--accent); background: rgba(198,244,50,.1); border: 1px solid rgba(198,244,50,.3); border-radius: 6px; padding: 1px 6px; }
   .tc-odd { display: inline-flex; align-items: center; gap: 3px; color: var(--muted); font-size: 10px; }
@@ -185,6 +185,16 @@
   .tc-odd .bk { width: 14px; height: 14px; font-size: 7.5px; }
   .tc-odd.na { opacity: .4; }
   .tc-empty { color: var(--faint); text-align: center; }
+  .tc-rows { display: flex; flex-direction: column; gap: 6px; }
+  .tc-row { display: flex; align-items: center; gap: 4px; }
+  .tc-sign { font-style: normal; font-size: 9px; width: 10px; }
+  .tc-sign.up { color: var(--up); } .tc-sign.down { color: var(--down); }
+  .tc-chip { display: inline-flex; align-items: center; gap: 3px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; padding: 2px 5px 2px 3px; }
+  .tc-chip b { font-size: 13px; font-weight: 500; color: var(--text); }
+  .tc-chip .bk { width: 14px; height: 14px; font-size: 7.5px; }
+  .tc-chip.best { background: var(--accent); border-color: var(--accent); }
+  .tc-chip.best b { color: var(--accent-ink); font-weight: 700; }
+  .tc-none { color: var(--faint); font-size: 12px; }
   .tbl td, .tbl thead th:not(.tbl-name) { border-left: 1px solid #2c3847; }  /* séparation entre catégories */
   .tbl-legend { margin: 8px 2px 28px; }
   .nm-short { display: none; }
@@ -193,7 +203,8 @@
     .nm-full, .tbl-player .avatar { display: none; }
     .nm-short { display: inline; }
     .tbl-player { padding: 18px 7px; font-size: 12px; max-width: 96px; overflow: hidden; text-overflow: ellipsis; }
-    .tc { padding: 18px 6px; gap: 5px; }
+    .tc { padding: 14px 6px; gap: 6px; }
+    .tc-chip b { font-size: 12px; }
     .tc-line { font-size: 15px; min-width: 32px; padding: 1px 4px; }
     .tc-odd b { font-size: 12px; }
   }
@@ -212,8 +223,8 @@
   <section id="match"></section>
 </main>
 <footer class="wrap">Cotes indicatives, à vérifier chez le bookmaker. Les jeux d'argent et de hasard peuvent être dangereux : pertes d'argent, conflits familiaux, addiction… Appelez le 09 74 75 13 13 (appel non surtaxé). Interdit aux moins de 18 ans.</footer>
-<script src="nba-teams.js?v=202610201514"></script>
-<script src="nba-demo.js?v=202610201514"></script>
-<script src="nba.js?v=202610201514"></script>
+<script src="nba-teams.js?v=202610201516"></script>
+<script src="nba-demo.js?v=202610201516"></script>
+<script src="nba.js?v=202610201516"></script>
 </body>
 </html>

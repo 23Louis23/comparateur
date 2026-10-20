@@ -14,14 +14,21 @@ const POLL_MS = 75 * 1000;  // l'API GitHub autorise 60 requêtes/heure sans com
 const REPO = '23Louis23/comparateur';
 const RAW_DATA = `https://raw.githubusercontent.com/${REPO}/data/nba.json`;  // mis en cache ~5 min par GitHub
 let lastSha = null;
+let apiPausedUntil = 0;  // quota de l'API GitHub épuisé (60/h par connexion) : on attend sa remise à zéro
 
 // Adresse de la dernière publication de l'iMac : figée par son identifiant, donc jamais servie en cache.
 async function latestDataUrl() {
-  try {
-    const r = await fetch(`https://api.github.com/repos/${REPO}/commits/data`, { headers: { Accept: 'application/vnd.github.sha' }, cache: 'no-store' });
-    if (r.ok) { const sha = (await r.text()).trim(); if (/^[0-9a-f]{40}$/.test(sha)) return { url: `https://raw.githubusercontent.com/${REPO}/${sha}/nba.json`, sha }; }
-  } catch {}
-  return { url: RAW_DATA + '?t=' + Date.now(), sha: null };
+  if (Date.now() >= apiPausedUntil) {
+    try {
+      const r = await fetch(`https://api.github.com/repos/${REPO}/commits/data`, { headers: { Accept: 'application/vnd.github.sha' }, cache: 'no-store' });
+      if (r.ok) { const sha = (await r.text()).trim(); if (/^[0-9a-f]{40}$/.test(sha)) return { url: `https://raw.githubusercontent.com/${REPO}/${sha}/nba.json`, sha }; }
+      if (r.status === 403 || r.status === 429) {
+        const reset = Number(r.headers.get('X-RateLimit-Reset')) * 1000;
+        apiPausedUntil = reset > Date.now() ? reset : Date.now() + 15 * 60e3;
+      }
+    } catch {}
+  }
+  return { url: RAW_DATA + '?t=' + Date.now(), sha: null };  // repli : adresse mise en cache ~5 min
 }
 
 const state = { data: null, error: null, gameId: null, playerId: null, search: '', off: new Set(), view: 'joueur', focusStat: null };
@@ -204,22 +211,30 @@ function renderPicker(g, players) {
 }
 
 // Case du tableau : ligne principale (celle que le plus de bookmakers proposent à l'équilibre)
-// avec la meilleure cote Plus et Moins ; à défaut, le palier dont la meilleure cote est la plus proche de 2,00.
+// avec la cote Plus et Moins de chaque bookmaker ; à défaut, le palier dont la meilleure cote est
+// la plus proche de 2,00, avec la cote de chaque bookmaker.
+function tableChips(obj) {
+  const books = Object.entries(obj || {}).filter(([b]) => on(b)).sort((x, y) => y[1] - x[1]);
+  if (!books.length) return '<span class="tc-none">–</span>';
+  const best = books[0][1], tie = books.length > 1 && best === books[books.length - 1][1];
+  return books.map(([b, o]) => `<span class="tc-chip ${o === best && !tie && books.length > 1 ? 'best' : ''}">${bk(b)}<b class="num">${fmt(o)}</b></span>`).join('');
+}
+
 function tableCell(p, s) {
   const lines = p.lines?.[s] || {};
   const { main } = balancedLines(lines);
   const count = l => new Set([...Object.keys(lines[l]?.over || {}), ...Object.keys(lines[l]?.under || {})].filter(on)).size;
   const line = [...main].sort((x, y) => count(y) - count(x))[0];
-  const best = obj => Object.entries(obj || {}).filter(([b]) => on(b)).sort((x, y) => y[1] - x[1])[0];
   if (line) {
-    const o = best(lines[line].over), u = best(lines[line].under);
-    const odd = (x, sign) => x ? `<span class="tc-odd">${sign}${bk(x[0])}<b class="num">${fmt(x[1])}</b></span>` : `<span class="tc-odd na">${sign}–</span>`;
-    return `<span class="tc-line num">${line.replace('.', ',')}</span>${odd(o, '▲')}${odd(u, '▼')}`;
+    return `<span class="tc-line num">${line.replace('.', ',')}</span><span class="tc-rows">
+      <span class="tc-row"><i class="tc-sign up">▲</i>${tableChips(lines[line].over)}</span>
+      <span class="tc-row"><i class="tc-sign down">▼</i>${tableChips(lines[line].under)}</span></span>`;
   }
-  const cuts = Object.entries(p.stats?.[s] || {}).map(([c, cell]) => [c, best(cell.o)]).filter(([, b]) => b);
+  const best = obj => Math.max(0, ...Object.entries(obj || {}).filter(([b]) => on(b)).map(([, o]) => o));
+  const cuts = Object.entries(p.stats?.[s] || {}).filter(([, cell]) => best(cell.o) > 0);
   if (!cuts.length) return '';
-  const [c, b] = cuts.reduce((x, y) => Math.abs(y[1][1] - 2) < Math.abs(x[1][1] - 2) ? y : x);
-  return `<span class="tc-line num">${YES_STATS.has(s) ? 'Oui' : c + '+'}</span><span class="tc-odd">${bk(b[0])}<b class="num">${fmt(b[1])}</b></span>`;
+  const [c, cell] = cuts.reduce((x, y) => Math.abs(best(y[1].o) - 2) < Math.abs(best(x[1].o) - 2) ? y : x);
+  return `<span class="tc-line num">${YES_STATS.has(s) ? 'Oui' : c + '+'}</span><span class="tc-rows"><span class="tc-row">${tableChips(cell.o)}</span></span>`;
 }
 
 const shortName = n => { const w = String(n).split(/\s+/); return w.length > 1 ? `${w[0][0]}. ${w.slice(1).join(' ')}` : n; };
@@ -241,7 +256,7 @@ function renderTable(g, players) {
       </tr>`;
     }).join('')}</tbody>
   </table></div>
-  <div class="small tbl-legend">▲ meilleure cote Plus · ▼ meilleure cote Moins sur la ligne principale. Sans plus/moins : le palier le plus proche de 2,00. Touchez une case pour voir tous les paliers.</div>`;
+  <div class="small tbl-legend">▲ cotes Plus · ▼ cotes Moins de chaque bookmaker sur la ligne principale (meilleure en vert). Sans plus/moins : le palier le plus proche de 2,00. Touchez une case pour voir tous les paliers.</div>`;
 }
 
 function renderPlayer(g, p) {
