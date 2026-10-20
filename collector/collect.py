@@ -21,13 +21,14 @@ sys.path.insert(0, str(HERE / "books"))
 
 import betclic  # noqa: E402
 import unibet  # noqa: E402
+import winamax  # noqa: E402
 from common import Blocked, iso, norm_name, now  # noqa: E402
 from teams import team  # noqa: E402
 
 BUILD = HERE / "build"          # dépôt local de la branche « data » (ignoré par git)
 STATE = HERE / "state.json"     # mémoire entre deux passages (ignoré par git)
 REMOTE = "https://github.com/23Louis23/comparateur.git"
-LOCAL_BOOKS = [unibet, betclic]
+LOCAL_BOOKS = [unibet, winamax, betclic]
 FALLBACK_URL = "https://raw.githubusercontent.com/23Louis23/comparateur/main/docs/nba.json"
 ARROW_MINUTES = 60              # durée d'affichage d'une variation de cote
 STAT_LABELS = {"pts": "Points", "reb": "Rebonds", "ast": "Passes", "3pt": "Paniers à 3 pts", "pra": "Pts + Reb + Pas",
