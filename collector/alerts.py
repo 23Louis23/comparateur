@@ -61,40 +61,51 @@ def outlier(odds):
     return None
 
 
+def odds_fr(x):
+    return ("%.2f" % x).replace(".", ",")
+
+
 def find(games, labels, local):
+    """Liste de dicts : kind, key, player, cat (catégorie), short (« 6+ »), long (détail), hit, odds, match."""
     found = []
     for g in games:
         start = datetime.fromisoformat(g["date"][:-1] + "+00:00")
         if start < now():
             continue
         ok = fresh_books(g, local)
-        when = start.astimezone().strftime("%H:%M")
-        match = "%s @ %s, %s" % (g["away"].split()[-1], g["home"].split()[-1], when)
+        match = "%s @ %s, %s" % (g["away"].split()[-1], g["home"].split()[-1], start.astimezone().strftime("%H:%M"))
         for p in g["players"]:
             for stat, cuts in (p.get("stats") or {}).items():
+                cat = labels.get(stat, stat)
                 for cut, cell in cuts.items():
                     odds = {b: o for b, o in cell["o"].items() if b in ok and b not in cell.get("f", [])}
                     hit = outlier(odds)
                     if hit:
-                        what = "%s %s+ %s" % (p["name"], cut, labels.get(stat, stat).lower()) if stat not in ("dd", "td") \
-                            else "%s %s" % (p["name"], labels.get(stat, stat).lower())
-                        found.append(("cote", (g["id"], p["id"], stat, "c" + cut), what, hit, odds, match))
+                        yes = stat in ("dd", "td")
+                        found.append(dict(kind="cote", key=(g["id"], p["id"], stat, "c" + cut), player=p["name"], cat=cat,
+                                          short="Oui" if yes else cut + "+",
+                                          long="réalise un %s" % cat.lower() if yes else "palier %s ou plus" % cut,
+                                          hit=hit, odds=odds, match=match))
             for stat, lines in (p.get("lines") or {}).items():
+                cat = labels.get(stat, stat)
                 for line, sides in lines.items():
                     over = {b: o for b, o in sides.get("over", {}).items() if b in ok}
                     under = {b: o for b, o in sides.get("under", {}).items() if b in ok}
-                    for side, odds, sign in (("over", over, "+"), ("under", under, "−")):
+                    for side, odds, word in (("over", over, "Plus"), ("under", under, "Moins")):
                         hit = outlier(odds)
                         if hit:
-                            what = "%s %s%s %s" % (p["name"], sign, line, labels.get(stat, stat).lower())
-                            found.append(("cote", (g["id"], p["id"], stat, side + line), what, hit, odds, match))
+                            found.append(dict(kind="cote", key=(g["id"], p["id"], stat, side + line), player=p["name"], cat=cat,
+                                              short="%s %s" % (word, line.replace(".", ",")),
+                                              long="ligne %s de %s" % (word, line.replace(".", ",")),
+                                              hit=hit, odds=odds, match=match))
                     if over and under:
                         bo, o = max(over.items(), key=lambda kv: kv[1])
                         bu, u = max(under.items(), key=lambda kv: kv[1])
                         if bo != bu and 1 / o + 1 / u < 1:
                             gain = (1 / (1 / o + 1 / u) - 1) * 100
-                            what = "%s %s %s" % (p["name"], line, labels.get(stat, stat).lower())
-                            found.append(("surebet", (g["id"], p["id"], stat, "sb" + line), what, (bo, o, bu, u, gain), None, match))
+                            found.append(dict(kind="surebet", key=(g["id"], p["id"], stat, "sb" + line), player=p["name"], cat=cat,
+                                              short=line.replace(".", ","), long="ligne %s" % line.replace(".", ","),
+                                              hit=(bo, o, bu, u, gain), odds=None, match=match))
     return found
 
 
@@ -105,29 +116,37 @@ def run(games, labels, local, st):
     for k in [k for k, v in sent.items() if datetime.fromisoformat(v["t"][:-1] + "+00:00") < limit]:
         del sent[k]
     todo = []
-    for kind, key, what, hit, odds, match in find(games, labels, local):
-        k = "|".join(key)
-        value = hit[1] if kind == "cote" else hit[4]
+    for f in find(games, labels, local):
+        k = "|".join(f["key"])
+        value = f["hit"][1] if f["kind"] == "cote" else f["hit"][4]
         prev = sent.get(k)
-        if prev and value <= prev["v"] + (0.05 if kind == "cote" else 0.3) and \
+        if prev and value <= prev["v"] + (0.05 if f["kind"] == "cote" else 0.3) and \
                 datetime.fromisoformat(prev["t"][:-1] + "+00:00") > now() - timedelta(hours=REPEAT_HOURS):
             continue
         sent[k] = {"v": value, "t": iso(now())}
-        if kind == "cote":
-            book, best, second = hit
-            rest = ", ".join("%s %.2f" % (BOOK_NAMES.get(b, b), o) for b, o in sorted(odds.items(), key=lambda kv: -kv[1]) if b != book)
-            todo.append(("Cote anormale · %s" % what,
-                         "%s %.2f, soit +%d %% sur la 2e meilleure cote\nAilleurs : %s\n%s" % (
-                             BOOK_NAMES.get(book, book), best, round((best / second - 1) * 100), rest, match), "rotating_light"))
+        if f["kind"] == "cote":
+            book, best, second = f["hit"]
+            name = BOOK_NAMES.get(book, book)
+            pct = round((best / second - 1) * 100)
+            rest = " · ".join("%s %s" % (BOOK_NAMES.get(b, b), odds_fr(o)) for b, o in sorted(f["odds"].items(), key=lambda kv: -kv[1]) if b != book)
+            title = "⚠️ %s · %s · %s %s" % (name, f["player"], f["cat"], f["short"])
+            msg = "%s : %s, soit +%d %% sur la 2e meilleure cote\nCatégorie : %s, %s\nAutres bookmakers : %s\nMatch : %s" % (
+                name, odds_fr(best), pct, f["cat"], f["long"], rest, f["match"])
+            line = "%s · %s · %s %s : %s (+%d %%)" % (name, f["player"], f["cat"], f["short"], odds_fr(best), pct)
+            todo.append((title, msg, "rotating_light", line))
         else:
-            bo, o, bu, u, gain = hit
-            todo.append(("Surebet +%.1f %% · %s" % (gain, what),
-                         "Plus chez %s %.2f · Moins chez %s %.2f\n%s" % (BOOK_NAMES.get(bo, bo), o, BOOK_NAMES.get(bu, bu), u, match), "moneybag"))
+            bo, o, bu, u, gain = f["hit"]
+            title = "💰 Surebet +%s %% · %s · %s %s" % (("%.1f" % gain).replace(".", ","), f["player"], f["cat"], f["short"])
+            msg = "Plus de %s chez %s : %s\nMoins de %s chez %s : %s\nCatégorie : %s, %s\nMatch : %s" % (
+                f["short"], BOOK_NAMES.get(bo, bo), odds_fr(o), f["short"], BOOK_NAMES.get(bu, bu), odds_fr(u), f["cat"], f["long"], f["match"])
+            line = "Surebet · %s · %s %s : Plus %s %s / Moins %s %s" % (
+                f["player"], f["cat"], f["short"], BOOK_NAMES.get(bo, bo), odds_fr(o), BOOK_NAMES.get(bu, bu), odds_fr(u))
+            todo.append((title, msg, "moneybag", line))
     if not todo:
         return 0
     if len(todo) > MAX_PUSH:
-        push("%d alertes CoteRadar" % len(todo), "\n".join("• " + t for t, _, _ in todo[:15]), "rotating_light")
+        push("%d alertes CoteRadar" % len(todo), "\n".join("• " + line for _, _, _, line in todo[:20]), "rotating_light")
     else:
-        for title, msg, tag in todo:
+        for title, msg, tag, _ in todo:
             push(title, msg, tag)
     return len(todo)
