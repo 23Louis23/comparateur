@@ -9,7 +9,9 @@ const BOOKS = {
 const STAT_ORDER = ['pts', 'reb', 'ast', '3pt', 'pra', 'pr', 'pa', 'ra', 'stl', 'blk', 'sb', 'tov', 'dd', 'td'];
 const YES_STATS = new Set(['dd', 'td']);  // marchés oui/non : pas de palier
 const DEMO = new URLSearchParams(location.search).has('demo');
-const POLL_MS = 2 * 60 * 1000;
+const POLL_MS = 60 * 1000;
+// Cotes publiées par l'iMac (branche « data ») ; à défaut, celles de GitHub Actions (OddsPapi)
+const DATA_URLS = ['https://raw.githubusercontent.com/23Louis23/comparateur/data/nba.json', 'nba.json'];
 
 const state = { data: null, error: null, gameId: null, stat: null, side: 'all', search: '', off: new Set() };
 try { JSON.parse(localStorage.getItem('off') || '[]').forEach(b => state.off.add(b)); } catch {}
@@ -42,9 +44,18 @@ async function load() {
   try {
     if (DEMO) state.data = buildNbaDemo();
     else {
-      const r = await fetch('nba.json?t=' + Date.now(), { cache: 'no-store' });
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      state.data = await r.json();
+      let last;
+      for (const url of DATA_URLS) {
+        try {
+          const r = await fetch(url + '?t=' + Date.now(), { cache: 'no-store' });
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          const d = await r.json();
+          // la copie de l'iMac n'est retenue que si elle est récente (iMac éteint → repli)
+          if (url !== 'nba.json' && Date.now() - new Date(d.generatedAt) > 3 * 3600e3) throw new Error('données anciennes');
+          state.data = d; last = null; break;
+        } catch (e) { last = e; }
+      }
+      if (last) throw last;
     }
     state.error = null;
   } catch (e) { state.error = e.message; }

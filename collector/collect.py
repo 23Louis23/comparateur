@@ -1,0 +1,186 @@
+#!/usr/bin/env python3
+"""
+Collecteur local (iMac) : lit les props NBA directement chez les bookmakers,
+fusionne matchs et joueurs, ajoute les bookmakers encore fournis par OddsPapi
+(docs/nba.json, mis à jour par GitHub Actions) et publie nba.json sur la branche
+« data » du dépôt, que le site lit directement.
+
+Usage : python3 collector/collect.py [--no-push]
+"""
+import json
+import subprocess
+import sys
+import traceback
+import urllib.request
+from datetime import datetime, timedelta
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+sys.path.insert(0, str(HERE / "books"))
+
+import betclic  # noqa: E402
+import unibet  # noqa: E402
+from common import Blocked, iso, norm_name, now  # noqa: E402
+from teams import team  # noqa: E402
+
+ROOT = HERE.parent
+BUILD = HERE / "build"          # dépôt local de la branche « data » (ignoré par git)
+STATE = HERE / "state.json"     # mémoire entre deux passages (ignoré par git)
+LOCAL_BOOKS = [unibet, betclic]
+FALLBACK_URL = "https://raw.githubusercontent.com/23Louis23/comparateur/main/docs/nba.json"
+ARROW_MINUTES = 60              # durée d'affichage d'une variation de cote
+STAT_LABELS = {"pts": "Points", "reb": "Rebonds", "ast": "Passes", "3pt": "Paniers à 3 pts", "pra": "Pts + Reb + Pas",
+               "pr": "Pts + Reb", "pa": "Pts + Pas", "ra": "Reb + Pas", "stl": "Interceptions", "blk": "Contres",
+               "sb": "Int + Contres", "tov": "Balles perdues", "dd": "Double-double", "td": "Triple-double"}
+
+
+def log(*a):
+    print(datetime.now().strftime("%H:%M:%S"), *a, flush=True)
+
+
+def load(path, default):
+    try:
+        return json.loads(Path(path).read_text("utf-8"))
+    except (OSError, ValueError):
+        return default
+
+
+class Board:
+    """Matchs fusionnés de tous les bookmakers."""
+
+    def __init__(self):
+        self.games = {}
+
+    def game(self, start, home, away):
+        th, ta = team(home), team(away)
+        if not th or not ta:
+            return None
+        for g in self.games.values():  # même affiche à ±3 h (l'ordre domicile/extérieur peut varier)
+            if {g["_h"], g["_a"]} == {th[0], ta[0]} and abs((datetime.fromisoformat(g["date"][:-1] + "+00:00") - start).total_seconds()) < 3 * 3600:
+                return g
+        gid = "%s-%s-%s" % (start.strftime("%Y%m%d"), ta[0], th[0])
+        g = self.games[gid] = {"id": gid, "date": iso(start), "home": th[1], "away": ta[1],
+                               "_h": th[0], "_a": ta[0], "players": {}, "updated": {}}
+        return g
+
+    @staticmethod
+    def add(g, player, stat, cut, book, odds):
+        key = norm_name(player)
+        p = g["players"].setdefault(key, {"id": key, "name": player, "stats": {}})
+        if any(ord(ch) > 127 for ch in player) and not any(ord(ch) > 127 for ch in p["name"]):
+            p["name"] = player  # garder l'orthographe accentuée (Dončić, Jokić…)
+        cell = p["stats"].setdefault(stat, {}).setdefault(str(cut), {"o": {}, "p": {}})
+        cell["o"][book] = max(odds, cell["o"].get(book, 0))
+
+
+def add_fallback(board, local_names):
+    """Bookmakers non collectés en local (PMU, PokerStars… via OddsPapi)."""
+    try:
+        with urllib.request.urlopen(FALLBACK_URL + "?t=%d" % now().timestamp(), timeout=20) as r:
+            data = json.load(r)
+    except Exception as e:  # noqa: BLE001 — l'appoint est facultatif
+        log("appoint OddsPapi indisponible :", type(e).__name__)
+        return
+    for fg in data.get("games", []):
+        start = datetime.fromisoformat(fg["date"].replace("Z", "+00:00"))
+        if start < now() - timedelta(hours=3):
+            continue
+        g = board.game(start, fg["home"], fg["away"])
+        if not g:
+            continue
+        for b, t in (fg.get("updated") or {}).items():
+            if b not in local_names:
+                g["updated"][b] = t
+        for p in fg.get("players", []):
+            for stat, cuts in p.get("stats", {}).items():
+                for cut, cell in cuts.items():
+                    for b, odds in cell.get("o", {}).items():
+                        if b not in local_names:
+                            board.add(g, p["name"], stat, cut, b, odds)
+
+
+def apply_history(board, previous):
+    """Flèches ▲▼ : ancienne cote conservée ARROW_MINUTES après un changement."""
+    prev = {(g["id"], p["id"], s, c): cell for g in previous.get("games", []) for p in g.get("players", [])
+            for s, cuts in p.get("stats", {}).items() for c, cell in cuts.items()}
+    limit = now() - timedelta(minutes=ARROW_MINUTES)
+    for g in board.games.values():
+        for p in g["players"].values():
+            for s, cuts in p["stats"].items():
+                for c, cell in cuts.items():
+                    old = prev.get((g["id"], p["id"], s, c), {})
+                    cell["t"] = {}
+                    for b, o in cell["o"].items():
+                        before, when = old.get("o", {}).get(b), old.get("t", {}).get(b)
+                        if before is not None and before != o:
+                            cell["p"][b], cell["t"][b] = before, iso(now())
+                        elif b in old.get("p", {}) and when and datetime.fromisoformat(when[:-1] + "+00:00") > limit:
+                            cell["p"][b], cell["t"][b] = old["p"][b], when
+
+
+def publish(path):
+    """Branche « data » : un seul commit, remplacé à chaque passage (pas d'historique qui grossit)."""
+    remote = subprocess.run(["git", "-C", str(ROOT), "remote", "get-url", "origin"],
+                            capture_output=True, text=True, check=True).stdout.strip()
+    if not (BUILD / ".git").exists():
+        subprocess.run(["git", "init", "-q", "-b", "data", str(BUILD)], check=True)
+        subprocess.run(["git", "-C", str(BUILD), "remote", "add", "origin", remote], check=True)
+    run = lambda *a: subprocess.run(["git", "-C", str(BUILD), *a], capture_output=True, text=True)
+    run("add", "nba.json")
+    run("-c", "user.name=coteradar-imac", "-c", "user.email=coteradar-imac@users.noreply.github.com",
+        "commit", "-q", "--amend" if run("rev-parse", "HEAD").returncode == 0 else "--allow-empty", "-m", "Props NBA (iMac)")
+    r = run("push", "-q", "-f", "origin", "HEAD:data")
+    if r.returncode:
+        raise RuntimeError("git push : " + r.stderr.strip()[:200])
+
+
+def main():
+    st = load(STATE, {})
+    board = Board()
+    status = {}
+    for book in LOCAL_BOOKS:
+        bs = st.setdefault(book.NAME, {})
+        try:
+            games = book.fetch(bs.setdefault("memo", {}))
+            n = 0
+            for bg in games:
+                g = board.game(bg.start, bg.home, bg.away)
+                if not g:
+                    continue
+                g["updated"][book.NAME] = iso(now())
+                for player, stats in bg.players.items():
+                    for stat, cuts in stats.items():
+                        for cut, odds in cuts.items():
+                            board.add(g, player, stat, cut, book.NAME, odds)
+                            n += 1
+            status[book.NAME] = bs["status"] = "ok (%d cotes)" % n
+            bs["lastOk"] = iso(now())
+        except Blocked as e:
+            status[book.NAME] = bs["status"] = "bloqué : %s" % e
+        except Exception as e:  # noqa: BLE001 — un site en panne ne doit pas arrêter les autres
+            status[book.NAME] = bs["status"] = "erreur : %s" % type(e).__name__
+            traceback.print_exc()
+        log(book.NAME, status[book.NAME])
+    add_fallback(board, {b.NAME for b in LOCAL_BOOKS})
+
+    BUILD.mkdir(exist_ok=True)
+    out_path = BUILD / "nba.json"
+    apply_history(board, load(out_path, {}))
+    games = []
+    for g in sorted(board.games.values(), key=lambda g: g["date"]):
+        players = sorted((p for p in g["players"].values() if p["stats"]), key=lambda p: p["name"])
+        games.append({k: v for k, v in g.items() if not k.startswith("_")} | {"players": players})
+    books = sorted({b for g in games for b in g["updated"]})
+    out = {"generatedAt": iso(now()), "source": {"status": "ok", "lastRun": iso(now()), "collector": "imac", "books": status},
+           "books": books, "stats": STAT_LABELS, "games": games}
+    out_path.write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")))
+    STATE.write_text(json.dumps(st, indent=1, ensure_ascii=False))
+    log("%d matchs, %d joueurs" % (len(games), sum(len(g["players"]) for g in games)))
+    if "--no-push" not in sys.argv:
+        publish(out_path)
+        log("publié sur la branche data")
+
+
+if __name__ == "__main__":
+    main()

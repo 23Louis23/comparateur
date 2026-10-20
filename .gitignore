@@ -2,3 +2,7 @@
 __pycache__/
 .env
 .claude/
+collector/build/
+collector/state.json
+collector/*.log
+__pycache__/
