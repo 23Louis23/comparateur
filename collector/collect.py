@@ -20,6 +20,7 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE / "books"))
 
 import betclic  # noqa: E402
+import pokerstars  # noqa: E402
 import unibet  # noqa: E402
 import winamax  # noqa: E402
 from common import Blocked, iso, norm_name, now  # noqa: E402
@@ -28,7 +29,7 @@ from teams import team  # noqa: E402
 BUILD = HERE / "build"          # dépôt local de la branche « data » (ignoré par git)
 STATE = HERE / "state.json"     # mémoire entre deux passages (ignoré par git)
 REMOTE = "https://github.com/23Louis23/comparateur.git"
-LOCAL_BOOKS = [unibet, winamax, betclic]
+LOCAL_BOOKS = [unibet, winamax, pokerstars, betclic]
 FALLBACK_URL = "https://raw.githubusercontent.com/23Louis23/comparateur/main/docs/nba.json"
 ARROW_MINUTES = 60              # durée d'affichage d'une variation de cote
 STAT_LABELS = {"pts": "Points", "reb": "Rebonds", "ast": "Passes", "3pt": "Paniers à 3 pts", "pra": "Pts + Reb + Pas",
@@ -75,8 +76,8 @@ class Board:
         cell["o"][book] = max(odds, cell["o"].get(book, 0))
 
 
-def add_fallback(board, local_names):
-    """Bookmakers non collectés en local (PMU, PokerStars… via OddsPapi)."""
+def add_fallback(board, covered):
+    """Appoint OddsPapi pour tout ce qui n'a pas été lu en direct : (match, bookmaker, stat) absents de covered."""
     try:
         with urllib.request.urlopen(FALLBACK_URL + "?t=%d" % now().timestamp(), timeout=20) as r:
             data = json.load(r)
@@ -91,13 +92,12 @@ def add_fallback(board, local_names):
         if not g:
             continue
         for b, t in (fg.get("updated") or {}).items():
-            if b not in local_names:
-                g["updated"][b] = t
+            g["updated"].setdefault(b, t)  # l'heure de la collecte locale prime
         for p in fg.get("players", []):
             for stat, cuts in p.get("stats", {}).items():
                 for cut, cell in cuts.items():
                     for b, odds in cell.get("o", {}).items():
-                        if b not in local_names:
+                        if (g["id"], b, stat) not in covered:  # stat déjà lue en direct chez ce bookmaker
                             board.add(g, p["name"], stat, cut, b, odds)
 
 
@@ -161,7 +161,9 @@ def main():
             status[book.NAME] = bs["status"] = "erreur : %s" % type(e).__name__
             traceback.print_exc()
         log(book.NAME, status[book.NAME])
-    add_fallback(board, {b.NAME for b in LOCAL_BOOKS})
+    covered = {(g["id"], b, stat) for g in board.games.values() for p in g["players"].values()
+               for stat, cuts in p["stats"].items() for cell in cuts.values() for b in cell["o"]}
+    add_fallback(board, covered)
 
     BUILD.mkdir(exist_ok=True)
     out_path = BUILD / "nba.json"
