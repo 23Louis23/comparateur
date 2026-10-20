@@ -1,0 +1,63 @@
+{
+ "run": "2026-10-20T07:34:46Z",
+ "bookmakers": {
+  "bwin": "aucune cote NBA",
+  "pmu": "cotes reçues",
+  "pokerstars": "cotes reçues",
+  "unibet": "cotes reçues",
+  "winamax": "cotes reçues"
+ },
+ "par_bookmaker": {
+  "pmu": {
+   "reb": 342,
+   "pra": 198,
+   "pr": 234,
+   "pts": 544,
+   "sb": 138,
+   "dd": 42,
+   "ra": 138,
+   "blk": 83,
+   "ast": 263,
+   "3pt": 234,
+   "stl": 127,
+   "pa": 131
+  },
+  "pokerstars": {
+   "pr": 31,
+   "pra": 117,
+   "pa": 112,
+   "ra": 109,
+   "td": 16,
+   "dd": 116,
+   "pts": 585,
+   "reb": 475,
+   "blk": 47,
+   "ast": 382,
+   "stl": 119,
+   "3pt": 519
+  },
+  "unibet": {
+   "pr": 25,
+   "pa": 19,
+   "ast": 219,
+   "reb": 263,
+   "3pt": 188,
+   "pts": 386,
+   "ra": 19,
+   "pra": 20,
+   "blk": 59,
+   "stl": 84,
+   "td": 11,
+   "tov": 11
+  },
+  "winamax": {
+   "blk": 21,
+   "reb": 11,
+   "3pt": 13
+  }
+ },
+ "non_reconnus": {
+  "Player First Point [result, ligne 0.0, issues Yes]": 15
+ },
+ "formats_paliers": {}
+}
