@@ -19,6 +19,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE / "books"))
 
+import alerts  # noqa: E402
 import betclic  # noqa: E402
 import pmu  # noqa: E402
 import pokerstars  # noqa: E402
@@ -75,13 +76,15 @@ class Board:
         cell[side][book] = max(odds, cell[side].get(book, 0))
 
     @staticmethod
-    def add(g, player, stat, cut, book, odds):
+    def add(g, player, stat, cut, book, odds, fallback=False):
         key = norm_name(player)
         p = g["players"].setdefault(key, {"id": key, "name": player, "stats": {}})
         if any(ord(ch) > 127 for ch in player) and not any(ord(ch) > 127 for ch in p["name"]):
             p["name"] = player  # garder l'orthographe accentuée (Dončić, Jokić…)
         cell = p["stats"].setdefault(stat, {}).setdefault(str(cut), {"o": {}, "p": {}})
         cell["o"][book] = max(odds, cell["o"].get(book, 0))
+        if fallback:  # cote OddsPapi (ancienne) : affichée, mais jamais source d'alerte
+            cell.setdefault("f", []).append(book)
 
 
 def add_fallback(board, covered):
@@ -106,7 +109,7 @@ def add_fallback(board, covered):
                 for cut, cell in cuts.items():
                     for b, odds in cell.get("o", {}).items():
                         if (g["id"], b, stat) not in covered:  # stat déjà lue en direct chez ce bookmaker
-                            board.add(g, p["name"], stat, cut, b, odds)
+                            board.add(g, p["name"], stat, cut, b, odds, fallback=True)
 
 
 def apply_history(board, previous):
@@ -208,6 +211,12 @@ def main():
     for g in sorted(board.games.values(), key=lambda g: g["date"]):
         players = sorted((p for p in g["players"].values() if p["stats"] or p.get("lines")), key=lambda p: p["name"])
         games.append({k: v for k, v in g.items() if not k.startswith("_")} | {"players": players})
+    try:
+        n = alerts.run(games, STAT_LABELS, {b.NAME for b in LOCAL_BOOKS}, st)
+        if n:
+            log("%d alerte(s) envoyée(s)" % n)
+    except Exception as e:  # noqa: BLE001 — une alerte ratée ne doit pas bloquer la publication
+        log("alertes : erreur", type(e).__name__)
     books = sorted({b for g in games for b in g["updated"]})
     out = {"generatedAt": iso(now()), "source": {"status": "ok", "lastRun": iso(now()), "collector": "imac", "books": status},
            "books": books, "stats": STAT_LABELS, "games": games}
