@@ -24,7 +24,7 @@ import pmu  # noqa: E402
 import pokerstars  # noqa: E402
 import unibet  # noqa: E402
 import winamax  # noqa: E402
-from common import Blocked, iso, norm_name, now  # noqa: E402
+from common import Blocked, Game, iso, norm_name, now  # noqa: E402
 from teams import team  # noqa: E402
 
 BUILD = HERE / "build"          # dépôt local de la branche « data » (ignoré par git)
@@ -135,27 +135,49 @@ def publish(path):
         raise RuntimeError("git push : " + r.stderr.strip()[:200])
 
 
+def save_games(path, games):
+    path.write_text(json.dumps([{"start": g.start.isoformat(), "home": g.home, "away": g.away, "players": g.players}
+                                for g in games], ensure_ascii=False))
+
+
+def load_games(path):
+    games = []
+    for d in load(path, []):
+        g = Game(datetime.fromisoformat(d["start"]), d["home"], d["away"])
+        g.players = {p: {s: {int(c): o for c, o in cuts.items()} for s, cuts in stats.items()} for p, stats in d["players"].items()}
+        games.append(g)
+    return games
+
+
 def main():
     st = load(STATE, {})
     board = Board()
     status = {}
+    BUILD.mkdir(exist_ok=True)
     for book in LOCAL_BOOKS:
         bs = st.setdefault(book.NAME, {})
+        cache = BUILD / ("cache-%s.json" % book.NAME)
         try:
-            games = book.fetch(bs.setdefault("memo", {}))
+            interval = getattr(book, "INTERVAL_MIN", 0)  # bookmakers lents : relus moins souvent
+            last = bs.get("lastOk")
+            if interval and last and cache.exists() and now() - datetime.fromisoformat(last[:-1] + "+00:00") < timedelta(minutes=interval):
+                games, at = load_games(cache), last
+            else:
+                games, at = book.fetch(bs.setdefault("memo", {})), iso(now())
+                save_games(cache, games)
             n = 0
             for bg in games:
                 g = board.game(bg.start, bg.home, bg.away)
                 if not g:
                     continue
-                g["updated"][book.NAME] = iso(now())
+                g["updated"][book.NAME] = at
                 for player, stats in bg.players.items():
                     for stat, cuts in stats.items():
                         for cut, odds in cuts.items():
                             board.add(g, player, stat, cut, book.NAME, odds)
                             n += 1
             status[book.NAME] = bs["status"] = "ok (%d cotes)" % n
-            bs["lastOk"] = iso(now())
+            bs["lastOk"] = at
         except Blocked as e:
             status[book.NAME] = bs["status"] = "bloqué : %s" % e
         except Exception as e:  # noqa: BLE001 — un site en panne ne doit pas arrêter les autres

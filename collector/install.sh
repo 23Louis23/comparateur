@@ -15,6 +15,8 @@ if [[ "${1:-}" == "--remove" ]]; then
   rm -f "$PLIST"; echo "Collecte automatique désinstallée."; exit 0
 fi
 
+PY=/usr/bin/python3
+[[ -x "$DEST/../venv/bin/python" ]] && PY="$DEST/../venv/bin/python"  # avec Playwright (Betclic complet)
 mkdir -p "$DEST/books"
 cp "$SRC"/*.py "$DEST/"; cp "$SRC"/books/*.py "$DEST/books/"
 cat > "$PLIST" <<PL
@@ -24,7 +26,7 @@ cat > "$PLIST" <<PL
 <dict>
   <key>Label</key><string>$LABEL</string>
   <key>ProgramArguments</key>
-  <array><string>/usr/bin/python3</string><string>$DEST/collect.py</string></array>
+  <array><string>$PY</string><string>$DEST/collect.py</string></array>
   <key>WorkingDirectory</key><string>$DEST</string>
   <key>StartInterval</key><integer>300</integer>
   <key>RunAtLoad</key><true/>
