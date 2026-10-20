@@ -11,6 +11,7 @@ import json
 import subprocess
 import sys
 import traceback
+from concurrent.futures import ThreadPoolExecutor
 import urllib.request
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -145,19 +146,36 @@ def publish(path):
         raise RuntimeError("git push : " + r.stderr.strip()[:200])
 
 
-def save_games(path, games):
-    path.write_text(json.dumps([{"start": g.start.isoformat(), "home": g.home, "away": g.away, "players": g.players,
-                                 "lines": g.lines} for g in games], ensure_ascii=False))
+def save_games(path, games, at):
+    path.write_text(json.dumps({"at": at, "games": [
+        {"start": g.start.isoformat(), "home": g.home, "away": g.away, "players": g.players, "lines": g.lines}
+        for g in games]}, ensure_ascii=False))
 
 
 def load_games(path):
+    """→ (matchs, heure de lecture) ; ([], None) si absent."""
+    data = load(path, {})
+    rows, at = (data, None) if isinstance(data, list) else (data.get("games", []), data.get("at"))
     games = []
-    for d in load(path, []):
+    for d in rows:
         g = Game(datetime.fromisoformat(d["start"]), d["home"], d["away"])
         g.players = {p: {s: {int(c): o for c, o in cuts.items()} for s, cuts in stats.items()} for p, stats in d["players"].items()}
         g.lines = d.get("lines", {})
         games.append(g)
-    return games
+    return games, at
+
+
+def fetch_only(name):
+    """Tâche séparée (Betclic, lent) : lit le bookmaker et range ses cotes en cache, sans publier."""
+    book = next(b for b in LOCAL_BOOKS if b.NAME == name)
+    BUILD.mkdir(exist_ok=True)
+    try:
+        games = book.fetch({})
+        save_games(BUILD / ("cache-%s.json" % name), games, iso(now()))
+        log(name, "lu (%d cotes) — en cache pour la collecte principale" % sum(g.count() for g in games))
+    except Exception as e:  # noqa: BLE001
+        log(name, "erreur :", type(e).__name__)
+        traceback.print_exc()
 
 
 def main():
@@ -165,17 +183,39 @@ def main():
     board = Board()
     status = {}
     BUILD.mkdir(exist_ok=True)
+    # 1) lecture : bookmakers rapides en parallèle (un site différent par fil, même rythme pour chacun) ;
+    #    bookmakers « à part » (Betclic) : dernières cotes laissées en cache par leur propre tâche
+    def read(book):
+        cache = BUILD / ("cache-%s.json" % book.NAME)
+        if getattr(book, "SEPARATE", False):
+            games, at = load_games(cache)
+            if not at or now() - datetime.fromisoformat(at[:-1] + "+00:00") > timedelta(minutes=45):
+                raise RuntimeError("cache absent ou trop ancien")
+            return games, at
+        games = book.fetch(st.setdefault(book.NAME, {}).setdefault("memo", {}))
+        at = iso(now())
+        save_games(cache, games, at)
+        return games, at
+
+    results = {}
+    with ThreadPoolExecutor(max_workers=len(LOCAL_BOOKS)) as pool:
+        futures = {pool.submit(read, b): b for b in LOCAL_BOOKS}
+        for fut in futures:
+            book = futures[fut]
+            try:
+                results[book.NAME] = fut.result()
+            except Blocked as e:
+                status[book.NAME] = "bloqué : %s" % e
+            except Exception as e:  # noqa: BLE001 — un site en panne ne doit pas arrêter les autres
+                status[book.NAME] = "erreur : %s" % (e if isinstance(e, RuntimeError) else type(e).__name__)
+                if not isinstance(e, RuntimeError):
+                    traceback.print_exc()
+
+    # 2) fusion, dans un ordre fixe
     for book in LOCAL_BOOKS:
         bs = st.setdefault(book.NAME, {})
-        cache = BUILD / ("cache-%s.json" % book.NAME)
-        try:
-            interval = getattr(book, "INTERVAL_MIN", 0)  # bookmakers lents : relus moins souvent
-            last = bs.get("lastOk")
-            if interval and last and cache.exists() and now() - datetime.fromisoformat(last[:-1] + "+00:00") < timedelta(minutes=interval):
-                games, at = load_games(cache), last
-            else:
-                games, at = book.fetch(bs.setdefault("memo", {})), iso(now())
-                save_games(cache, games)
+        if book.NAME in results:
+            games, at = results[book.NAME]
             n = 0
             for bg in games:
                 g = board.game(bg.start, bg.home, bg.away)
@@ -192,13 +232,9 @@ def main():
                         for cut, odds in cuts.items():
                             board.add(g, player, stat, cut, book.NAME, odds)
                             n += 1
-            status[book.NAME] = bs["status"] = "ok (%d cotes)" % n
+            status[book.NAME] = "ok (%d cotes)" % n
             bs["lastOk"] = at
-        except Blocked as e:
-            status[book.NAME] = bs["status"] = "bloqué : %s" % e
-        except Exception as e:  # noqa: BLE001 — un site en panne ne doit pas arrêter les autres
-            status[book.NAME] = bs["status"] = "erreur : %s" % type(e).__name__
-            traceback.print_exc()
+        bs["status"] = status[book.NAME]
         log(book.NAME, status[book.NAME])
     covered = {(g["id"], b, stat) for g in board.games.values() for p in g["players"].values()
                for stat, cuts in p["stats"].items() for cell in cuts.values() for b in cell["o"]}
@@ -229,4 +265,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    if "--only" in sys.argv:
+        fetch_only(sys.argv[sys.argv.index("--only") + 1])
+    else:
+        main()

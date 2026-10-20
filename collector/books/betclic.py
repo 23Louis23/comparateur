@@ -11,7 +11,7 @@ from pathlib import Path
 from common import Game, get, over_cut, now, price
 
 NAME = "betclic"
-INTERVAL_MIN = 15  # navigateur : ~40 s par match, relu toutes les 15 min
+SEPARATE = True  # navigateur : ~40-60 s par match → tâche à part toutes les 15 min (collect.py --only betclic)
 BASE = "https://www.betclic.fr"
 LIST = BASE + "/basketball-sbasketball/nba-c13"
 TABS = ["Points", "Statistiques joueurs", "Marqueurs"]  # en plus de « Le Top », affiché d'office

@@ -13,7 +13,7 @@ from common import iso, now
 
 CONFIG = Path.home() / "Library/Application Support/CoteRadar/config.json"
 SITE = "https://23louis23.github.io/comparateur/"
-EDGE = 1.20          # meilleure cote ≥ 2e meilleure × 1,20 (elle sort seule du lot)
+EDGE = 1.30          # meilleure cote ≥ 2e meilleure × 1,30 (elle sort seule du lot)
 MIN_BOOKS = 3        # au moins 3 bookmakers sur la même sélection
 MAX_ODDS = 4.0       # au-delà, les écarts entre bookmakers sont normaux
 FRESH_MIN = 20       # seules les cotes lues en direct depuis moins de 20 min comptent (Betclic : relu toutes les 15 min)
@@ -127,12 +127,11 @@ def run(games, labels, local, st):
         if f["kind"] == "cote":
             book, best, second = f["hit"]
             name = BOOK_NAMES.get(book, book)
-            pct = round((best / second - 1) * 100)
             rest = " · ".join("%s %s" % (BOOK_NAMES.get(b, b), odds_fr(o)) for b, o in sorted(f["odds"].items(), key=lambda kv: -kv[1]) if b != book)
             title = "⚠️ %s · %s · %s %s" % (name, f["player"], f["cat"], f["short"])
-            msg = "%s : %s, soit +%d %% sur la 2e meilleure cote\nCatégorie : %s, %s\nAutres bookmakers : %s\nMatch : %s" % (
-                name, odds_fr(best), pct, f["cat"], f["long"], rest, f["match"])
-            line = "%s · %s · %s %s : %s (+%d %%)" % (name, f["player"], f["cat"], f["short"], odds_fr(best), pct)
+            msg = "%s : %s\nCatégorie : %s, %s\nAutres bookmakers : %s\nMatch : %s" % (
+                name, odds_fr(best), f["cat"], f["long"], rest, f["match"])
+            line = "%s · %s · %s %s : %s" % (name, f["player"], f["cat"], f["short"], odds_fr(best))
             todo.append((title, msg, "rotating_light", line))
         else:
             bo, o, bu, u, gain = f["hit"]

@@ -12,7 +12,8 @@ SRC="$(cd "$(dirname "$0")" && pwd)"
 
 launchctl bootout "gui/$(id -u)/$LABEL" 2>/dev/null || true
 if [[ "${1:-}" == "--remove" ]]; then
-  rm -f "$PLIST"; echo "Collecte automatique désinstallée."; exit 0
+  launchctl bootout "gui/$(id -u)/fr.coteradar.betclic" 2>/dev/null || true
+  rm -f "$PLIST" "$HOME/Library/LaunchAgents/fr.coteradar.betclic.plist"; echo "Collecte automatique désinstallée."; exit 0
 fi
 
 PY=/usr/bin/python3
@@ -39,4 +40,29 @@ cat > "$PLIST" <<PL
 </plist>
 PL
 launchctl bootstrap "gui/$(id -u)" "$PLIST"
-echo "Collecte automatique installée (toutes les 2 min). Journal : ~/Library/Logs/CoteRadar.log"
+
+# Betclic (navigateur invisible, lent) : tâche à part toutes les 15 min, qui remplit un cache
+B_LABEL=fr.coteradar.betclic
+B_PLIST="$HOME/Library/LaunchAgents/$B_LABEL.plist"
+launchctl bootout "gui/$(id -u)/$B_LABEL" 2>/dev/null || true
+cat > "$B_PLIST" <<PL
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>$B_LABEL</string>
+  <key>ProgramArguments</key>
+  <array><string>$PY</string><string>$DEST/collect.py</string><string>--only</string><string>betclic</string></array>
+  <key>WorkingDirectory</key><string>$DEST</string>
+  <key>StartInterval</key><integer>900</integer>
+  <key>RunAtLoad</key><true/>
+  <key>ProcessType</key><string>Background</string>
+  <key>LowPriorityIO</key><true/>
+  <key>EnvironmentVariables</key><dict><key>PATH</key><string>/usr/bin:/bin:/usr/sbin:/sbin</string></dict>
+  <key>StandardOutPath</key><string>$HOME/Library/Logs/CoteRadar.log</string>
+  <key>StandardErrorPath</key><string>$HOME/Library/Logs/CoteRadar.log</string>
+</dict>
+</plist>
+PL
+launchctl bootstrap "gui/$(id -u)" "$B_PLIST"
+echo "Collecte automatique installée (toutes les 2 min, Betclic toutes les 15 min en parallèle). Journal : ~/Library/Logs/CoteRadar.log"
