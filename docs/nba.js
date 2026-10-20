@@ -24,7 +24,10 @@ async function latestDataUrl() {
   return { url: RAW_DATA + '?t=' + Date.now(), sha: null };
 }
 
-const state = { data: null, error: null, gameId: null, playerId: null, search: '', off: new Set() };
+const state = { data: null, error: null, gameId: null, playerId: null, search: '', off: new Set(), view: 'joueur', focusStat: null };
+try { state.view = localStorage.getItem('view') || 'joueur'; } catch {}
+const qsView = new URLSearchParams(location.search).get('vue');
+if (qsView === 'tableau' || qsView === 'joueur') state.view = qsView;
 try { JSON.parse(localStorage.getItem('off') || '[]').forEach(b => state.off.add(b)); } catch {}
 
 const $ = id => document.getElementById(id);
@@ -148,7 +151,14 @@ function render() {
   }
   const players = [...g.players].sort((x, y) => rankOf(y) - rankOf(x) || x.name.localeCompare(y.name));
   if (!players.find(p => p.id === state.playerId)) state.playerId = players[0].id;
-  $('match').innerHTML = renderHero(g) + renderPicker(g, players) + renderPlayer(g, players.find(p => p.id === state.playerId));
+  $('match').innerHTML = renderHero(g) + renderPicker(g, players) + (state.view === 'tableau'
+    ? renderTable(g, players)
+    : renderPlayer(g, players.find(p => p.id === state.playerId)));
+  if (state.focusStat && state.view === 'joueur') {
+    const el = document.getElementById('stat-' + state.focusStat);
+    state.focusStat = null;
+    if (el) requestAnimationFrame(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  }
 }
 
 function renderHero(g) {
@@ -174,19 +184,64 @@ function renderPicker(g, players) {
   const list = players.filter(p => !q || p.name.toLowerCase().includes(q));
   return `
     <div class="controls">
+      <div class="seg view-seg">
+        <button class="${state.view === 'joueur' ? 'on' : ''}" data-view="joueur">Fiche joueur</button>
+        <button class="${state.view === 'tableau' ? 'on' : ''}" data-view="tableau">Tableau</button>
+      </div>
       <input class="search" id="search" placeholder="Rechercher un joueur…" value="${esc(state.search)}" autocomplete="off">
       <div class="books">${Object.keys(BOOKS).map(b => present.has(b)
         ? `<button class="book ${state.off.has(b) ? 'off' : ''}" data-book="${b}">${bk(b)}${BOOKS[b].name}</button>`
         : `<span class="book na" title="Pas de cotes pour ce match">${bk(b)}${BOOKS[b].name}</span>`).join('')}</div>
     </div>
-    <div class="picker">${list.map(p => {
+    ${state.view === 'tableau' ? '' : `<div class="picker">${list.map(p => {
       const t = teamOf(g, p), r = rankOf(p);
       return `<button class="pchip ${p.id === state.playerId ? 'on' : ''}" data-player="${esc(p.id)}" style="${t ? `--tc:${t.c1}` : ''}">
         <span class="avatar sm">${esc(initials(p.name))}</span>
         <span class="pc-name">${esc(p.name)}</span>
         ${r ? `<span class="pc-ref num">${r} pts</span>` : ''}
       </button>`;
-    }).join('') || '<div class="small">Aucun joueur pour cette recherche.</div>'}</div>`;
+    }).join('') || '<div class="small">Aucun joueur pour cette recherche.</div>'}</div>`}`;
+}
+
+// Case du tableau : ligne principale (celle que le plus de bookmakers proposent à l'équilibre)
+// avec la meilleure cote Plus et Moins ; à défaut, le palier dont la meilleure cote est la plus proche de 2,00.
+function tableCell(p, s) {
+  const lines = p.lines?.[s] || {};
+  const { main } = balancedLines(lines);
+  const count = l => new Set([...Object.keys(lines[l]?.over || {}), ...Object.keys(lines[l]?.under || {})].filter(on)).size;
+  const line = [...main].sort((x, y) => count(y) - count(x))[0];
+  const best = obj => Object.entries(obj || {}).filter(([b]) => on(b)).sort((x, y) => y[1] - x[1])[0];
+  if (line) {
+    const o = best(lines[line].over), u = best(lines[line].under);
+    const odd = (x, sign) => x ? `<span class="tc-odd">${sign}${bk(x[0])}<b class="num">${fmt(x[1])}</b></span>` : `<span class="tc-odd na">${sign}–</span>`;
+    return `<span class="tc-line num">${line.replace('.', ',')}</span>${odd(o, '▲')}${odd(u, '▼')}`;
+  }
+  const cuts = Object.entries(p.stats?.[s] || {}).map(([c, cell]) => [c, best(cell.o)]).filter(([, b]) => b);
+  if (!cuts.length) return '';
+  const [c, b] = cuts.reduce((x, y) => Math.abs(y[1][1] - 2) < Math.abs(x[1][1] - 2) ? y : x);
+  return `<span class="tc-line num">${YES_STATS.has(s) ? 'Oui' : c + '+'}</span><span class="tc-odd">${bk(b[0])}<b class="num">${fmt(b[1])}</b></span>`;
+}
+
+const shortName = n => { const w = String(n).split(/\s+/); return w.length > 1 ? `${w[0][0]}. ${w.slice(1).join(' ')}` : n; };
+
+function renderTable(g, players) {
+  const q = state.search.trim().toLowerCase();
+  const rows = players.filter(p => !q || p.name.toLowerCase().includes(q));
+  const cols = STAT_ORDER.filter(s => rows.some(p => statsOfPlayer(p).includes(s)));
+  if (!rows.length) return `<div class="empty">Aucun joueur pour cette recherche.</div>`;
+  return `<div class="tbl-wrap"><table class="tbl">
+    <thead><tr><th class="tbl-name">Joueur</th>${cols.map(s => `<th>${esc(label(s))}</th>`).join('')}</tr></thead>
+    <tbody>${rows.map(p => {
+      const t = teamOf(g, p);
+      return `<tr><th class="tbl-name" style="${t ? `--tc:${t.c1}` : ''}"><button class="tbl-player" data-player="${esc(p.id)}" data-goto="1">
+          <span class="avatar xs">${esc(initials(p.name))}</span><span class="nm-full">${esc(p.name)}</span><span class="nm-short">${esc(shortName(p.name))}</span></button></th>
+        ${cols.map(s => { const c = tableCell(p, s); return c
+          ? `<td><button class="tc" data-player="${esc(p.id)}" data-stat="${s}" title="${esc(p.name)} · ${esc(label(s))} : voir tous les paliers">${c}</button></td>`
+          : '<td class="tc-empty">·</td>'; }).join('')}
+      </tr>`;
+    }).join('')}</tbody>
+  </table></div>
+  <div class="small tbl-legend">▲ meilleure cote Plus · ▼ meilleure cote Moins sur la ligne principale. Sans plus/moins : le palier le plus proche de 2,00. Touchez une case pour voir tous les paliers.</div>`;
 }
 
 function renderPlayer(g, p) {
@@ -210,7 +265,7 @@ function renderStat(p, s) {
     .map(([cut, cell]) => ({ cut: Number(cut), cell, books: Object.entries(cell.o).filter(([b]) => on(b)).sort((x, y) => y[1] - x[1]) }))
     .filter(c => c.books.length).sort((x, y) => x.cut - y.cut);
   if (!main.length && !cuts.length) return '';
-  return `<div class="stat">
+  return `<div class="stat" id="stat-${s}">
     <div class="stat-h"><h3>${esc(label(s))}</h3>${main.length ? `<span class="small">ligne à l'équilibre</span>` : ''}</div>
     ${main.map(l => renderLine(l, lines[l])).join('')}
     ${others.length ? `<details class="more"><summary>Autres lignes (${others.length})</summary>${others.map(l => renderLine(l, lines[l])).join('')}</details>` : ''}
@@ -259,7 +314,15 @@ document.addEventListener('click', e => {
   if (!t) return;
   if (t.id === 'refresh') return load();
   if (t.dataset.game) { state.gameId = t.dataset.game; state.playerId = null; state.search = ''; }
-  else if (t.dataset.player) { state.playerId = t.dataset.player; requestAnimationFrame(() => document.querySelector('.player')?.scrollIntoView({ behavior: 'smooth', block: 'start' })); }
+  else if (t.dataset.view) {
+    state.view = t.dataset.view;
+    try { localStorage.setItem('view', state.view); } catch {}
+  }
+  else if (t.dataset.player) {
+    state.playerId = t.dataset.player;
+    if (state.view === 'tableau') { state.view = 'joueur'; state.focusStat = t.dataset.stat || null; }
+    if (!state.focusStat) requestAnimationFrame(() => document.querySelector('.player')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  }
   else if (t.dataset.book) {
     const b = t.dataset.book;
     state.off.has(b) ? state.off.delete(b) : state.off.add(b);

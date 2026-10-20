@@ -149,7 +149,7 @@
   .player { padding-bottom: 32px; scroll-margin-top: 70px; }
   .ph { display: flex; align-items: center; gap: 14px; padding: 16px 18px; background: linear-gradient(90deg, var(--tc, var(--panel-2)) -200%, var(--panel) 75%); border: 1px solid var(--line); border-radius: var(--radius); margin-bottom: 10px; }
   .ph-name { font-family: 'Barlow Condensed'; font-size: 28px; font-weight: 800; line-height: 1.05; text-transform: uppercase; }
-  .stat { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 10px; }
+  .stat { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 10px; scroll-margin-top: 72px; }
   .stat-h { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }
   .stat-h h3 { margin: 0; font-family: 'Barlow Condensed'; font-size: 20px; font-weight: 800; text-transform: uppercase; letter-spacing: .02em; }
   .sub { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 700; margin: 12px 0 2px; }
@@ -164,6 +164,37 @@
   @media (max-width: 760px) {
     .ouline { grid-template-columns: 1fr; }
     .ph-name { font-size: 22px; }
+  }
+
+  /* vue tableau */
+  .view-seg button { padding: 6px 12px; }
+  .tbl-wrap { overflow: auto; max-height: calc(100vh - 140px); border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }
+  .tbl { border-collapse: separate; border-spacing: 0; font-size: 12px; min-width: 100%; }
+  .tbl th, .tbl td { border-bottom: 1px solid var(--line); padding: 0; white-space: nowrap; }
+  .tbl thead th { position: sticky; top: 0; z-index: 2; background: var(--panel-2); color: var(--muted); font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; font-weight: 700; padding: 8px 8px; text-align: left; }
+  .tbl .tbl-name { position: sticky; left: 0; z-index: 1; background: var(--panel); border-right: 1px solid var(--line); text-align: left; }
+  .tbl thead .tbl-name { z-index: 3; background: var(--panel-2); }
+  .tbl tbody tr:hover td, .tbl tbody tr:hover .tbl-name { background: var(--panel-2); }
+  .tbl-player { display: flex; align-items: center; gap: 7px; background: linear-gradient(90deg, var(--tc, transparent) -300%, transparent 80%); border: 0; padding: 7px 10px; font-weight: 700; font-size: 12.5px; width: 100%; text-align: left; }
+  .avatar.xs { width: 22px; height: 22px; font-size: 9px; }
+  .tc { display: flex; align-items: center; gap: 6px; background: none; border: 0; padding: 6px 8px; width: 100%; font-size: 12px; }
+  .tc:hover { background: var(--panel-3); }
+  .tc-line { font-size: 15px; min-width: 30px; color: var(--text); }
+  .tc-odd { display: inline-flex; align-items: center; gap: 3px; color: var(--muted); font-size: 10px; }
+  .tc-odd b { color: var(--text); font-size: 13px; }
+  .tc-odd .bk { width: 14px; height: 14px; font-size: 7.5px; }
+  .tc-odd.na { opacity: .4; }
+  .tc-empty { color: var(--faint); text-align: center; }
+  .tbl-legend { margin: 8px 2px 28px; }
+  .nm-short { display: none; }
+  @media (max-width: 760px) {
+    .tbl-wrap { max-height: none; }
+    .nm-full, .tbl-player .avatar { display: none; }
+    .nm-short { display: inline; }
+    .tbl-player { padding: 6px 7px; font-size: 11.5px; max-width: 96px; overflow: hidden; text-overflow: ellipsis; }
+    .tc { padding: 5px 6px; gap: 4px; }
+    .tc-line { font-size: 13px; min-width: 24px; }
+    .tc-odd b { font-size: 12px; }
   }
 </style>
 </head>
