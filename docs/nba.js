@@ -124,6 +124,56 @@ function rankOf(p) {
 }
 const statsOfPlayer = p => STAT_ORDER.filter(s => (p.stats?.[s] && Object.keys(p.stats[s]).length) || (p.lines?.[s] && Object.keys(p.lines[s]).length));
 
+
+// ------------------------------------------------------------ compositions (RotoWire)
+const INJ = {  // statut RotoWire → libellé, couleur
+  Out: ['Absent', 'out'], OFS: ['Absent (saison)', 'out'], Doubt: ['Douteux', 'doubt'],
+  Ques: ['Incertain', 'ques'], GTD: ['Incertain', 'ques'], Prob: ['Probable', 'prob'],
+};
+const injTag = (inj, small) => inj ? `<span class="inj inj-${(INJ[inj] || ['', 'ques'])[1]}${small ? ' sm' : ''}">${esc((INJ[inj] || [inj])[0])}</span>` : '';
+const normName = n => String(n || '').normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase()
+  .replace(/[^a-z ]+/g, ' ').replace(/\b(jr|sr|ii|iii|iv)\b/g, ' ').replace(/\s+/g, ' ').trim();
+// Cote américaine (« ORL -132 ») → cote décimale (« ORL 1,76 »)
+function usToDec(v) {
+  const m = String(v || '').match(/^(\S+)\s+([+-]\d+)$/);
+  if (!m) return v || '–';
+  const us = Number(m[2]), dec = us < 0 ? 1 + 100 / -us : 1 + us / 100;
+  return `${m[1]} ${dec.toFixed(2).replace('.', ',')}`;
+}
+
+function renderLineup(g) {
+  const lu = g.lineup;
+  if (!lu) return '';
+  const ids = new Set(g.players.map(p => p.id));
+  const name = pl => {
+    const id = normName(pl.name);
+    return ids.has(id) ? `<button class="lu-name" data-player="${esc(id)}" data-lu="1">${esc(pl.name)}</button>` : `<span class="lu-name">${esc(pl.name)}</span>`;
+  };
+  const dot = pct => pct == null ? '' : `<i class="lu-dot p${pct}" title="Probabilité de jouer : ${pct} %"></i>`;
+  const team = (side, t) => {
+    const starters = new Set(side.starters.map(pl => normName(pl.name)));
+    side = { ...side, out: side.out.filter(pl => !starters.has(normName(pl.name))) };  // titulaire incertain : badge dans le cinq
+    return `<div class="lu-team">
+      <div class="lu-th">${badge(t)}<div><div class="lu-nick">${esc(t.nick)}</div><div class="small">${esc(side.record || '')}</div></div>
+        <span class="lu-status ${side.status}">${side.status === 'confirmed' ? 'Composition confirmée' : 'Composition probable'}</span></div>
+      <ol class="lu-list">${side.starters.map(pl => `<li><span class="lu-pos">${esc(pl.pos)}</span>${dot(pl.pct)}${name(pl)}${injTag(pl.inj, true)}</li>`).join('')}</ol>
+      ${side.out.filter(pl => pl.inj !== 'OFS').length ? `<div class="sub">Peuvent manquer le match</div>
+        <ul class="lu-list out">${side.out.filter(pl => pl.inj !== 'OFS').map(pl => `<li><span class="lu-pos">${esc(pl.pos)}</span>${name(pl)}${injTag(pl.inj, true)}</li>`).join('')}</ul>` : ''}
+      ${side.out.some(pl => pl.inj === 'OFS') ? `<div class="small lu-ofs">Absents pour la saison : ${side.out.filter(pl => pl.inj === 'OFS').map(pl => esc(pl.name)).join(', ')}</div>` : ''}
+    </div>`;
+  };
+  return `<section class="lu">
+    <div class="lu-head"><h3>Compositions</h3><span class="small">Source : <a href="https://www.rotowire.com/basketball/nba-lineups.php" target="_blank" rel="noopener">RotoWire</a></span></div>
+    <div class="lu-teams">${team(lu.away, findTeam(g.away))}${team(lu.home, findTeam(g.home))}</div>
+    <div class="lu-foot">
+      ${lu.line ? `<span><b>Vainqueur</b> ${esc(usToDec(lu.line))}</span>` : ''}
+      ${lu.spread ? `<span><b>Handicap</b> ${esc(lu.spread.replace('.', ','))}</span>` : ''}
+      ${lu.total ? `<span><b>Total</b> ${esc(lu.total.replace(' Pts', ' pts').replace('.', ','))}</span>` : ''}
+      ${lu.refs?.length ? `<span><b>Arbitres</b> ${lu.refs.map(esc).join(', ')}</span>` : ''}
+    </div>
+  </section>`;
+}
+
 // ------------------------------------------------------------ rendu
 function render() {
   renderStatus();
@@ -152,13 +202,13 @@ function render() {
     return;
   }
   if (!g.players.length) {
-    $('match').innerHTML = renderHero(g) + `<div class="empty"><div class="big">⏳</div>Les bookmakers n'ont pas encore publié les props de ce match.<br>
+    $('match').innerHTML = renderHero(g) + renderLineup(g) + `<div class="empty"><div class="big">⏳</div>Les bookmakers n'ont pas encore publié les props de ce match.<br>
       Elles apparaissent en général la veille ou le jour du match.<br><a href="?demo=1">Voir à quoi ça ressemblera</a></div>`;
     return;
   }
   const players = [...g.players].sort((x, y) => rankOf(y) - rankOf(x) || x.name.localeCompare(y.name));
   if (!players.find(p => p.id === state.playerId)) state.playerId = players[0].id;
-  $('match').innerHTML = renderHero(g) + renderPicker(g, players) + (state.view === 'tableau'
+  $('match').innerHTML = renderHero(g) + renderLineup(g) + renderPicker(g, players) + (state.view === 'tableau'
     ? renderTable(g, players)
     : renderPlayer(g, players.find(p => p.id === state.playerId)));
   if (state.focusStat && state.view === 'joueur') {
@@ -204,7 +254,7 @@ function renderPicker(g, players) {
       const t = teamOf(g, p), r = rankOf(p);
       return `<button class="pchip ${p.id === state.playerId ? 'on' : ''}" data-player="${esc(p.id)}" style="${t ? `--tc:${t.c1}` : ''}">
         <span class="avatar sm">${esc(initials(p.name))}</span>
-        <span class="pc-name">${esc(p.name)}</span>
+        <span class="pc-name">${esc(p.name)}</span>${p.starter ? `<span class="pc-pos">${esc(p.starter)}</span>` : ''}${injTag(p.inj, true)}
         ${r ? `<span class="pc-ref num">${r} pts</span>` : ''}
       </button>`;
     }).join('') || '<div class="small">Aucun joueur pour cette recherche.</div>'}</div>`}`;
@@ -249,7 +299,7 @@ function renderTable(g, players) {
     <tbody>${rows.map(p => {
       const t = teamOf(g, p);
       return `<tr><th class="tbl-name" style="${t ? `--tc:${t.c1}` : ''}"><button class="tbl-player" data-player="${esc(p.id)}" data-goto="1">
-          <span class="avatar xs">${esc(initials(p.name))}</span><span class="nm-full">${esc(p.name)}</span><span class="nm-short">${esc(shortName(p.name))}</span></button></th>
+          <span class="avatar xs">${esc(initials(p.name))}</span><span class="nm-full">${esc(p.name)}</span><span class="nm-short">${esc(shortName(p.name))}</span>${injTag(p.inj, true)}</button></th>
         ${cols.map(s => { const c = tableCell(p, s); return c
           ? `<td><button class="tc" data-player="${esc(p.id)}" data-stat="${s}" title="${esc(p.name)} · ${esc(label(s))} : voir tous les paliers">${c}</button></td>`
           : '<td class="tc-empty">·</td>'; }).join('')}
@@ -266,7 +316,7 @@ function renderPlayer(g, p) {
   return `<section class="player" style="${t ? `--tc:${t.c1}` : ''}">
     <div class="ph">
       <div class="avatar lg">${esc(initials(p.name))}</div>
-      <div><div class="ph-name">${esc(p.name)}</div><div class="pteam">${t ? `${esc(t.city)} ${esc(t.nick)} · ` : ''}${stats.length} catégories</div></div>
+      <div><div class="ph-name">${esc(p.name)}</div><div class="pteam">${t ? `${esc(t.city)} ${esc(t.nick)} · ` : ''}${p.starter ? `Titulaire (${esc(p.starter)}) · ` : ''}${stats.length} catégories</div>${p.inj ? `<div style="margin-top:4px">${injTag(p.inj)}</div>` : ''}</div>
     </div>
     ${stats.map(s => renderStat(p, s)).join('')}
   </section>`;
@@ -335,7 +385,7 @@ document.addEventListener('click', e => {
   }
   else if (t.dataset.player) {
     state.playerId = t.dataset.player;
-    if (state.view === 'tableau') { state.view = 'joueur'; state.focusStat = t.dataset.stat || null; }
+    if (state.view === 'tableau' || t.dataset.lu) { state.view = 'joueur'; state.focusStat = t.dataset.stat || null; }
     if (!state.focusStat) requestAnimationFrame(() => document.querySelector('.player')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   }
   else if (t.dataset.book) {

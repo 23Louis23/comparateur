@@ -21,6 +21,7 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE / "books"))
 
 import alerts  # noqa: E402
+import lineups  # noqa: E402
 import betclic  # noqa: E402
 import pmu  # noqa: E402
 import pokerstars  # noqa: E402
@@ -111,6 +112,53 @@ def add_fallback(board, covered):
                     for b, odds in cell.get("o", {}).items():
                         if (g["id"], b, stat) not in covered:  # stat déjà lue en direct chez ce bookmaker
                             board.add(g, p["name"], stat, cut, b, odds, fallback=True)
+
+
+LINEUPS_EVERY_MIN = 10
+
+
+def get_lineups():
+    """Compositions RotoWire, relues toutes les 10 min (cache entre deux lectures)."""
+    cache = BUILD / "cache-lineups.json"
+    data = load(cache, {})
+    at = data.get("at")
+    if at and now() - datetime.fromisoformat(at[:-1] + "+00:00") < timedelta(minutes=LINEUPS_EVERY_MIN):
+        return data.get("games", [])
+    try:
+        games = lineups.fetch()
+        cache.write_text(json.dumps({"at": iso(now()), "games": games}, ensure_ascii=False))
+        log("compositions ok (%d matchs)" % len(games))
+        return games
+    except Exception as e:  # noqa: BLE001 — sans compositions, le reste continue
+        log("compositions : erreur", type(e).__name__)
+        return data.get("games", [])
+
+
+def attach_lineups(board, lus):
+    """Rattache chaque composition au match correspondant (mêmes équipes, date la plus proche)
+    et annote les joueurs : équipe, titulaire, statut de blessure."""
+    for lu in lus:
+        th, ta = team(lu["home"]["nick"]), team(lu["away"]["nick"])
+        if not th or not ta:
+            continue
+        cands = [g for g in board.games.values() if {g["_h"], g["_a"]} == {th[0], ta[0]}
+                 and datetime.fromisoformat(g["date"][:-1] + "+00:00") > now() - timedelta(hours=4)]
+        if not cands:
+            continue
+        g = min(cands, key=lambda g: g["date"])
+        home, away = (lu["home"], lu["away"]) if g["_h"] == th[0] else (lu["away"], lu["home"])
+        g["lineup"] = {"home": home, "away": away, "refs": lu["refs"], "line": lu["line"],
+                       "spread": lu["spread"], "total": lu["total"], "time": lu["time"]}
+        for side_name, side in (("home", home), ("away", away)):
+            for role, lst in (("starter", side["starters"]), ("out", side["out"])):
+                for pl in lst:
+                    p = g["players"].get(norm_name(pl["name"]))
+                    if p:
+                        p["team"] = side_name
+                        if role == "starter":
+                            p["starter"] = pl["pos"]
+                        if pl["inj"]:
+                            p["inj"] = pl["inj"]
 
 
 def apply_history(board, previous):
@@ -239,6 +287,7 @@ def main():
     covered = {(g["id"], b, stat) for g in board.games.values() for p in g["players"].values()
                for stat, cuts in p["stats"].items() for cell in cuts.values() for b in cell["o"]}
     add_fallback(board, covered)
+    attach_lineups(board, get_lineups())
 
     BUILD.mkdir(exist_ok=True)
     out_path = BUILD / "nba.json"

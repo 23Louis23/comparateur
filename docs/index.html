@@ -208,6 +208,39 @@
     .tc-line { font-size: 15px; min-width: 32px; padding: 1px 4px; }
     .tc-odd b { font-size: 12px; }
   }
+
+  /* compositions */
+  .lu { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; margin-top: 12px; }
+  .lu-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+  .lu-head h3 { margin: 0; font-family: 'Barlow Condensed'; font-size: 20px; font-weight: 800; text-transform: uppercase; }
+  .lu-head a { color: var(--muted); }
+  .lu-teams { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .lu-team { background: var(--panel-2); border: 1px solid var(--line); border-radius: 11px; padding: 10px 12px; }
+  .lu-th { display: flex; align-items: center; gap: 9px; margin-bottom: 8px; }
+  .lu-nick { font-weight: 800; }
+  .lu-status { margin-left: auto; font-size: 11px; font-weight: 700; border-radius: 999px; padding: 3px 9px; }
+  .lu-status.expected { background: rgba(255,181,71,.14); color: var(--warn); }
+  .lu-status.confirmed { background: rgba(61,220,132,.14); color: var(--up); }
+  .lu-list { list-style: none; margin: 0; padding: 0; }
+  .lu-list li { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-top: 1px solid var(--line); }
+  .lu-list li:first-child { border-top: 0; }
+  .lu-pos { width: 24px; font-size: 11px; font-weight: 700; color: var(--muted); }
+  .lu-name { background: none; border: 0; padding: 0; font-weight: 600; text-align: left; }
+  button.lu-name:hover { color: var(--accent); text-decoration: underline; }
+  span.lu-name { color: var(--muted); }
+  .lu-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--up); }
+  .lu-dot.p75 { background: #9be15d; } .lu-dot.p50 { background: var(--warn); } .lu-dot.p25 { background: #ff8a4c; } .lu-dot.p0 { background: var(--down); }
+  .lu-ofs { margin-top: 6px; }
+  .lu-foot { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 10px; font-size: 12.5px; color: var(--muted); }
+  .lu-foot b { color: var(--text); font-weight: 700; margin-right: 4px; }
+  .inj { display: inline-block; font-size: 11px; font-weight: 800; border-radius: 5px; padding: 1px 6px; margin-left: 4px; }
+  .inj.sm { font-size: 10px; padding: 0 5px; }
+  .inj-out { background: rgba(255,107,107,.18); color: var(--down); }
+  .inj-doubt { background: rgba(255,138,76,.18); color: #ff8a4c; }
+  .inj-ques { background: rgba(255,181,71,.18); color: var(--warn); }
+  .inj-prob { background: rgba(61,220,132,.16); color: var(--up); }
+  .pc-pos { font-size: 10px; font-weight: 800; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
+  @media (max-width: 760px) { .lu-teams { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
@@ -223,8 +256,8 @@
   <section id="match"></section>
 </main>
 <footer class="wrap">Cotes indicatives, à vérifier chez le bookmaker. Les jeux d'argent et de hasard peuvent être dangereux : pertes d'argent, conflits familiaux, addiction… Appelez le 09 74 75 13 13 (appel non surtaxé). Interdit aux moins de 18 ans.</footer>
-<script src="nba-teams.js?v=202610201516"></script>
-<script src="nba-demo.js?v=202610201516"></script>
-<script src="nba.js?v=202610201516"></script>
+<script src="nba-teams.js?v=202610212159"></script>
+<script src="nba-demo.js?v=202610212159"></script>
+<script src="nba.js?v=202610212159"></script>
 </body>
 </html>
