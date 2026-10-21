@@ -13,7 +13,8 @@ SRC="$(cd "$(dirname "$0")" && pwd)"
 launchctl bootout "gui/$(id -u)/$LABEL" 2>/dev/null || true
 if [[ "${1:-}" == "--remove" ]]; then
   launchctl bootout "gui/$(id -u)/fr.coteradar.betclic" 2>/dev/null || true
-  rm -f "$PLIST" "$HOME/Library/LaunchAgents/fr.coteradar.betclic.plist"; echo "Collecte automatique désinstallée."; exit 0
+  launchctl bootout "gui/$(id -u)/fr.coteradar.stats" 2>/dev/null || true
+  rm -f "$PLIST" "$HOME/Library/LaunchAgents/fr.coteradar.betclic.plist" "$HOME/Library/LaunchAgents/fr.coteradar.stats.plist"; echo "Collecte automatique désinstallée."; exit 0
 fi
 
 PY=/usr/bin/python3
@@ -65,4 +66,12 @@ cat > "$B_PLIST" <<PL
 </plist>
 PL
 launchctl bootstrap "gui/$(id -u)" "$B_PLIST"
+
+# Stats ESPN (moyennes des 5 derniers matchs) : tâche à part toutes les 20 min
+S_LABEL=fr.coteradar.stats
+S_PLIST="$HOME/Library/LaunchAgents/$S_LABEL.plist"
+launchctl bootout "gui/$(id -u)/$S_LABEL" 2>/dev/null || true
+sed -e "s#$B_LABEL#$S_LABEL#" -e "s#<string>betclic</string>#<string>stats</string>#" \
+    -e "s#<integer>900</integer>#<integer>1200</integer>#" "$B_PLIST" > "$S_PLIST"
+launchctl bootstrap "gui/$(id -u)" "$S_PLIST"
 echo "Collecte automatique installée (toutes les 2 min, Betclic toutes les 15 min en parallèle). Journal : ~/Library/Logs/CoteRadar.log"

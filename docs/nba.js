@@ -270,13 +270,41 @@ function tableChips(obj) {
   return books.map(([b, o]) => `<span class="tc-chip ${o === best && !tie && books.length > 1 ? 'best' : ''}">${bk(b)}<b class="num">${fmt(o)}</b></span>`).join('');
 }
 
+// ------------------------------------------------------------ 5 derniers matchs (ESPN)
+// valeurs stockées par match : [pts, reb, ast, 3pts, int, contres, balles perdues, minutes]
+const L5_IDX = { pts: [0], reb: [1], ast: [2], '3pt': [3], stl: [4], blk: [5], tov: [6], pra: [0, 1, 2], pr: [0, 1], pa: [0, 2], ra: [1, 2], sb: [4, 5] };
+function l5Vals(p, s) {
+  const g = p.l5?.g;
+  if (!g?.length) return null;
+  if (s === 'dd' || s === 'td') return g.map(r => [r[0], r[1], r[2], r[4], r[5]].filter(v => v >= 10).length >= (s === 'dd' ? 2 : 3) ? 1 : 0);
+  return L5_IDX[s] ? g.map(r => L5_IDX[s].reduce((t, i) => t + r[i], 0)) : null;
+}
+const l5Avg = (p, s) => { const v = l5Vals(p, s); return v ? v.reduce((a, b) => a + b, 0) / v.length : null; };
+const dec1 = x => (Math.round(x * 10) / 10).toString().replace('.', ',');
+// Ligne principale d'une catégorie : la plus proposée parmi les lignes à l'équilibre
+function mainLine(p, s) {
+  const lines = p.lines?.[s] || {};
+  const { main } = balancedLines(lines);
+  const count = l => new Set([...Object.keys(lines[l]?.over || {}), ...Object.keys(lines[l]?.under || {})].filter(on)).size;
+  return [...main].sort((x, y) => count(y) - count(x))[0] || null;
+}
+const l5Class = (avg, line) => line == null || avg == null ? '' : avg > Number(line) ? 'above' : avg < Number(line) ? 'below' : '';
+// Pastille « moy. 5 derniers » (ou « 2/5 » pour double/triple-double)
+function l5Badge(p, s, line, compact) {
+  const avg = l5Avg(p, s);
+  if (avg == null) return '';
+  const n = p.l5.n;
+  if (s === 'dd' || s === 'td') return `<span class="l5 ${compact ? 'sm' : ''}" title="${n} derniers matchs">${Math.round(avg * n)}/${n}${compact ? '' : ' derniers matchs'}</span>`;
+  return `<span class="l5 ${l5Class(avg, line)} ${compact ? 'sm' : ''}" title="Moyenne des ${n} derniers matchs">${compact ? 'moy ' : `Moy. ${n} derniers : `}<b class="num">${dec1(avg)}</b></span>`;
+}
+
 function tableCell(p, s) {
   const lines = p.lines?.[s] || {};
   const { main } = balancedLines(lines);
   const count = l => new Set([...Object.keys(lines[l]?.over || {}), ...Object.keys(lines[l]?.under || {})].filter(on)).size;
   const line = [...main].sort((x, y) => count(y) - count(x))[0];
   if (line) {
-    return `<span class="tc-line num">${line.replace('.', ',')}</span><span class="tc-rows">
+    return `<span class="tc-col"><span class="tc-line num">${line.replace('.', ',')}</span>${l5Badge(p, s, line, true)}</span><span class="tc-rows">
       <span class="tc-row"><i class="tc-sign up">▲</i>${tableChips(lines[line].over)}</span>
       <span class="tc-row"><i class="tc-sign down">▼</i>${tableChips(lines[line].under)}</span></span>`;
   }
@@ -284,7 +312,7 @@ function tableCell(p, s) {
   const cuts = Object.entries(p.stats?.[s] || {}).filter(([, cell]) => best(cell.o) > 0);
   if (!cuts.length) return '';
   const [c, cell] = cuts.reduce((x, y) => Math.abs(best(y[1].o) - 2) < Math.abs(best(x[1].o) - 2) ? y : x);
-  return `<span class="tc-line num">${YES_STATS.has(s) ? 'Oui' : c + '+'}</span><span class="tc-rows"><span class="tc-row">${tableChips(cell.o)}</span></span>`;
+  return `<span class="tc-col"><span class="tc-line num">${YES_STATS.has(s) ? 'Oui' : c + '+'}</span>${l5Badge(p, s, YES_STATS.has(s) ? null : Number(c) - 0.5, true)}</span><span class="tc-rows"><span class="tc-row">${tableChips(cell.o)}</span></span>`;
 }
 
 const shortName = n => { const w = String(n).split(/\s+/); return w.length > 1 ? `${w[0][0]}. ${w.slice(1).join(' ')}` : n; };
@@ -316,7 +344,7 @@ function renderPlayer(g, p) {
   return `<section class="player" style="${t ? `--tc:${t.c1}` : ''}">
     <div class="ph">
       <div class="avatar lg">${esc(initials(p.name))}</div>
-      <div><div class="ph-name">${esc(p.name)}</div><div class="pteam">${t ? `${esc(t.city)} ${esc(t.nick)} · ` : ''}${p.starter ? `Titulaire (${esc(p.starter)}) · ` : ''}${stats.length} catégories</div>${p.inj ? `<div style="margin-top:4px">${injTag(p.inj)}</div>` : ''}</div>
+      <div><div class="ph-name">${esc(p.name)}</div><div class="pteam">${t ? `${esc(t.city)} ${esc(t.nick)} · ` : ''}${p.starter ? `Titulaire (${esc(p.starter)}) · ` : ''}${p.l5 ? `${dec1(p.l5.g.reduce((t, r) => t + r[7], 0) / p.l5.n)} min sur ses ${p.l5.n} derniers matchs · ` : ''}${stats.length} catégories</div>${p.inj ? `<div style="margin-top:4px">${injTag(p.inj)}</div>` : ''}</div>
     </div>
     ${stats.map(s => renderStat(p, s)).join('')}
   </section>`;
@@ -331,10 +359,11 @@ function renderStat(p, s) {
     .filter(c => c.books.length).sort((x, y) => x.cut - y.cut);
   if (!main.length && !cuts.length) return '';
   return `<div class="stat" id="stat-${s}">
-    <div class="stat-h"><h3>${esc(label(s))}</h3>${main.length ? `<span class="small">ligne à l'équilibre</span>` : ''}</div>
+    <div class="stat-h"><h3>${esc(label(s))}</h3>${l5Badge(p, s, mainLine(p, s))}${main.length ? `<span class="small">ligne à l'équilibre</span>` : ''}</div>
+    ${l5Detail(p, s)}
     ${main.map(l => renderLine(l, lines[l])).join('')}
     ${others.length ? `<details class="more"><summary>Autres lignes (${others.length})</summary>${others.map(l => renderLine(l, lines[l])).join('')}</details>` : ''}
-    ${cuts.length ? `<div class="sub">${yes ? 'Cotes' : 'Paliers'}</div><div class="cuts">${cuts.map(c => renderCut(c, yes)).join('')}</div>` : ''}
+    ${cuts.length ? `<div class="sub">${yes ? 'Cotes' : 'Paliers'}</div><div class="cuts">${cuts.map(c => renderCut(c, yes, l5Vals(p, s))).join('')}</div>` : ''}
   </div>`;
 }
 
@@ -349,13 +378,20 @@ function renderLine(line, sides) {
   return `<div class="ouline">${side('over', '+')}${side('under', '−')}</div>`;
 }
 
-function renderCut({ cut, cell, books }, yes) {
+function l5Detail(p, s) {
+  const v = l5Vals(p, s);
+  if (!v || s === 'dd' || s === 'td') return '';
+  const prev = p.l5.prev ? ` <span class="small">(dont ${p.l5.prev} de la saison passée)</span>` : '';
+  return `<div class="l5-detail small">${p.l5.n} derniers matchs : ${v.map(x => `<b class="num">${dec1(x)}</b>`).join(' · ')}${prev}</div>`;
+}
+
+function renderCut({ cut, cell, books }, yes, vals) {
   const best = books[0][1], worst = books[books.length - 1][1];
   const tie = books.length > 1 && best === worst;  // même cote partout : rien à surligner
   const avg = books.reduce((s, [, o]) => s + o, 0) / books.length;
   const edge = books.length > 1 ? (best / avg - 1) * 100 : 0;
   return `<div class="cut ${books.length === 1 ? 'solo' : ''}">
-    <div class="cut-h"><span class="v num">${yes ? 'Oui' : `${cut}<small>+</small>`}</span>${edge >= 4 ? `<span class="edge">+${edge.toFixed(0)}%</span>` : ''}</div>
+    <div class="cut-h"><span class="v num">${yes ? 'Oui' : `${cut}<small>+</small>`}</span>${!yes && vals ? `<span class="hit" title="Palier atteint sur les ${vals.length} derniers matchs">${vals.filter(x => x >= cut).length}/${vals.length}</span>` : ''}${edge >= 4 ? `<span class="edge">+${edge.toFixed(0)}%</span>` : ''}</div>
     ${books.map(([b, o]) => {
       const prev = cell.p?.[b];
       const arr = prev != null && prev !== o ? `<span class="arr ${o > prev ? 'up' : 'down'}" title="avant : ${fmt(prev)}">${o > prev ? '▲' : '▼'}</span>` : '';

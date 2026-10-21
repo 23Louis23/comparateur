@@ -109,6 +109,56 @@ def find(games, labels, local):
     return found
 
 
+# Écart ligne / moyenne des 5 derniers matchs
+L5_REL = 0.30                     # moyenne ≥ 30 % au-dessus ou en dessous de la ligne…
+L5_ABS = {"pts": 5, "reb": 2.5, "ast": 2.5, "3pt": 1.5, "pra": 6, "pr": 5, "pa": 5, "ra": 3}  # …et au moins cet écart
+L5_MIN_GAMES = 3
+L5_MAX_PREV = 2   # au moins 3 des 5 matchs doivent venir de la saison en cours (rôles qui changent d'une saison à l'autre)
+L5_IDX = {"pts": [0], "reb": [1], "ast": [2], "3pt": [3], "pra": [0, 1, 2], "pr": [0, 1], "pa": [0, 2], "ra": [1, 2]}
+
+
+def l5_values(l5, stat):
+    return [sum(row[i] for i in L5_IDX[stat]) for row in l5["g"]]
+
+
+def find_l5(games, labels, local):
+    found = []
+    for g in games:
+        start = datetime.fromisoformat(g["date"][:-1] + "+00:00")
+        if start < now():
+            continue
+        ok = fresh_books(g, local)
+        match = "%s @ %s, %s" % (g["away"].split()[-1], g["home"].split()[-1], start.astimezone().strftime("%H:%M"))
+        for p in g["players"]:
+            l5 = p.get("l5")
+            if not l5 or l5.get("n", 0) < L5_MIN_GAMES or l5.get("prev", 0) > L5_MAX_PREV or p.get("inj") in ("Out", "OFS", "Doubt"):
+                continue
+            for stat, lines in (p.get("lines") or {}).items():
+                if stat not in L5_ABS:
+                    continue
+                # ligne principale : celle proposée par le plus de bookmakers frais
+                def books(l):
+                    return {b for side in ("over", "under") for b in lines[l].get(side, {}) if b in ok}
+                cands = [l for l in lines if books(l)]
+                if not cands:
+                    continue
+                line = max(cands, key=lambda l: (len(books(l)), -abs(float(l) - sum(l5_values(l5, stat)) / l5["n"])))
+                vals = l5_values(l5, stat)
+                avg, ln = sum(vals) / len(vals), float(line)
+                if abs(avg - ln) >= L5_ABS[stat] and abs(avg - ln) >= L5_REL * ln:
+                    over = {b: o for b, o in lines[line].get("over", {}).items() if b in ok}
+                    under = {b: o for b, o in lines[line].get("under", {}).items() if b in ok}
+                    found.append(dict(kind="l5", key=(g["id"], p["id"], stat, "l5"), player=p["name"],
+                                      cat=labels.get(stat, stat), line=line, avg=avg, vals=vals, prev=l5.get("prev", 0),
+                                      over=max(over.items(), key=lambda kv: kv[1]) if over else None,
+                                      under=max(under.items(), key=lambda kv: kv[1]) if under else None, match=match))
+    return found
+
+
+def fmt1(x):
+    return ("%.1f" % x).replace(".", ",").replace(",0", "")
+
+
 def run(games, labels, local, st):
     """Détecte, déduplique et envoie. st : état persistant (dict)."""
     sent = st.setdefault("alerts", {})
@@ -116,6 +166,21 @@ def run(games, labels, local, st):
     for k in [k for k, v in sent.items() if datetime.fromisoformat(v["t"][:-1] + "+00:00") < limit]:
         del sent[k]
     todo = []
+    for f in find_l5(games, labels, local):  # écart ligne / moyenne : rappel seulement si la ligne bouge d'1 point
+        k = "|".join(f["key"])
+        prev = sent.get(k)
+        if prev and abs(float(f["line"]) - prev["v"]) < 1 and \
+                datetime.fromisoformat(prev["t"][:-1] + "+00:00") > now() - timedelta(hours=REPEAT_HOURS * 2):
+            continue
+        sent[k] = {"v": float(f["line"]), "t": iso(now())}
+        line = f["line"].replace(".", ",")
+        side = "au-dessus" if f["avg"] > float(f["line"]) else "en dessous"
+        best = lambda x: "%s %s" % (BOOK_NAMES.get(x[0], x[0]), odds_fr(x[1])) if x else "–"
+        title = "📊 %s · %s %s · moyenne %s" % (f["player"], f["cat"], line, fmt1(f["avg"]))
+        msg = "Ligne : %s · Moyenne 5 derniers matchs : %s (%s de la ligne)\n5 derniers : %s%s\nMeilleur Plus : %s · Meilleur Moins : %s\nMatch : %s" % (
+            line, fmt1(f["avg"]), side, " · ".join(fmt1(v) for v in f["vals"]),
+            " (dont %d de la saison passée)" % f["prev"] if f["prev"] else "", best(f["over"]), best(f["under"]), f["match"])
+        todo.append((title, msg, "bar_chart", "%s · %s %s : moyenne %s" % (f["player"], f["cat"], line, fmt1(f["avg"]))))
     for f in find(games, labels, local):
         k = "|".join(f["key"])
         value = f["hit"][1] if f["kind"] == "cote" else f["hit"][4]

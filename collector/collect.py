@@ -24,6 +24,7 @@ import alerts  # noqa: E402
 import lineups  # noqa: E402
 import betclic  # noqa: E402
 import pmu  # noqa: E402
+import stats  # noqa: E402
 import pokerstars  # noqa: E402
 import unibet  # noqa: E402
 import winamax  # noqa: E402
@@ -213,6 +214,34 @@ def load_games(path):
     return games, at
 
 
+def stats_only():
+    """Tâche séparée (toutes les 20 min) : moyennes des 5 derniers matchs (ESPN) des joueurs publiés."""
+    BUILD.mkdir(exist_ok=True)
+    path = BUILD / "cache-stats.json"
+    cache = load(path, {})
+    try:
+        n = stats.run(load(BUILD / "nba.json", {}), cache)
+        path.write_text(json.dumps(cache, ensure_ascii=False))
+        log("stats ESPN : %d joueurs mis à jour (%d en cache)" % (n, len(cache.get("players", {}))))
+    except Exception as e:  # noqa: BLE001
+        path.write_text(json.dumps(cache, ensure_ascii=False))
+        log("stats ESPN : erreur", type(e).__name__)
+        traceback.print_exc()
+
+
+def attach_stats(board):
+    """Moyennes des 5 derniers matchs + équipe (effectif ESPN) de chaque joueur."""
+    players = load(BUILD / "cache-stats.json", {}).get("players", {})
+    for g in board.games.values():
+        for key, p in g["players"].items():
+            s = players.get(key)
+            if not s or not s.get("n"):
+                continue
+            p["l5"] = {k: s[k] for k in ("n", "prev", "seasons", "dates", "g")}
+            if not p.get("team") and s.get("team") in (g["_h"], g["_a"]):
+                p["team"] = "home" if s["team"] == g["_h"] else "away"
+
+
 def fetch_only(name):
     """Tâche séparée (Betclic, lent) : lit le bookmaker et range ses cotes en cache, sans publier."""
     book = next(b for b in LOCAL_BOOKS if b.NAME == name)
@@ -288,6 +317,7 @@ def main():
                for stat, cuts in p["stats"].items() for cell in cuts.values() for b in cell["o"]}
     add_fallback(board, covered)
     attach_lineups(board, get_lineups())
+    attach_stats(board)
 
     BUILD.mkdir(exist_ok=True)
     out_path = BUILD / "nba.json"
@@ -314,7 +344,9 @@ def main():
 
 
 if __name__ == "__main__":
-    if "--only" in sys.argv:
+    if "--only" in sys.argv and sys.argv[sys.argv.index("--only") + 1] == "stats":
+        stats_only()
+    elif "--only" in sys.argv:
         fetch_only(sys.argv[sys.argv.index("--only") + 1])
     else:
         main()

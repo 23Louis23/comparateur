@@ -241,6 +241,18 @@
   .inj-prob { background: rgba(61,220,132,.16); color: var(--up); }
   .pc-pos { font-size: 10px; font-weight: 800; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
   @media (max-width: 760px) { .lu-teams { grid-template-columns: 1fr; } }
+
+  /* 5 derniers matchs */
+  .l5 { display: inline-flex; align-items: baseline; gap: 4px; font-size: 12px; color: var(--muted); background: var(--panel-3); border-radius: 6px; padding: 2px 8px; }
+  .l5 b { font-size: 15px; color: var(--text); }
+  .l5.above { background: rgba(61,220,132,.14); color: var(--up); } .l5.above b { color: var(--up); }
+  .l5.below { background: rgba(255,107,107,.14); color: var(--down); } .l5.below b { color: var(--down); }
+  .l5.sm { font-size: 10px; padding: 1px 5px; margin-top: 4px; }
+  .l5.sm b { font-size: 12px; }
+  .l5-detail { margin: -2px 0 8px; }
+  .l5-detail b { color: var(--text); }
+  .tc-col { display: flex; flex-direction: column; align-items: center; }
+  .hit { font-size: 10.5px; font-weight: 700; color: var(--muted); background: var(--panel-3); border-radius: 5px; padding: 0 5px; }
 </style>
 </head>
 <body>
@@ -256,8 +268,8 @@
   <section id="match"></section>
 </main>
 <footer class="wrap">Cotes indicatives, à vérifier chez le bookmaker. Les jeux d'argent et de hasard peuvent être dangereux : pertes d'argent, conflits familiaux, addiction… Appelez le 09 74 75 13 13 (appel non surtaxé). Interdit aux moins de 18 ans.</footer>
-<script src="nba-teams.js?v=202610212159"></script>
-<script src="nba-demo.js?v=202610212159"></script>
-<script src="nba.js?v=202610212159"></script>
+<script src="nba-teams.js?v=202610212208"></script>
+<script src="nba-demo.js?v=202610212208"></script>
+<script src="nba.js?v=202610212208"></script>
 </body>
 </html>
