@@ -74,6 +74,7 @@ class Game:
         self.start, self.home, self.away = start, home, away
         self.players = {}  # nom affiché → {stat: {palier: cote}}
         self.lines = {}    # nom affiché → {stat: {"9.5": {"over": cote, "under": cote}}}
+        self.url = None    # page du match chez le bookmaker
 
     def add(self, player, stat, cut, odds):
         odds = price(odds)

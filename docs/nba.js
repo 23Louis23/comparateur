@@ -263,11 +263,19 @@ function renderPicker(g, players) {
 // Case du tableau : ligne principale (celle que le plus de bookmakers proposent à l'équilibre)
 // avec la cote Plus et Moins de chaque bookmaker ; à défaut, le palier dont la meilleure cote est
 // la plus proche de 2,00, avec la cote de chaque bookmaker.
+// Élément cliquable vers la page du match chez le bookmaker (nouvel onglet), sinon simple élément
+function oddLink(b, cls, inner) {
+  const url = game()?.links?.[b];
+  return url
+    ? `<a class="${cls} lnk" href="${esc(url)}" target="_blank" rel="noopener" title="Ouvrir le match chez ${esc(BOOKS[b]?.name || b)}">${inner}</a>`
+    : `<span class="${cls}">${inner}</span>`;
+}
+
 function tableChips(obj) {
   const books = Object.entries(obj || {}).filter(([b]) => on(b)).sort((x, y) => y[1] - x[1]);
   if (!books.length) return '<span class="tc-none">–</span>';
   const best = books[0][1], tie = books.length > 1 && best === books[books.length - 1][1];
-  return books.map(([b, o]) => `<span class="tc-chip ${o === best && !tie && books.length > 1 ? 'best' : ''}">${bk(b)}<b class="num">${fmt(o)}</b></span>`).join('');
+  return books.map(([b, o]) => oddLink(b, `tc-chip ${o === best && !tie && books.length > 1 ? 'best' : ''}`, `${bk(b)}<b class="num">${fmt(o)}</b>`)).join('');
 }
 
 // ------------------------------------------------------------ 5 derniers matchs (ESPN)
@@ -329,7 +337,7 @@ function renderTable(g, players) {
       return `<tr><th class="tbl-name" style="${t ? `--tc:${t.c1}` : ''}"><button class="tbl-player" data-player="${esc(p.id)}" data-goto="1">
           <span class="avatar xs">${esc(initials(p.name))}</span><span class="nm-full">${esc(p.name)}</span><span class="nm-short">${esc(shortName(p.name))}</span>${injTag(p.inj, true)}</button></th>
         ${cols.map(s => { const c = tableCell(p, s); return c
-          ? `<td><button class="tc" data-player="${esc(p.id)}" data-stat="${s}" title="${esc(p.name)} · ${esc(label(s))} : voir tous les paliers">${c}</button></td>`
+          ? `<td><div class="tc" role="button" tabindex="0" data-cell="1" data-player="${esc(p.id)}" data-stat="${s}" title="${esc(p.name)} · ${esc(label(s))} : voir tous les paliers">${c}</div></td>`
           : '<td class="tc-empty">·</td>'; }).join('')}
       </tr>`;
     }).join('')}</tbody>
@@ -373,7 +381,7 @@ function renderLine(line, sides) {
     if (!books.length) return `<div class="ou-side"><div class="ou-lab">${sign} ${line}</div><span class="small">—</span></div>`;
     const best = books[0][1], tie = books.length > 1 && best === books[books.length - 1][1];
     return `<div class="ou-side"><div class="ou-lab"><b class="num">${sign}${line}</b></div><div class="ou-books">${books.map(([b, o]) =>
-      `<span class="ou ${o === best && !tie && books.length > 1 ? 'best' : ''}">${bk(b)}<span class="num">${fmt(o)}</span></span>`).join('')}</div></div>`;
+      oddLink(b, `ou ${o === best && !tie && books.length > 1 ? 'best' : ''}`, `${bk(b)}<span class="num">${fmt(o)}</span>`)).join('')}</div></div>`;
   };
   return `<div class="ouline">${side('over', '+')}${side('under', '−')}</div>`;
 }
@@ -395,7 +403,7 @@ function renderCut({ cut, cell, books }, yes, vals) {
     ${books.map(([b, o]) => {
       const prev = cell.p?.[b];
       const arr = prev != null && prev !== o ? `<span class="arr ${o > prev ? 'up' : 'down'}" title="avant : ${fmt(prev)}">${o > prev ? '▲' : '▼'}</span>` : '';
-      return `<div class="line ${o === best && !tie ? 'best' : ''}">${bk(b)}<span class="bn">${esc(BOOKS[b]?.name || b)}</span><span class="o num">${fmt(o)}${arr}</span></div>`;
+      return oddLink(b, `line ${o === best && !tie ? 'best' : ''}`, `${bk(b)}<span class="bn">${esc(BOOKS[b]?.name || b)}</span><span class="o num">${fmt(o)}${arr}</span>`);
     }).join('')}
   </div>`;
 }
@@ -411,7 +419,8 @@ function renderStatus() {
 
 // ------------------------------------------------------------ interactions
 document.addEventListener('click', e => {
-  const t = e.target.closest('button');
+  if (e.target.closest('a[href]')) return;  // cote → page du match chez le bookmaker
+  const t = e.target.closest('button, [data-cell]');
   if (!t) return;
   if (t.id === 'refresh') return load();
   if (t.dataset.game) { state.gameId = t.dataset.game; state.playerId = null; state.search = ''; }

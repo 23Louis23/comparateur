@@ -35,6 +35,7 @@ def fetch(memo, horizon_hours=48):
         st = state(get("%s/match/%s" % (BASE, mt["matchId"])))
         bets, outcomes, odds = st.get("bets", {}), st.get("outcomes", {}), st.get("odds", {})
         g = Game(start, mt["competitor1Name"], mt["competitor2Name"])
+        g.url = "%s/match/%s" % (BASE, mt["matchId"])
         for b in bets.values():
             if b.get("matchId") != mt["matchId"] or not b.get("available"):
                 continue

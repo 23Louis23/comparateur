@@ -253,6 +253,14 @@
   .l5-detail b { color: var(--text); }
   .tc-col { display: flex; flex-direction: column; align-items: center; }
   .hit { font-size: 10.5px; font-weight: 700; color: var(--muted); background: var(--panel-3); border-radius: 5px; padding: 0 5px; }
+
+  /* cotes cliquables → page du match chez le bookmaker */
+  a.lnk { color: inherit; text-decoration: none; }
+  a.line.lnk, a.ou.lnk, a.tc-chip.lnk { display: flex; cursor: pointer; transition: box-shadow .12s, transform .12s; }
+  a.ou.lnk, a.tc-chip.lnk { display: inline-flex; }
+  a.lnk:hover { box-shadow: 0 0 0 1px var(--muted) inset; }
+  a.lnk.best:hover { box-shadow: 0 0 0 2px #fff inset; }
+  .tc { cursor: pointer; }
 </style>
 </head>
 <body>
@@ -268,8 +276,8 @@
   <section id="match"></section>
 </main>
 <footer class="wrap">Cotes indicatives, à vérifier chez le bookmaker. Les jeux d'argent et de hasard peuvent être dangereux : pertes d'argent, conflits familiaux, addiction… Appelez le 09 74 75 13 13 (appel non surtaxé). Interdit aux moins de 18 ans.</footer>
-<script src="nba-teams.js?v=202610212208"></script>
-<script src="nba-demo.js?v=202610212208"></script>
-<script src="nba.js?v=202610212208"></script>
+<script src="nba-teams.js?v=202610221925"></script>
+<script src="nba-demo.js?v=202610221925"></script>
+<script src="nba.js?v=202610221925"></script>
 </body>
 </html>

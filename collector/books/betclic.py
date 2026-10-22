@@ -119,6 +119,7 @@ def fetch_browser(horizon_hours):
         page = browser.new_page(locale="fr-FR", viewport={"width": 1280, "height": 900})
         for start, home, away, url in matches(horizon_hours):
             g = Game(start, home, away)
+            g.url = url
             page.goto(url, wait_until="domcontentloaded", timeout=45000)
             try:
                 page.wait_for_selector("[data-qa=market-box]", timeout=20000)
@@ -150,6 +151,7 @@ def fetch_page(horizon_hours):
     games = []
     for start, home, away, url in matches(horizon_hours):
         g = Game(start, home, away)
+        g.url = url
         for p in payloads(state(get(url))):
             for sc in (p.get("match") or {}).get("subCategories") or []:
                 for mk in sc.get("markets") or []:

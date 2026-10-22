@@ -42,6 +42,7 @@ def fetch(memo, horizon_hours=48):
         if not (now() < start < now() + timedelta(hours=horizon_hours)):
             continue
         g = Game(start, home=names[1], away=names[0])  # PokerStars affiche « Extérieur @ Domicile »
+        g.url = BASE + href
         for block in h.split('data-testid="sports-expandable-accordion"')[1:]:
             title = htmllib.unescape((re.search(r'aria-label="([^"]+)"', block) or [None, ""])[1])
             if title in TABLES:

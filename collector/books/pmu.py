@@ -28,6 +28,7 @@ def fetch(memo, horizon_hours=48):
             continue
         offer = json.loads(get("%s/betoffer/event/%s.json?%s" % (API, ev["id"], PARAMS)))
         g = Game(start, ev.get("homeName"), ev.get("awayName"))
+        g.url = "https://www.pmu.fr/sport/event/%s" % ev["id"]
         for b in offer.get("betOffers", []):
             label = b["criterion"]["label"]
             if "Prolongations incluses" not in label or "joueur" not in label and "double" not in label:

@@ -28,6 +28,10 @@ def events():
     return sorted(set(re.findall(r"/paris-basketball/usa/nba/(\d+)/[a-z0-9-]*-vs-[a-z0-9-]*", html)))
 
 
+def match_url(eid, slug="match"):
+    return "%s/paris-basketball/usa/nba/%s/%s" % (BASE, eid, slug)
+
+
 def classify(group):
     gid, label = group.get("id"), group.get("description") or ""
     if gid in COMBOS:
@@ -63,6 +67,7 @@ def fetch(memo, horizon_hours=48):
             continue
         a, _, b = (ev.get("description") or "").partition(" vs ")
         g = Game(start, home=a, away=b)  # Unibet affiche « Domicile vs Extérieur »
+        g.url = match_url(eid, re.sub(r"[^a-z0-9]+", "-", (ev.get("description") or "match").lower()).strip("-"))
         for group in ev.get("groupedMarkets") or []:
             kind, stat = classify(group)
             if not kind:

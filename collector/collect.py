@@ -197,7 +197,7 @@ def publish(path):
 
 def save_games(path, games, at):
     path.write_text(json.dumps({"at": at, "games": [
-        {"start": g.start.isoformat(), "home": g.home, "away": g.away, "players": g.players, "lines": g.lines}
+        {"start": g.start.isoformat(), "home": g.home, "away": g.away, "players": g.players, "lines": g.lines, "url": g.url}
         for g in games]}, ensure_ascii=False))
 
 
@@ -210,6 +210,7 @@ def load_games(path):
         g = Game(datetime.fromisoformat(d["start"]), d["home"], d["away"])
         g.players = {p: {s: {int(c): o for c, o in cuts.items()} for s, cuts in stats.items()} for p, stats in d["players"].items()}
         g.lines = d.get("lines", {})
+        g.url = d.get("url")
         games.append(g)
     return games, at
 
@@ -299,6 +300,8 @@ def main():
                 if not g:
                     continue
                 g["updated"][book.NAME] = at
+                if bg.url:
+                    g.setdefault("links", {})[book.NAME] = bg.url
                 for player, stats in bg.lines.items():
                     for stat, lines in stats.items():
                         for line, sides in lines.items():
