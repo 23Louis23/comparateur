@@ -90,7 +90,7 @@ class Board:
             cell.setdefault("f", []).append(book)
 
 
-def add_fallback(board, covered):
+def add_fallback(board, covered, covered_lines=frozenset()):
     """Appoint OddsPapi pour tout ce qui n'a pas été lu en direct : (match, bookmaker, stat) absents de covered."""
     try:
         with urllib.request.urlopen(FALLBACK_URL + "?t=%d" % now().timestamp(), timeout=20) as r:
@@ -110,6 +110,12 @@ def add_fallback(board, covered):
         for b, url in (fg.get("links") or {}).items():
             g.setdefault("links", {}).setdefault(b, url)
         for p in fg.get("players", []):
+            for stat, lines in (p.get("lines") or {}).items():
+                for line, sides in lines.items():
+                    for side, books in sides.items():
+                        for b, odds in books.items():
+                            if (g["id"], b, stat) not in covered_lines:  # lignes déjà lues en direct chez ce bookmaker
+                                board.add_line(g, p["name"], stat, line, side, b, odds)
             for stat, cuts in p.get("stats", {}).items():
                 for cut, cell in cuts.items():
                     for b, odds in cell.get("o", {}).items():
@@ -320,7 +326,10 @@ def main():
         log(book.NAME, status[book.NAME])
     covered = {(g["id"], b, stat) for g in board.games.values() for p in g["players"].values()
                for stat, cuts in p["stats"].items() for cell in cuts.values() for b in cell["o"]}
-    add_fallback(board, covered)
+    covered_lines = {(g["id"], b, stat) for g in board.games.values() for p in g["players"].values()
+                     for stat, lines in (p.get("lines") or {}).items() for sides in lines.values()
+                     for books in sides.values() for b in books}
+    add_fallback(board, covered, covered_lines)
     attach_lineups(board, get_lineups())
     attach_stats(board)
 

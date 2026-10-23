@@ -251,7 +251,7 @@ def collect(api, st, games, diag):
                         break
                     stat, _, kind, line, outs = m
                     side = str(outs.get(str(oid)) or "")
-                    if kind == "over" and side != "Over":
+                    if kind == "over" and side not in ("Over", "Under"):
                         continue
                     if kind == "milestone":
                         num = re.match(r"^(\d+)\+?$", side)
@@ -273,6 +273,11 @@ def collect(api, st, games, diag):
                             continue
                         p = g["players"].setdefault(str(pid), {"id": str(pid), "name": None, "stats": {}})
                         p["name"] = player_name(row.get("playerName")) or p["name"] or "Joueur %s" % pid
+                        if kind == "over":  # ligne Plus/Moins (palier 25 → ligne 24,5)
+                            ln = p.setdefault("lines", {}).setdefault(stat, {}).setdefault("%g" % (line - 0.5), {"over": {}, "under": {}})
+                            ln[side.lower()][book] = max(price, ln[side.lower()].get(book, 0))
+                            if side == "Under":
+                                continue
                         cut = str(line if line is not None else 1)
                         cell = p["stats"].setdefault(stat, {}).setdefault(cut, {"o": {}, "p": {}})
                         key = (gid, pid, stat, cut, book)
