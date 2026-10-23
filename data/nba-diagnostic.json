@@ -1,63 +1,40 @@
 {
- "run": "2026-10-20T07:34:46Z",
+ "run": "2026-10-23T10:31:12Z",
  "bookmakers": {
-  "bwin": "aucune cote NBA",
-  "pmu": "cotes reçues",
-  "pokerstars": "cotes reçues",
-  "unibet": "cotes reçues",
-  "winamax": "cotes reçues"
+  "bet365": "cotes reçues"
  },
  "par_bookmaker": {
-  "pmu": {
-   "reb": 342,
-   "pra": 198,
-   "pr": 234,
-   "pts": 544,
-   "sb": 138,
-   "dd": 42,
-   "ra": 138,
-   "blk": 83,
-   "ast": 263,
-   "3pt": 234,
-   "stl": 127,
-   "pa": 131
-  },
-  "pokerstars": {
-   "pr": 31,
-   "pra": 117,
-   "pa": 112,
-   "ra": 109,
-   "td": 16,
-   "dd": 116,
-   "pts": 585,
-   "reb": 475,
-   "blk": 47,
-   "ast": 382,
-   "stl": 119,
-   "3pt": 519
-  },
-  "unibet": {
-   "pr": 25,
-   "pa": 19,
-   "ast": 219,
-   "reb": 263,
-   "3pt": 188,
-   "pts": 386,
-   "ra": 19,
-   "pra": 20,
-   "blk": 59,
-   "stl": 84,
-   "td": 11,
-   "tov": 11
-  },
-  "winamax": {
-   "blk": 21,
-   "reb": 11,
-   "3pt": 13
+  "bet365": {
+   "3pt": 1105,
+   "pr": 197,
+   "sb": 195,
+   "pa": 196,
+   "ast": 850,
+   "pra": 185,
+   "pts": 1305,
+   "reb": 820,
+   "td": 31,
+   "stl": 194,
+   "ra": 195,
+   "blk": 195,
+   "dd": 149
   }
  },
  "non_reconnus": {
-  "Player First Point [result, ligne 0.0, issues Yes]": 15
+  "Over Under Player Points First Quarter [p1, ligne 2.5, issues Under/Over]": 12,
+  "Over Under Player Rebounds First Quarter [p1, ligne 4.5, issues Over/Under]": 12,
+  "Over Under Player Rebounds First Quarter [p1, ligne 0.5, issues Under/Over]": 12,
+  "Over Under Player Rebounds First Quarter [p1, ligne 1.5, issues Under/Over]": 12,
+  "Over Under Player Points First Quarter [p1, ligne 9.5, issues Over/Under]": 12,
+  "Over Under Player Assists First Quarter [p1, ligne 0.5, issues Over/Under]": 12,
+  "Player First Point [result, ligne 0.0, issues Yes]": 12,
+  "Over Under Player Assists First Quarter [p1, ligne 1.5, issues Under/Over]": 12,
+  "Over Under Player Points First Quarter [p1, ligne 4.5, issues Over/Under]": 12,
+  "Over Under Player Assists First Quarter [p1, ligne 4.5, issues Under/Over]": 12,
+  "Over Under Player Rebounds First Quarter [p1, ligne 2.5, issues Over/Under]": 12,
+  "Over Under Player Points First Quarter [p1, ligne 6.5, issues Over/Under]": 12,
+  "Over Under Player Assists First Quarter [p1, ligne 2.5, issues Under/Over]": 12,
+  "Over Under Player Rebounds First Quarter [p1, ligne 3.5, issues Under/Over]": 2
  },
  "formats_paliers": {}
 }
