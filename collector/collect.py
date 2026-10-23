@@ -107,6 +107,8 @@ def add_fallback(board, covered):
             continue
         for b, t in (fg.get("updated") or {}).items():
             g["updated"].setdefault(b, t)  # l'heure de la collecte locale prime
+        for b, url in (fg.get("links") or {}).items():
+            g.setdefault("links", {}).setdefault(b, url)
         for p in fg.get("players", []):
             for stat, cuts in p.get("stats", {}).items():
                 for cut, cell in cuts.items():

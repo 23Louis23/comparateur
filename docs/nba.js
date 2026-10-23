@@ -5,6 +5,7 @@ const BOOKS = {
   betclic:    { name: 'Betclic',    color: '#ff3b3b' },
   bwin:       { name: 'bwin',       color: '#ffcc00', ink: '#111' },
   pokerstars: { name: 'PokerStars', color: '#b3001b' },
+  bet365:     { name: 'bet365',     color: '#027b5b', ink: '#ffdf1b' },
 };
 const STAT_ORDER = ['pts', 'reb', 'ast', '3pt', 'pra', 'pr', 'pa', 'ra', 'stl', 'blk', 'sb', 'tov', 'dd', 'td'];
 const YES_STATS = new Set(['dd', 'td']);  // marchés oui/non : pas de palier

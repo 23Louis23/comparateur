@@ -19,7 +19,7 @@ MAX_ODDS = 4.0       # au-delà, les écarts entre bookmakers sont normaux
 FRESH_MIN = 20       # seules les cotes lues en direct depuis moins de 20 min comptent (Betclic : relu toutes les 15 min)
 REPEAT_HOURS = 6     # pas de rappel pour la même alerte avant 6 h (sauf cote encore plus haute)
 MAX_PUSH = 5         # au-delà, un seul message récapitulatif
-BOOK_NAMES = {"unibet": "Unibet", "winamax": "Winamax", "pmu": "PMU", "betclic": "Betclic", "pokerstars": "PokerStars"}
+BOOK_NAMES = {"unibet": "Unibet", "winamax": "Winamax", "pmu": "PMU", "betclic": "Betclic", "pokerstars": "PokerStars", "bet365": "bet365"}
 
 
 def config():

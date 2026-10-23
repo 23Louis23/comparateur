@@ -31,10 +31,12 @@ FORCE = "--force" in sys.argv or os.environ.get("FORCE") == "true"
 LIMIT = int(os.environ.get("ODDSPAPI_MONTHLY_LIMIT", "250"))
 NOW = datetime.now(timezone.utc)
 BASE = "https://api.oddspapi.io/v4"
-CATALOG_VERSION = 1
+CATALOG_VERSION = 2
 
 BOOKS = {"unibet": r"unibet", "winamax": r"winamax", "pmu": r"\bpmu", "betclic": r"betclic",
-         "bwin": r"bwin", "pokerstars": r"pokerstars"}
+         "bwin": r"bwin", "pokerstars": r"pokerstars", "bet365": r"bet365"}
+# Bookmakers interrogés ici : ceux que l'iMac ne lit pas (ou pas en entier) en direct.
+ONLY = set(os.environ.get("ODDSPAPI_BOOKS", "pokerstars,bet365").split(","))
 
 # Statistiques suivies : clé → (motif sur le nom du marché OddsPapi, libellé)
 STATS = {
@@ -188,6 +190,8 @@ def collect(api, st, games, diag):
     merged = {}
 
     for sl, book in slug_to_book.items():
+        if book not in ONLY:
+            continue
         if api.left <= 0:
             break
         if parse_dt(miss.get(sl)) and NOW < parse_dt(miss[sl]) and not FORCE:
@@ -232,6 +236,8 @@ def collect(api, st, games, diag):
             if not book or not isinstance(b, dict) or b.get("suspended"):
                 continue
             g["updated"][book] = iso(NOW)
+            if b.get("fixturePath"):  # page du match chez le bookmaker
+                g.setdefault("links", {})[book] = b["fixturePath"]
             stats = diag["par_bookmaker"].setdefault(book, {})
             for mid, mk in (b.get("markets") or {}).items():
                 if not isinstance(mk, dict) or mk.get("marketActive") is False:
@@ -301,7 +307,7 @@ def main():
         st["status"] = "pas de clé ODDSPAPI_KEY"
     else:
         miss = st.get("miss", {})
-        active = [sl for sl in st["cache"].get("books", {}).values() if not (parse_dt(miss.get(sl)) and NOW < parse_dt(miss[sl]))]
+        active = [sl for b, sl in st["cache"].get("books", {}).items() if b in ONLY and not (parse_dt(miss.get(sl)) and NOW < parse_dt(miss[sl]))]
         per_run = int(os.environ.get("ODDSPAPI_PER_RUN", str(max(1, len(active) or len(BOOKS)))))
         remaining = LIMIT - st["used"]
         hours_left = max(1.0, ((NOW.replace(day=1) + timedelta(days=32)).replace(day=1, hour=0, minute=0, second=0)
