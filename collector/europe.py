@@ -438,7 +438,43 @@ def main():
         print("matchs vus par un seul bookmaker :", len(unmatched))
         for u in unmatched[:25]:
             print("  ", u)
+    # écarts de ligne sur un même joueur (lignes équilibrées chez chaque bookmaker)
+    gaps = []
+    for ref, members in groups:
+        if len(members) < 2:
+            continue
+        per = {}  # (joueur, stat) → {book: {ligne: {over, under}}}
+        for b, (g, inv) in members.items():
+            for key, o in g.sel.items():
+                k = key.split("|")
+                if k[0] == "pl":
+                    per.setdefault((k[1], k[2]), {}).setdefault(b, {}).setdefault(k[3], {})[k[4]] = o
+        for (player, stat), books in per.items():
+            if stat not in alerts.GAP_MIN:
+                continue
+            bal = {}
+            for b, lines in books.items():
+                cands = [(abs(v["over"] - v["under"]), float(l), v["over"], v["under"]) for l, v in lines.items() if "over" in v and "under" in v]
+                if cands and min(cands)[0] <= alerts.GAP_BALANCE:
+                    bal[b] = min(cands)[1:]
+            if len(bal) >= 2:
+                lo_b, hi_b = min(bal, key=lambda b: bal[b][0]), max(bal, key=lambda b: bal[b][0])
+                if bal[hi_b][0] - bal[lo_b][0] >= alerts.GAP_MIN[stat]:
+                    gaps.append((ref, members, player, stat, lo_b, hi_b, bal))
     todo = []
+    for ref, members, player, stat, lo_b, hi_b, bal in gaps:
+        k = "%s|%s|%s|gap|%s|%s" % (ref.home, ref.away, ref.start.date(), player, stat)
+        gap = bal[hi_b][0] - bal[lo_b][0]
+        prev = sent.get(k)
+        if prev and abs(gap - prev["v"]) < 1 and datetime.fromisoformat(prev["t"]) > now() - timedelta(hours=REPEAT_H * 2):
+            continue
+        ln = lambda x: ("%g" % x).replace(".", ",")
+        title = "📏 %s · %s · écart de ligne %s" % (player.title(), STAT_FR.get(stat, stat), ln(gap))
+        msg = "Plus de %s chez %s : %s\nMoins de %s chez %s : %s\nToutes les lignes : %s\n%s – %s · %s" % (
+            ln(bal[lo_b][0]), BOOK_NAMES[lo_b], alerts.odds_fr(bal[lo_b][1]), ln(bal[hi_b][0]), BOOK_NAMES[hi_b],
+            alerts.odds_fr(bal[hi_b][2]), " · ".join("%s %s" % (BOOK_NAMES[b], ln(v[0])) for b, v in sorted(bal.items(), key=lambda kv: kv[1][0])),
+            ref.home, ref.away, ref.start.astimezone().strftime("%a %d/%m %H:%M"))
+        todo.append((title, msg, members[lo_b][0].url, k, gap))
     for ref, members, key, bb, best, by in found:
         k = "%s|%s|%s|%s" % (ref.home, ref.away, ref.start.date(), key)
         prev = sent.get(k)

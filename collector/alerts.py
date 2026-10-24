@@ -159,6 +159,50 @@ def fmt1(x):
     return ("%.1f" % x).replace(".", ",").replace(",0", "")
 
 
+# Écart de ligne entre bookmakers sur un même joueur
+GAP_BALANCE = 0.35  # une ligne ne compte que si Plus et Moins sont proches chez ce bookmaker (ex. 1,75 / 1,95)
+GAP_MIN = {"pts": 3, "reb": 2, "ast": 2, "3pt": 1, "pra": 4, "pr": 3, "pa": 3, "ra": 2, "stl": 1, "blk": 1, "sb": 1, "tov": 1}
+
+
+def balanced_by_book(lines, ok):
+    """{bookmaker: (ligne, cote Plus, cote Moins)} : pour chacun, la ligne où Plus et Moins sont les plus proches."""
+    out = {}
+    for line, sides in lines.items():
+        for b, o in sides.get("over", {}).items():
+            u = sides.get("under", {}).get(b)
+            if b not in ok or u is None:
+                continue
+            if b not in out or abs(o - u) < abs(out[b][1] - out[b][2]):
+                out[b] = (float(line), o, u)
+    return {b: v for b, v in out.items() if abs(v[1] - v[2]) <= GAP_BALANCE}
+
+
+def find_line_gaps(games, labels, local):
+    found = []
+    for g in games:
+        start = datetime.fromisoformat(g["date"][:-1] + "+00:00")
+        if start < now():
+            continue
+        ok = fresh_books(g, local)
+        match = "%s @ %s, %s" % (g["away"].split()[-1], g["home"].split()[-1], start.astimezone().strftime("%H:%M"))
+        for p in g["players"]:
+            if p.get("inj") in ("Out", "OFS", "Doubt"):
+                continue
+            for stat, lines in (p.get("lines") or {}).items():
+                if stat not in GAP_MIN:
+                    continue
+                bb = balanced_by_book(lines, ok)
+                if len(bb) < 2:
+                    continue
+                lo_b = min(bb, key=lambda b: bb[b][0])
+                hi_b = max(bb, key=lambda b: bb[b][0])
+                gap = bb[hi_b][0] - bb[lo_b][0]
+                if gap >= GAP_MIN[stat]:
+                    found.append(dict(key=(g["id"], p["id"], stat, "gap"), player=p["name"], cat=labels.get(stat, stat),
+                                      gap=gap, lo=(lo_b,) + bb[lo_b], hi=(hi_b,) + bb[hi_b], all=bb, match=match))
+    return found
+
+
 def run(games, labels, local, st):
     """Détecte, déduplique et envoie. st : état persistant (dict)."""
     sent = st.setdefault("alerts", {})
@@ -181,6 +225,22 @@ def run(games, labels, local, st):
             line, fmt1(f["avg"]), side, " · ".join(fmt1(v) for v in f["vals"]),
             " (dont %d de la saison passée)" % f["prev"] if f["prev"] else "", best(f["over"]), best(f["under"]), f["match"])
         todo.append((title, msg, "bar_chart", "%s · %s %s : moyenne %s" % (f["player"], f["cat"], line, fmt1(f["avg"]))))
+    for f in find_line_gaps(games, labels, local):  # écart de ligne : rappel si l'écart change d'1 ou après 12 h
+        k = "|".join(f["key"])
+        prev = sent.get(k)
+        if prev and abs(f["gap"] - prev["v"]) < 1 and \
+                datetime.fromisoformat(prev["t"][:-1] + "+00:00") > now() - timedelta(hours=REPEAT_HOURS * 2):
+            continue
+        sent[k] = {"v": f["gap"], "t": iso(now())}
+        lo_b, lo, lo_o, lo_u = f["lo"]
+        hi_b, hi, hi_o, hi_u = f["hi"]
+        name = lambda b: BOOK_NAMES.get(b, b)
+        ln = lambda x: ("%g" % x).replace(".", ",")
+        title = "📏 %s · %s · écart de ligne %s" % (f["player"], f["cat"], ln(f["gap"]))
+        msg = "Plus de %s chez %s : %s\nMoins de %s chez %s : %s\nToutes les lignes : %s\nMatch : %s" % (
+            ln(lo), name(lo_b), odds_fr(lo_o), ln(hi), name(hi_b), odds_fr(hi_u),
+            " · ".join("%s %s" % (name(b), ln(v[0])) for b, v in sorted(f["all"].items(), key=lambda kv: kv[1][0])), f["match"])
+        todo.append((title, msg, "straight_ruler", "%s · %s : %s %s / %s %s" % (f["player"], f["cat"], name(lo_b), ln(lo), name(hi_b), ln(hi))))
     for f in find(games, labels, local):
         k = "|".join(f["key"])
         value = f["hit"][1] if f["kind"] == "cote" else f["hit"][4]
