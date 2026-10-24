@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """
 Basket européen — alertes uniquement (pas d'interface) : écart de cote ≥ 50 % entre deux
-bookmakers sur une même sélection. Euroligue, Eurocoupe, Betclic Élite, Grèce A1, Turquie BSL,
+bookmakers sur une même sélection, écart de ligne sur un même joueur, et veille des handicaps
+(écart ≥ 3 points entre bookmakers, ou handicap inversé : le favori reçoit des points). La NBA
+passe aussi ici, mais seulement pour le vainqueur et le handicap (ses props sont suivies par collect.py). Euroligue, Eurocoupe, Betclic Élite, Grèce A1, Turquie BSL,
 ligue Adriatique, Allemagne BBL, Espagne ACB, Italie Lega A, BCL… (compétitions féminines,
 NBA, WNBA, NCAA et Australie exclues).
 
@@ -38,11 +40,14 @@ from common import get, iso, norm_name, now, over_cut, price  # noqa: E402
 
 EDGE = 1.50          # meilleure cote ≥ autre cote × 1,50
 MAX_ODDS = 6.0       # au-delà, les écarts entre bookmakers sont normaux
+HCP_GAP = 3          # écart entre les handicaps équilibrés de deux bookmakers
+HCP_FAV = 1.60       # favori net (cote moyenne au vainqueur)…
+HCP_FLIP = 1.5       # …à qui un bookmaker donne pourtant au moins +1,5 point : handicap inversé
 HORIZON_H = 48
 REPEAT_H = 6
 STATE = HERE / "build" / "europe-state.json"
 EXCLUDE = re.compile(r"\bNBA\b|WNBA|NCAA|\bNBL\b|Australie|Chine|Japon|Cor[ée]e|Philippines|\(F\)|F[ée]minin|Femmes|Women|LFB|"
-                     r"Cotes des S[ée]ries|March Madness", re.I)
+                     r"Cotes des S[ée]ries|March Madness|\sF\.(?:\s|$)", re.I)
 STAT_FR = {"pts": "points", "reb": "rebonds", "ast": "passes", "3pt": "paniers à 3 pts", "pra": "pts+reb+pas",
            "pr": "pts+reb", "pa": "pts+pas", "ra": "reb+pas", "stl": "interceptions", "blk": "contres",
            "sb": "int+contres", "tov": "balles perdues", "dd": "double-double", "td": "triple-double"}
@@ -73,8 +78,9 @@ def key_line(x):
 
 
 class EGame:
-    def __init__(self, book, start, home, away, league, url):
+    def __init__(self, book, start, home, away, league, url, nba=False):
         self.book, self.start, self.home, self.away, self.league, self.url = book, start, home, away, league, url
+        self.nba = nba
         self.sel = {}
 
     def add(self, key, odds):
@@ -143,9 +149,10 @@ def fetch_pmu():
         ev = item["event"]
         league = " / ".join(p.get("name", "") for p in ev.get("path", [])[1:])
         start = datetime.fromisoformat(ev["start"].replace("Z", "+00:00"))
-        if EXCLUDE.search(league) or ev.get("state") != "NOT_STARTED" or not now() < start < now() + timedelta(hours=HORIZON_H):
+        nba = league == "NBA"
+        if (EXCLUDE.search(league) and not nba) or ev.get("state") != "NOT_STARTED" or not now() < start < now() + timedelta(hours=HORIZON_H):
             continue
-        g = EGame("pmu", start, ev.get("homeName"), ev.get("awayName"), league, "https://www.pmu.fr/sport/event/%s" % ev["id"])
+        g = EGame("pmu", start, ev.get("homeName"), ev.get("awayName"), league, "https://www.pmu.fr/sport/event/%s" % ev["id"], nba)
         raw = page("%s/betoffer/event/%s.json?%s" % (pmu.API, ev["id"], pmu.PARAMS))
         if raw is None:
             continue
@@ -197,9 +204,10 @@ def fetch_winamax():
             continue
         league = (tours.get(str(mt.get("tournamentId"))) or {}).get("tournamentName", "")
         start = datetime.fromtimestamp(mt["matchStart"], timezone.utc)
-        if EXCLUDE.search(league) or mt.get("tournamentId") == 177 or not now() < start < now() + timedelta(hours=HORIZON_H):
+        nba = mt.get("tournamentId") == 177
+        if (EXCLUDE.search(league) and not nba) or not now() < start < now() + timedelta(hours=HORIZON_H):
             continue
-        g = EGame("winamax", start, mt["competitor1Name"], mt["competitor2Name"], league, "%s/match/%s" % (winamax.BASE, mt["matchId"]))
+        g = EGame("winamax", start, mt["competitor1Name"], mt["competitor2Name"], league, "%s/match/%s" % (winamax.BASE, mt["matchId"]), nba)
         raw = page("%s/match/%s" % (winamax.BASE, mt["matchId"]))
         if raw is None:
             continue
@@ -253,10 +261,12 @@ def fetch_unibet():
         if lg.startswith("usa/") or EXCLUDE.search(lg.replace("-", " ")) or lg.endswith("-f") or "femmes" in lg:
             continue
         links |= set(re.findall(r'href="(/paris-basketball/%s/(\d+)/[a-z0-9-]+-vs-[a-z0-9-]+)"' % re.escape(lg), get(unibet.BASE + "/paris-basketball/" + lg)))
+    links |= set(re.findall(r'href="(/paris-basketball/usa/nba/(\d+)/[a-z0-9-]+-vs-[a-z0-9-]+)"', get(unibet.BASE + "/paris-basketball/usa/nba")))
     games = []
     for path, eid in sorted(links):
         lg = path.split("/")[2] + "/" + path.split("/")[3]
-        if lg.startswith("usa/") or lg.endswith("-f") or "femmes" in lg or EXCLUDE.search(lg.replace("-", " ").replace("/", " ")):
+        nba = lg == "usa/nba"
+        if not nba and (lg.startswith("usa/") or lg.endswith("-f") or "femmes" in lg or EXCLUDE.search(lg.replace("-", " ").replace("/", " "))):
             continue
         raw = page(unibet.BASE + path)
         m = raw and re.search(r'<script[^>]*id="serverApp-state"[^>]*>(.*?)</script>', raw, re.S)
@@ -268,7 +278,8 @@ def fetch_unibet():
         if not now() < start < now() + timedelta(hours=HORIZON_H):
             continue
         a, _, b = (ev.get("description") or "").partition(" vs ")
-        g = EGame("unibet", start, a, b, lg, unibet.BASE + path)
+        g = EGame("unibet", start, a, b, lg, unibet.BASE + path, nba)
+        regular = {}  # handicap « temps réglementaire » : seulement si celui du match (prolongations incluses) manque (NBA)
         for group in ev.get("groupedMarkets") or []:
             gd = group.get("description") or ""
             kind, stat = unibet.classify(group)
@@ -292,6 +303,14 @@ def fetch_unibet():
                         side = "over" if d.startswith("Plus") else "under" if d.startswith("Moins") else None
                         if s and side and o.get("spread") is not None:
                             g.add("tt|%s|%s|%s" % (s, key_line(o["spread"]), side), o.get("price"))
+                    elif gd in ("Face à Face Handicap Points - Match", "Face à Face Handicap Points - TR"):
+                        s = g.side(d.split(" [")[0])
+                        if s and o.get("spread") is not None:
+                            key = "hcp|%s|%s" % (s, key_line(o["spread"]))
+                            if gd.endswith("Match"):
+                                g.add(key, o.get("price"))
+                            else:
+                                regular[key] = o.get("price")
                     elif kind == "milestone":
                         mm = re.match(r"^(.*\S)\s+(\d+)\+$", d)
                         if mm:
@@ -302,6 +321,9 @@ def fetch_unibet():
                             g.add("pl|%s|%s|%s|%s" % (norm_name(mm.group(1)), stat, key_line(mm.group(3)), "over" if mm.group(2) == "+" else "under"), o.get("price"))
                     elif kind == "ou" and d.startswith(("Plus", "Moins")):
                         g.add("pl|%s|%s|%s|%s" % (norm_name(md.rsplit(" - ", 1)[-1]), stat, key_line(o.get("spread")), "over" if d.startswith("Plus") else "under"), o.get("price"))
+        if not any(k.startswith("hcp|") for k in g.sel):
+            for key, o in regular.items():
+                g.add(key, o)
         games.append(g)
     return games
 
@@ -317,12 +339,13 @@ def bc_state(html):
 
 def fetch_betclic():
     base = "https://www.betclic.fr"
-    page = get(base + "/basketball-sbasketball")
-    links = {mid: path for path, mid in re.findall(r'href="(/basketball-sbasketball/[a-z0-9-]+-c\d+/[a-z0-9-]+-m(\d+))"', page)}
+    top = get(base + "/basketball-sbasketball")
+    links = {mid: path for path, mid in re.findall(r'href="(/basketball-sbasketball/[a-z0-9-]+-c\d+/[a-z0-9-]+-m(\d+))"', top)}
     comps = {re.match(r"(/basketball-sbasketball/[a-z0-9-]+-c\d+)/", p).group(1) for p in links.values()}
-    matches = {m["matchId"]: m for p in bc_state(page) for m in p.get("matches") or []}
+    comps.add("/basketball-sbasketball/nba-c13")  # absente de la page d'accueil basket
+    matches = {m["matchId"]: m for p in bc_state(top) for m in p.get("matches") or []}
     for c in comps:
-        if "nba" in c or "wnba" in c:
+        if "wnba" in c:
             continue
         cp = get(base + c)
         links.update({mid: path for path, mid in re.findall(r'href="(/basketball-sbasketball/[a-z0-9-]+-c\d+/[a-z0-9-]+-m(\d+))"', cp)})
@@ -331,10 +354,11 @@ def fetch_betclic():
     for mid, mt in matches.items():
         league = (mt.get("competition") or {}).get("name", "")
         start = datetime.fromisoformat(mt["matchDateUtc"][:19] + "+00:00")
-        if mid not in links or EXCLUDE.search(league) or not now() < start < now() + timedelta(hours=HORIZON_H):
+        nba = mid in links and "/nba-c13/" in links[mid]
+        if mid not in links or (EXCLUDE.search(league) and not nba) or not now() < start < now() + timedelta(hours=HORIZON_H):
             continue
         home, _, away = mt["name"].partition(" - ")
-        g = EGame("betclic", start, home, away, league, base + links[mid])
+        g = EGame("betclic", start, home, away, league, base + links[mid], nba)
         raw = page(base + links[mid])
         if raw is None:
             continue
@@ -376,6 +400,10 @@ def fetch_betclic():
 FETCHERS = {"pmu": fetch_pmu, "winamax": fetch_winamax, "unibet": fetch_unibet, "betclic": fetch_betclic}
 
 
+def when(d):
+    return "%s %s" % (("lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim.")[d.astimezone().weekday()], d.astimezone().strftime("%d/%m %H:%M"))
+
+
 def describe(key, home, away):
     k = key.split("|")
     team = lambda s: home if s == "home" else away
@@ -395,6 +423,62 @@ def describe(key, home, away):
     return key
 
 
+def hcp_main(sel):
+    """Handicap principal d'un bookmaker (vu de « home ») → (ligne juste, ligne la plus équilibrée, cote home,
+    cote away) ou None. Ligne juste : interpolée entre deux lignes voisines quand aucune n'est pile à l'équilibre."""
+    rows = []
+    for key, o in sel.items():
+        k = key.split("|")
+        if k[0] == "hcp" and k[1] == "home":
+            u = sel.get("hcp|away|" + key_line(0.0 - num(k[2])))
+            if u:
+                rows.append((num(k[2]), o, u))
+    best = min(rows, key=lambda r: abs(r[1] - r[2])) if rows else None
+    if not best or abs(best[1] - best[2]) > alerts.GAP_BALANCE:
+        return None
+    fair = best[0]
+    rows.sort()
+    for (l1, o1, u1), (l2, o2, u2) in zip(rows, rows[1:]):  # la cote de « home » baisse quand il reçoit plus de points
+        if o1 - u1 >= 0 >= o2 - u2 and o1 - u1 > o2 - u2 and l2 - l1 <= 2:
+            fair = l1 + (l2 - l1) * (o1 - u1) / ((o1 - u1) - (o2 - u2))
+            break
+    return (fair,) + best
+
+
+def favourite(books):
+    """Favori net au vainqueur (cote moyenne des bookmakers ≤ HCP_FAV) → (« home »/« away », cote) ou None."""
+    avg = {}
+    for side in ("home", "away"):
+        v = [sel["win|" + side] for sel in books.values() if "win|" + side in sel]
+        if v:
+            avg[side] = sum(v) / len(v)
+    side = min(avg, key=avg.get) if avg else None
+    return (side, avg[side]) if side and avg[side] <= HCP_FAV else None
+
+
+def handicaps(groups):
+    """Veille des handicaps : écart ≥ HCP_GAP entre bookmakers, ou handicap inversé (favori qui reçoit des points)."""
+    out = []
+    for ref, members in groups:
+        books = {b: {swap(k) if inv else k: o for k, o in g.sel.items()} for b, (g, inv) in members.items()}
+        bal = {b: v for b, v in ((b, hcp_main(sel)) for b, sel in books.items()) if v}
+        if not bal:
+            continue
+        fav = favourite(books)
+        side = fav[0] if fav else "home"
+        sign = 1 if side == "home" else -1
+        fair = {b: sign * v[0] for b, v in bal.items()}  # handicaps vus du favori (sinon de l'équipe à domicile)
+        shown = {b: sign * v[1] for b, v in bal.items()}
+        flipped = [b for b in bal if fav and fair[b] >= HCP_FLIP]
+        lo_b, hi_b = min(bal, key=lambda b: bal[b][0]), max(bal, key=lambda b: bal[b][0])
+        gap = bal[hi_b][0] - bal[lo_b][0]
+        opposite = min(-bal[lo_b][0], bal[hi_b][0]) >= HCP_FLIP + 1  # favori différent d'un bookmaker à l'autre
+        if flipped or gap >= HCP_GAP:
+            out.append(dict(ref=ref, members=members, bal=bal, fav=fav, side=side, shown=shown, flipped=flipped,
+                            lo_b=lo_b, hi_b=hi_b, gap=gap, inverted=bool(flipped or opposite)))
+    return out
+
+
 def main():
     dry = "--dry" in sys.argv
     per_book = {}
@@ -407,6 +491,10 @@ def main():
             except Exception as e:  # noqa: BLE001
                 log("%s : erreur %s" % (b, type(e).__name__))
                 traceback.print_exc()
+    for games in per_book.values():  # NBA : vainqueur et handicap seulement (les props sont suivies par collect.py)
+        for g in games:
+            if g.nba:
+                g.sel = {k: o for k, o in g.sel.items() if k.startswith(("win|", "hcp|"))}
 
     # regroupement des matchs entre bookmakers (orientation du premier qui l'a vu)
     groups = []  # [(référence, {book: (EGame, inversé)})]
@@ -433,7 +521,7 @@ def main():
             for key, o in g.sel.items():
                 odds.setdefault(swap(key) if inv else key, {})[b] = o
         for key, by in odds.items():
-            if len(by) < 2:
+            if len(by) < 2 or (ref.nba and not key.startswith("hcp|")):
                 continue
             (bb, best), = sorted(by.items(), key=lambda kv: -kv[1])[:1]
             low_b, low = min(by.items(), key=lambda kv: kv[1])
@@ -456,6 +544,13 @@ def main():
         print("sélections comparées :", len(ratios), collections.Counter(r[1] for r in ratios))
         for r in sorted(ratios, reverse=True)[:12]:
             print("  %.2f  %s – %s  %s  %s" % (r[0], r[2], r[3], r[4], r[5]))
+        print("handicaps principaux (ligne de l'équipe à domicile) :")
+        for ref, members in groups:
+            books = {b: {swap(k) if inv else k: o for k, o in g.sel.items()} for b, (g, inv) in members.items()}
+            bal = {b: v for b, v in ((b, hcp_main(sel)) for b, sel in books.items()) if v}
+            if bal:
+                print("  %s%s – %s  %s  favori %s" % ("[NBA] " if ref.nba else "", ref.home, ref.away,
+                      " · ".join("%s %+g [%+.1f] (%s/%s)" % (b, v[1], v[0], v[2], v[3]) for b, v in bal.items()), favourite(books)))
         unmatched = [(b, g.home, g.away, g.league) for ref, m in groups if len(m) == 1 for b, (g, _) in m.items()]
         print("matchs vus par un seul bookmaker :", len(unmatched))
         for u in unmatched[:25]:
@@ -495,8 +590,37 @@ def main():
         msg = "Plus de %s chez %s : %s\nMoins de %s chez %s : %s\nToutes les lignes : %s\n%s – %s · %s" % (
             ln(bal[lo_b][0]), BOOK_NAMES[lo_b], alerts.odds_fr(bal[lo_b][1]), ln(bal[hi_b][0]), BOOK_NAMES[hi_b],
             alerts.odds_fr(bal[hi_b][2]), " · ".join("%s %s" % (BOOK_NAMES[b], ln(v[0])) for b, v in sorted(bal.items(), key=lambda kv: kv[1][0])),
-            ref.home, ref.away, ref.start.astimezone().strftime("%a %d/%m %H:%M"))
+            ref.home, ref.away, when(ref.start))
         todo.append((title, msg, members[lo_b][0].url, k, gap))
+    for h in handicaps(groups):  # rappel si l'écart (ou la ligne inversée) bouge d'1 point, ou après 12 h
+        ref, bal, shown = h["ref"], h["bal"], h["shown"]
+        team = lambda s: ref.home if s == "home" else ref.away
+        k = "%s|%s|%s|hcp" % (ref.home, ref.away, ref.start.date())
+        v = h["gap"] if len(bal) > 1 else shown[h["flipped"][0]]
+        prev = sent.get(k)
+        if prev and abs(v - prev["v"]) < 1 and datetime.fromisoformat(prev["t"]) > now() - timedelta(hours=REPEAT_H * 2):
+            continue
+        ln = lambda x: ("+" if x > 0 else "") + ("%g" % x).replace(".", ",")
+        fav_team = team(h["side"])
+        rows = []
+        if h["inverted"]:
+            title = "🔄 Handicap inversé · %s – %s" % (ref.home, ref.away)
+            for b in h["flipped"]:
+                rows.append("%s : %s %s (cote %s) alors qu'il est favori" % (BOOK_NAMES[b], fav_team, ln(shown[b]),
+                            alerts.odds_fr(bal[b][2] if h["side"] == "home" else bal[b][3])))
+        else:
+            title = "📏 Écart de handicap %s · %s – %s" % (
+                ("%g" % abs(bal[h["hi_b"]][1] - bal[h["lo_b"]][1])).replace(".", ","), ref.home, ref.away)
+        if len(bal) > 1 and h["gap"] >= HCP_GAP:
+            hi_b, lo_b = h["hi_b"], h["lo_b"]
+            rows.append("%s %s chez %s : %s" % (ref.home, ln(bal[hi_b][1]), BOOK_NAMES[hi_b], alerts.odds_fr(bal[hi_b][2])))
+            rows.append("%s %s chez %s : %s" % (ref.away, ln(0.0 - bal[lo_b][1]), BOOK_NAMES[lo_b], alerts.odds_fr(bal[lo_b][3])))
+        rows.append("Handicap de %s : %s" % (fav_team, " · ".join("%s %s" % (BOOK_NAMES[b], ln(shown[b])) for b in sorted(bal, key=shown.get))))
+        if h["fav"]:
+            rows.append("Vainqueur : %s favori (cote moyenne %s)" % (fav_team, alerts.odds_fr(h["fav"][1])))
+        rows.append("%s · %s" % ("NBA" if ref.nba else ref.league, when(ref.start)))
+        url = h["members"][(h["flipped"] or [h["hi_b"]])[0]][0].url
+        todo.append((title, "\n".join(rows), url, k, v))
     for ref, members, key, bb, best, by in found:
         k = "%s|%s|%s|%s" % (ref.home, ref.away, ref.start.date(), key)
         prev = sent.get(k)
@@ -507,7 +631,7 @@ def main():
         rest = " · ".join("%s %s" % (BOOK_NAMES[b], alerts.odds_fr(o)) for b, o in sorted(by.items(), key=lambda kv: -kv[1]) if b != bb)
         title = "🏀 %s · %s – %s" % (BOOK_NAMES[bb], ref.home, ref.away)
         msg = "%s\n%s : %s\nAutres bookmakers : %s\n%s · %s" % (
-            what, BOOK_NAMES[bb], alerts.odds_fr(best), rest, league, ref.start.astimezone().strftime("%a %d/%m %H:%M"))
+            what, BOOK_NAMES[bb], alerts.odds_fr(best), rest, league, when(ref.start))
         todo.append((title, msg, members[bb][0].url, k, best))
     if dry:
         for t in todo:
