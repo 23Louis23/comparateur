@@ -21,6 +21,7 @@ import re
 import sys
 import traceback
 import unicodedata
+import urllib.error
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -50,6 +51,17 @@ BOOK_NAMES = {"pmu": "PMU", "winamax": "Winamax", "unibet": "Unibet", "betclic":
 
 def log(*a):
     print(datetime.now().strftime("%H:%M:%S"), "[europe]", *a, flush=True)
+
+
+def page(url):
+    """Page d'un match ; une erreur passagère du site (5xx) fait sauter ce match, pas tout le bookmaker."""
+    try:
+        return get(url)
+    except urllib.error.HTTPError as e:
+        if e.code >= 500:
+            log("page ignorée (%s) : %s" % (e.code, url.split("/")[2]))
+            return None
+        raise
 
 
 def num(s):
@@ -134,7 +146,10 @@ def fetch_pmu():
         if EXCLUDE.search(league) or ev.get("state") != "NOT_STARTED" or not now() < start < now() + timedelta(hours=HORIZON_H):
             continue
         g = EGame("pmu", start, ev.get("homeName"), ev.get("awayName"), league, "https://www.pmu.fr/sport/event/%s" % ev["id"])
-        offer = json.loads(get("%s/betoffer/event/%s.json?%s" % (pmu.API, ev["id"], pmu.PARAMS)))
+        raw = page("%s/betoffer/event/%s.json?%s" % (pmu.API, ev["id"], pmu.PARAMS))
+        if raw is None:
+            continue
+        offer = json.loads(raw)
         for b in offer.get("betOffers", []):
             label = b["criterion"]["label"]
             if "Prolongations incluses" not in label:
@@ -185,7 +200,10 @@ def fetch_winamax():
         if EXCLUDE.search(league) or mt.get("tournamentId") == 177 or not now() < start < now() + timedelta(hours=HORIZON_H):
             continue
         g = EGame("winamax", start, mt["competitor1Name"], mt["competitor2Name"], league, "%s/match/%s" % (winamax.BASE, mt["matchId"]))
-        ms = winamax.state(get("%s/match/%s" % (winamax.BASE, mt["matchId"])))
+        raw = page("%s/match/%s" % (winamax.BASE, mt["matchId"]))
+        if raw is None:
+            continue
+        ms = winamax.state(raw)
         outcomes, odds = ms.get("outcomes", {}), ms.get("odds", {})
         for b in ms.get("bets", {}).values():
             if b.get("matchId") != mt["matchId"] or not b.get("available"):
@@ -240,7 +258,8 @@ def fetch_unibet():
         lg = path.split("/")[2] + "/" + path.split("/")[3]
         if lg.startswith("usa/") or lg.endswith("-f") or "femmes" in lg or EXCLUDE.search(lg.replace("-", " ").replace("/", " ")):
             continue
-        m = re.search(r'<script[^>]*id="serverApp-state"[^>]*>(.*?)</script>', get(unibet.BASE + path), re.S)
+        raw = page(unibet.BASE + path)
+        m = raw and re.search(r'<script[^>]*id="serverApp-state"[^>]*>(.*?)</script>', raw, re.S)
         evs = (json.loads(m.group(1)).get("EventsDetail", {}).get("events") or []) if m else []
         if not evs:
             continue
@@ -316,7 +335,10 @@ def fetch_betclic():
             continue
         home, _, away = mt["name"].partition(" - ")
         g = EGame("betclic", start, home, away, league, base + links[mid])
-        for p in bc_state(get(base + links[mid])):
+        raw = page(base + links[mid])
+        if raw is None:
+            continue
+        for p in bc_state(raw):
             for sc in (p.get("match") or {}).get("subCategories") or []:
                 for mk in sc.get("markets") or []:
                     name = mk.get("name") or ""
