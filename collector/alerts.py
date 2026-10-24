@@ -161,7 +161,7 @@ def fmt1(x):
 
 # Écart de ligne entre bookmakers sur un même joueur
 GAP_BALANCE = 0.35  # une ligne ne compte que si Plus et Moins sont proches chez ce bookmaker (ex. 1,75 / 1,95)
-GAP_MIN = {"pts": 3, "reb": 2, "ast": 2, "3pt": 1, "pra": 4, "pr": 3, "pa": 3, "ra": 2, "stl": 1, "blk": 1, "sb": 1, "tov": 1}
+GAP_MIN = {"pts": 3, "pra": 3, "pa": 3, "pr": 3, "reb": 2, "ast": 2, "ra": 2, "3pt": 2, "stl": 2, "blk": 1, "sb": 1, "tov": 1}
 
 
 def balanced_by_book(lines, ok):
