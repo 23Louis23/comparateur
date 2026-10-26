@@ -38,6 +38,16 @@ const qsView = new URLSearchParams(location.search).get('vue');
 if (qsView === 'tableau' || qsView === 'joueur') state.view = qsView;
 try { JSON.parse(localStorage.getItem('off') || '[]').forEach(b => state.off.add(b)); } catch {}
 
+// Dernière position (match, joueur, défilement) : retrouvée si le navigateur recharge la page au retour
+// sur l'onglet (fréquent sur iPhone), seulement si elle date de moins de 30 min.
+const SPOT_KEY = 'spot';
+let pendingSpot = null;
+try {
+  const spot = JSON.parse(localStorage.getItem(SPOT_KEY) || 'null');
+  if (spot && Date.now() - spot.at < 30 * 60e3) { state.gameId = spot.gameId; state.playerId = spot.playerId; pendingSpot = spot.scroll; }
+} catch {}
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const fmt = n => n.toFixed(2);
@@ -176,7 +186,31 @@ function renderLineup(g) {
 }
 
 // ------------------------------------------------------------ rendu
+// Zones qui défilent : bandeau des matchs, tableau, liste des joueurs, paliers de la fiche joueur
+const SCROLLERS = '#games, .tbl-wrap, .picker, .cuts';
+const viewKey = () => `${state.gameId}|${state.view}|${state.view === 'joueur' ? state.playerId : ''}`;
+function saveScroll() {
+  return { key: viewKey(), y: window.scrollY, els: [...document.querySelectorAll(SCROLLERS)].map(el => [el.scrollLeft, el.scrollTop]) };
+}
+// Même match, même vue : on remet chaque zone où elle était ; sinon seul le bandeau des matchs garde sa place
+function restoreScroll(saved) {
+  if (!saved) return;
+  const els = [...document.querySelectorAll(SCROLLERS)];
+  (saved.key === viewKey() ? els : els.slice(0, 1)).forEach((el, i) => { if (saved.els[i]) [el.scrollLeft, el.scrollTop] = saved.els[i]; });
+  if (saved.key === viewKey()) window.scrollTo(0, saved.y);
+}
+function rememberSpot() {
+  try { localStorage.setItem(SPOT_KEY, JSON.stringify({ at: Date.now(), gameId: state.gameId, playerId: state.playerId, scroll: saveScroll() })); } catch {}
+}
+
 function render() {
+  const saved = pendingSpot && state.data ? pendingSpot : saveScroll();
+  if (state.data) pendingSpot = null;
+  draw();
+  restoreScroll(saved);
+}
+
+function draw() {
   renderStatus();
   $('demo').innerHTML = DEMO ? `<div class="demo-flag">⚠️ Mode démo : joueurs réels, cotes fictives. <a href="./">Voir les vraies cotes</a></div>` : '';
   const games = state.data?.games || [];
@@ -299,29 +333,43 @@ function mainLine(p, s) {
 }
 const l5Class = (avg, line) => line == null || avg == null ? '' : avg > Number(line) ? 'above' : avg < Number(line) ? 'below' : '';
 // Pastille « moy. 5 derniers » (ou « 2/5 » pour double/triple-double)
-function l5Badge(p, s, line, compact) {
+function l5Badge(p, s, line) {
   const avg = l5Avg(p, s);
   if (avg == null) return '';
   const n = p.l5.n;
-  if (s === 'dd' || s === 'td') return `<span class="l5 ${compact ? 'sm' : ''}" title="${n} derniers matchs">${Math.round(avg * n)}/${n}${compact ? '' : ' derniers matchs'}</span>`;
-  return `<span class="l5 ${l5Class(avg, line)} ${compact ? 'sm' : ''}" title="Moyenne des ${n} derniers matchs">${compact ? 'moy ' : `Moy. ${n} derniers : `}<b class="num">${dec1(avg)}</b></span>`;
+  if (s === 'dd' || s === 'td') return `<span class="l5" title="${n} derniers matchs">${Math.round(avg * n)}/${n} derniers matchs</span>`;
+  return `<span class="l5 ${l5Class(avg, line)}" title="Moyenne des ${n} derniers matchs">Moy. ${n} derniers : <b class="num">${dec1(avg)}</b></span>`;
+}
+// En-tête d'une case du tableau : moyenne des 5 derniers matchs puis chaque match (vert au-dessus de la ligne, rouge en dessous)
+function l5Head(p, s, line, extra) {
+  const v = l5Vals(p, s), avg = l5Avg(p, s);
+  if (avg == null) return extra ? `<span class="tc-head">${extra}</span>` : '';
+  const n = p.l5.n;
+  const body = s === 'dd' || s === 'td'
+    ? `<b class="num">${Math.round(avg * n)}/${n}</b> derniers matchs`
+    : `moy. <b class="num">${dec1(avg)}</b><span class="tc-l5v num">${v.map((x, i) => `<i class="${l5Class(x, line)}${i >= n - (p.l5.prev || 0) ? ' prev' : ''}">${dec1(x)}</i>`).join('')}</span>`;
+  const prev = p.l5.prev ? `, dont ${p.l5.prev} de la saison passée (en pâle)` : '';
+  return `<span class="tc-head"><span class="tc-l5 ${l5Class(avg, line)}" title="${n} derniers matchs, le plus récent à gauche${prev}">${body}</span>${extra || ''}</span>`;
 }
 
+// Case du tableau : toutes les lignes à l'équilibre des bookmakers (une par bookmaker, souvent la même),
+// chacune avec les cotes Plus et Moins de chaque bookmaker qui la propose.
 function tableCell(p, s) {
   const lines = p.lines?.[s] || {};
   const { main } = balancedLines(lines);
-  const count = l => new Set([...Object.keys(lines[l]?.over || {}), ...Object.keys(lines[l]?.under || {})].filter(on)).size;
-  const line = [...main].sort((x, y) => count(y) - count(x))[0];
+  const line = mainLine(p, s);
   if (line) {
-    return `<span class="tc-col"><span class="tc-line num">${line.replace('.', ',')}</span>${l5Badge(p, s, line, true)}</span><span class="tc-rows">
-      <span class="tc-row"><i class="tc-sign up">▲</i>${tableChips(lines[line].over)}</span>
-      <span class="tc-row"><i class="tc-sign down">▼</i>${tableChips(lines[line].under)}</span></span>`;
+    const blocks = main.map(l => `<span class="tc-block"><span class="tc-line num">${l.replace('.', ',')}</span><span class="tc-rows">
+      <span class="tc-row"><i class="tc-sign up">▲</i>${tableChips(lines[l].over)}</span>
+      <span class="tc-row"><i class="tc-sign down">▼</i>${tableChips(lines[l].under)}</span></span></span>`);
+    const multi = main.length > 1 ? `<span class="tc-multi" title="Les bookmakers ne proposent pas tous la même ligne">${main.length} lignes</span>` : '';
+    return l5Head(p, s, line, multi) + `<span class="tc-blocks ${main.length > 1 ? 'multi' : ''}">${blocks.join('')}</span>`;
   }
   const best = obj => Math.max(0, ...Object.entries(obj || {}).filter(([b]) => on(b)).map(([, o]) => o));
   const cuts = Object.entries(p.stats?.[s] || {}).filter(([, cell]) => best(cell.o) > 0);
   if (!cuts.length) return '';
   const [c, cell] = cuts.reduce((x, y) => Math.abs(best(y[1].o) - 2) < Math.abs(best(x[1].o) - 2) ? y : x);
-  return `<span class="tc-col"><span class="tc-line num">${YES_STATS.has(s) ? 'Oui' : c + '+'}</span>${l5Badge(p, s, YES_STATS.has(s) ? null : Number(c) - 0.5, true)}</span><span class="tc-rows"><span class="tc-row">${tableChips(cell.o)}</span></span>`;
+  return l5Head(p, s, YES_STATS.has(s) ? null : Number(c) - 0.5) + `<span class="tc-blocks"><span class="tc-block"><span class="tc-line num">${YES_STATS.has(s) ? 'Oui' : c + '+'}</span><span class="tc-rows"><span class="tc-row">${tableChips(cell.o)}</span></span></span></span>`;
 }
 
 const shortName = n => { const w = String(n).split(/\s+/); return w.length > 1 ? `${w[0][0]}. ${w.slice(1).join(' ')}` : n; };
@@ -343,7 +391,7 @@ function renderTable(g, players) {
       </tr>`;
     }).join('')}</tbody>
   </table></div>
-  <div class="small tbl-legend">▲ cotes Plus · ▼ cotes Moins de chaque bookmaker sur la ligne principale (meilleure en vert). Sans plus/moins : le palier le plus proche de 2,00. Touchez une case pour voir tous les paliers.</div>`;
+  <div class="small tbl-legend">▲ cotes Plus · ▼ cotes Moins de chaque bookmaker sur sa ligne à l'équilibre (meilleure en vert) ; quand les bookmakers n'ont pas la même ligne, chaque ligne est affichée. En haut de chaque case : moyenne des 5 derniers matchs puis le détail, du plus récent au plus ancien (vert au-dessus de la ligne, rouge en dessous). Sans plus/moins : le palier le plus proche de 2,00. Touchez une case pour voir tous les paliers.</div>`;
 }
 
 function renderPlayer(g, p) {
@@ -448,6 +496,7 @@ document.addEventListener('input', e => {
   render();
   const s = $('search'); s.focus(); s.setSelectionRange(pos, pos);
 });
-document.addEventListener('visibilitychange', () => { if (!document.hidden && !DEMO) load(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) rememberSpot(); else if (!DEMO) load(); });
+window.addEventListener('pagehide', rememberSpot);
 setInterval(() => { if (!document.hidden && !DEMO) load(); }, POLL_MS);
 load();
