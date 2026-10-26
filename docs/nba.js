@@ -340,16 +340,18 @@ function l5Badge(p, s, line) {
   if (s === 'dd' || s === 'td') return `<span class="l5" title="${n} derniers matchs">${Math.round(avg * n)}/${n} derniers matchs</span>`;
   return `<span class="l5 ${l5Class(avg, line)}" title="Moyenne des ${n} derniers matchs">Moy. ${n} derniers : <b class="num">${dec1(avg)}</b></span>`;
 }
-// En-tête d'une case du tableau : moyenne des 5 derniers matchs puis chaque match (vert au-dessus de la ligne, rouge en dessous)
+// En-tête d'une case du tableau : moyenne des 5 derniers matchs à gauche, chaque match à droite
+// (vert au-dessus de la ligne, rouge en dessous, saison passée en pâle)
 function l5Head(p, s, line, extra) {
   const v = l5Vals(p, s), avg = l5Avg(p, s);
-  if (avg == null) return extra ? `<span class="tc-head">${extra}</span>` : '';
-  const n = p.l5.n;
-  const body = s === 'dd' || s === 'td'
-    ? `<b class="num">${Math.round(avg * n)}/${n}</b> derniers matchs`
-    : `moy. <b class="num">${dec1(avg)}</b><span class="tc-l5v num">${v.map((x, i) => `<i class="${l5Class(x, line)}${i >= n - (p.l5.prev || 0) ? ' prev' : ''}">${dec1(x)}</i>`).join('')}</span>`;
+  if (avg == null) return extra ? `<span class="tc-head"><span class="tc-head-l">${extra}</span></span>` : '';
+  const n = p.l5.n, yes = s === 'dd' || s === 'td';
   const prev = p.l5.prev ? `, dont ${p.l5.prev} de la saison passée (en pâle)` : '';
-  return `<span class="tc-head"><span class="tc-l5 ${l5Class(avg, line)}" title="${n} derniers matchs, le plus récent à gauche${prev}">${body}</span>${extra || ''}</span>`;
+  const left = `<span class="tc-l5 ${yes ? '' : l5Class(avg, line)}" title="Moyenne des ${n} derniers matchs">${yes
+    ? `<b class="num">${Math.round(avg * n)}/${n}</b> derniers matchs` : `moy. <b class="num">${dec1(avg)}</b>`}</span>`;
+  const right = yes ? '' : `<span class="tc-l5v num" title="${n} derniers matchs, le plus récent à gauche${prev}">${
+    v.map((x, i) => `<i class="${l5Class(x, line)}${i >= n - (p.l5.prev || 0) ? ' prev' : ''}">${dec1(x)}</i>`).join('')}</span>`;
+  return `<span class="tc-head"><span class="tc-head-l">${left}${extra || ''}</span>${right}</span>`;
 }
 
 // Case du tableau : toutes les lignes à l'équilibre des bookmakers (une par bookmaker, souvent la même),
