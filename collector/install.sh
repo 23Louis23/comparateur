@@ -15,7 +15,10 @@ if [[ "${1:-}" == "--remove" ]]; then
   launchctl bootout "gui/$(id -u)/fr.coteradar.betclic" 2>/dev/null || true
   launchctl bootout "gui/$(id -u)/fr.coteradar.stats" 2>/dev/null || true
   launchctl bootout "gui/$(id -u)/fr.coteradar.europe" 2>/dev/null || true
-  rm -f "$PLIST" "$HOME/Library/LaunchAgents/fr.coteradar.betclic.plist" "$HOME/Library/LaunchAgents/fr.coteradar.stats.plist" "$HOME/Library/LaunchAgents/fr.coteradar.europe.plist"; echo "Collecte automatique désinstallée."; exit 0
+  launchctl bootout "gui/$(id -u)/fr.coteradar.rugby" 2>/dev/null || true
+  rm -f "$PLIST" "$HOME/Library/LaunchAgents/fr.coteradar.betclic.plist" "$HOME/Library/LaunchAgents/fr.coteradar.stats.plist" \
+        "$HOME/Library/LaunchAgents/fr.coteradar.europe.plist" "$HOME/Library/LaunchAgents/fr.coteradar.rugby.plist"
+  echo "Collecte automatique désinstallée."; exit 0
 fi
 
 PY=/usr/bin/python3
@@ -83,4 +86,12 @@ launchctl bootout "gui/$(id -u)/$E_LABEL" 2>/dev/null || true
 sed -e "s#$B_LABEL#$E_LABEL#" -e "s#<string>$DEST/collect.py</string><string>--only</string><string>betclic</string>#<string>$DEST/europe.py</string>#" \
     -e "s#<integer>900</integer>#<integer>600</integer>#" "$B_PLIST" > "$E_PLIST"
 launchctl bootstrap "gui/$(id -u)" "$E_PLIST"
+
+# Rugby (alertes uniquement) : tâche à part toutes les 12 min (décalée du basket européen : Betclic n'aime pas
+# recevoir les deux en même temps)
+R_LABEL=fr.coteradar.rugby
+R_PLIST="$HOME/Library/LaunchAgents/$R_LABEL.plist"
+launchctl bootout "gui/$(id -u)/$R_LABEL" 2>/dev/null || true
+sed -e "s#$E_LABEL#$R_LABEL#" -e "s#$DEST/europe.py#$DEST/rugby.py#" -e "s#<integer>600</integer>#<integer>720</integer>#" "$E_PLIST" > "$R_PLIST"
+launchctl bootstrap "gui/$(id -u)" "$R_PLIST"
 echo "Collecte automatique installée (toutes les 2 min, Betclic toutes les 15 min en parallèle). Journal : ~/Library/Logs/CoteRadar.log"
