@@ -482,12 +482,12 @@ function renderGaps() {
   const at = state.gapSport === 'nba' ? state.data?.generatedAt : state.data?.gaps?.[state.gapSport + 'At'];
   return `<section class="gaps">
     <div class="gaps-h"><h2>Écarts</h2>
-      <p class="small">Écarts de ligne et écarts de cote sur les joueurs et les handicaps, et en rugby sur tous les marchés, tant qu'ils sont d'actualité.</p>
+      <p class="small">Écarts de ligne et écarts de cote entre bookmakers, sur les joueurs et sur les marchés du match (vainqueur, total, handicap…), tant qu'ils sont d'actualité.</p>
       <details class="small gaps-how"><summary>Comment c'est calculé ?</summary>
       <b>Écart de ligne</b> : deux bookmakers n'ont pas la même ligne à l'équilibre (au moins 3 pour les points et les combinés P+R+A, P+R, P+A ;
       2 pour les rebonds, passes, R+A, paniers à 3 pts et interceptions ; 3 au handicap, ou handicap inversé).
-      <b>Écart de cote</b> : un bookmaker paie nettement plus que les autres sur un joueur (NBA : +30 % sur la 2e meilleure cote, au moins 3 bookmakers ;
-      basket européen : +50 % ; rugby : +50 % sur tous les marchés, marqueurs d'essai compris, cote jusqu'à 10 et 6 pour les marqueurs). Un écart disparaît dès qu'il se referme ou que le match commence.</details></div>
+      <b>Écart de cote</b> : un bookmaker paie nettement plus que les autres sur la même sélection (NBA : joueurs à +30 % sur la 2e meilleure cote, au moins 3 bookmakers, et handicaps à +50 % ;
+      basket européen : +50 % sur les joueurs, le vainqueur, le total, le handicap et les points d'une équipe, cote jusqu'à 6 ; rugby : +50 % sur tous les marchés, marqueurs d'essai compris, cote jusqu'à 10 et 6 pour les marqueurs). Un écart disparaît dès qu'il se referme ou que le match commence.</details></div>
     <div class="tabs">${GAP_SPORTS.map(([k, l]) => `<button class="tab ${state.gapSport === k ? 'on' : ''}" data-gapsport="${k}">${l}<span class="n">${currentGaps(k).length}</span></button>`).join('')}</div>
     ${at ? `<div class="small gaps-note">Cotes lues ${ago(at)} · ${GAP_EVERY[state.gapSport]}</div>` : ''}
     ${list.length ? list.map(x => x.kind === 'odds' ? oddsCard(x) : gapCard(x)).join('')
