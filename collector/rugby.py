@@ -601,7 +601,7 @@ def main():
     todo = []
     for ref, members, key, bb, best, by in found:
         # une clé par façon d'écrire le match chez chaque bookmaker : pas de rappel quand le match de référence change de nom
-        ks = sorted({"%s|%s|%s|%s" % ((g.away, g.home) if inv else (g.home, g.away)) + (ref.start.date(), key) for g, inv in members.values()})
+        ks = sorted({"%s|%s|%s|%s" % (((g.away, g.home) if inv else (g.home, g.away)) + (ref.start.date(), key)) for g, inv in members.values()})
         prev = max((sent[x] for x in ks if x in sent), key=lambda v: v["t"], default=None)
         if prev and best <= prev["v"] + 0.05 and datetime.fromisoformat(prev["t"]) > now() - timedelta(hours=REPEAT_H):
             continue
