@@ -199,8 +199,28 @@ def find_line_gaps(games, labels, local):
                 gap = bb[hi_b][0] - bb[lo_b][0]
                 if gap >= GAP_MIN[stat]:
                     found.append(dict(key=(g["id"], p["id"], stat, "gap"), player=p["name"], cat=labels.get(stat, stat),
-                                      gap=gap, lo=(lo_b,) + bb[lo_b], hi=(hi_b,) + bb[hi_b], all=bb, match=match))
+                                      gap=gap, lo=(lo_b,) + bb[lo_b], hi=(hi_b,) + bb[hi_b], all=bb, match=match, g=g, p=p, ok=ok))
     return found
+
+
+def gap_entries(games, labels, local):
+    """Écarts de ligne en cours, pour la page « Écarts » du site : toutes les lignes de chaque bookmaker
+    ({ligne: [cote Plus, cote Moins]}), sa ligne à l'équilibre (« main ») et le lien vers le match."""
+    out = []
+    for f in find_line_gaps(games, labels, local):
+        g, p, stat = f["g"], f["p"], f["key"][2]
+        books = {}
+        for line, sides in p["lines"][stat].items():
+            for b in set(sides.get("over", {})) | set(sides.get("under", {})):
+                if b in f["ok"]:
+                    books.setdefault(b, {"lines": {}, "url": (g.get("links") or {}).get(b)})["lines"][line] = \
+                        [sides.get("over", {}).get(b), sides.get("under", {}).get(b)]
+        for b, (line, _, _) in f["all"].items():
+            books[b]["main"] = next(l for l in books[b]["lines"] if float(l) == line)
+        out.append({"id": "|".join(f["key"]), "kind": "prop", "game": g["id"], "player": p["id"], "name": p["name"],
+                    "stat": stat, "cat": f["cat"], "start": g["date"], "home": g["home"], "away": g["away"],
+                    "gap": f["gap"], "lo": f["lo"][0], "hi": f["hi"][0], "books": books})
+    return out
 
 
 def run(games, labels, local, st):

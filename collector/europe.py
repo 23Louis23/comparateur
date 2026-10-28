@@ -46,6 +46,7 @@ HCP_FLIP = 1.5       # …à qui un bookmaker donne pourtant au moins +1,5 point
 HORIZON_H = 48
 REPEAT_H = 6
 STATE = HERE / "build" / "europe-state.json"
+PAGE = HERE / "build" / "gaps-europe.json"  # écarts en cours, publiés sur le site par collect.py
 EXCLUDE = re.compile(r"\bNBA\b|WNBA|NCAA|\bNBL\b|Australie|Chine|Japon|Cor[ée]e|Philippines|\(F\)|F[ée]minin|Femmes|Women|LFB|"
                      r"Cotes des S[ée]ries|March Madness|\sF\.(?:\s|$)", re.I)
 STAT_FR = {"pts": "points", "reb": "rebonds", "ast": "passes", "3pt": "paniers à 3 pts", "pra": "pts+reb+pas",
@@ -479,6 +480,38 @@ def handicaps(groups):
     return out
 
 
+def page_gaps(gaps, hcps):
+    """Écarts en cours pour la page « Écarts » du site : chaque bookmaker avec toutes ses lignes
+    ({ligne: [cote Plus, cote Moins]} ; handicap : {ligne de « home »: [cote home, cote away]})."""
+    out = []
+    for ref, members, player, stat, lo_b, hi_b, bal, books in gaps:
+        out.append({"id": "%s|%s|%s|%s|%s" % (ref.home, ref.away, ref.start.date(), player, stat), "sport": "europe",
+                    "kind": "prop", "name": player.title(), "stat": stat, "cat": STAT_FR.get(stat, stat).capitalize(),
+                    "start": iso(ref.start), "home": ref.home, "away": ref.away, "league": ref.league,
+                    "gap": bal[hi_b][0] - bal[lo_b][0], "lo": lo_b, "hi": hi_b,
+                    "books": {b: {"main": key_line(bal[b][0]) if b in bal else None, "url": members[b][0].url,
+                                  "lines": {l: [v.get("over"), v.get("under")] for l, v in lines.items()}}
+                              for b, lines in books.items()}})
+    for h in hcps:
+        ref, bal = h["ref"], h["bal"]
+        books = {}
+        for b, (g, inv) in h["members"].items():
+            lines = {}
+            for key, o in g.sel.items():
+                k = (swap(key) if inv else key).split("|")
+                if k[0] == "hcp":
+                    line = key_line(0.0 + (num(k[2]) if k[1] == "home" else -num(k[2])))
+                    lines.setdefault(line, [None, None])[0 if k[1] == "home" else 1] = o
+            if lines:
+                books[b] = {"main": key_line(bal[b][1]) if b in bal else None, "url": g.url, "lines": lines}
+        out.append({"id": "%s|%s|%s|hcp" % (ref.home, ref.away, ref.start.date()), "sport": "nba" if ref.nba else "europe",
+                    "kind": "hcp", "name": "Handicap", "cat": "Handicap", "start": iso(ref.start), "home": ref.home,
+                    "away": ref.away, "league": "NBA" if ref.nba else ref.league, "gap": abs(bal[h["hi_b"]][1] - bal[h["lo_b"]][1]),
+                    "lo": h["lo_b"], "hi": h["hi_b"], "inverted": h["inverted"], "flipped": h["flipped"],
+                    "fav": (ref.home if h["side"] == "home" else ref.away) if h["fav"] else None, "books": books})
+    return out
+
+
 def main():
     dry = "--dry" in sys.argv
     per_book = {}
@@ -577,9 +610,12 @@ def main():
             if len(bal) >= 2:
                 lo_b, hi_b = min(bal, key=lambda b: bal[b][0]), max(bal, key=lambda b: bal[b][0])
                 if bal[hi_b][0] - bal[lo_b][0] >= alerts.GAP_MIN[stat]:
-                    gaps.append((ref, members, player, stat, lo_b, hi_b, bal))
+                    gaps.append((ref, members, player, stat, lo_b, hi_b, bal, books))
+    hcps = handicaps(groups)
+    PAGE.parent.mkdir(exist_ok=True)
+    PAGE.write_text(json.dumps({"at": iso(now()), "gaps": page_gaps(gaps, hcps)}, ensure_ascii=False))
     todo = []
-    for ref, members, player, stat, lo_b, hi_b, bal in gaps:
+    for ref, members, player, stat, lo_b, hi_b, bal, _ in gaps:
         k = "%s|%s|%s|gap|%s|%s" % (ref.home, ref.away, ref.start.date(), player, stat)
         gap = bal[hi_b][0] - bal[lo_b][0]
         prev = sent.get(k)
@@ -592,7 +628,7 @@ def main():
             alerts.odds_fr(bal[hi_b][2]), " · ".join("%s %s" % (BOOK_NAMES[b], ln(v[0])) for b, v in sorted(bal.items(), key=lambda kv: kv[1][0])),
             ref.home, ref.away, when(ref.start))
         todo.append((title, msg, members[lo_b][0].url, k, gap))
-    for h in handicaps(groups):  # rappel si l'écart (ou la ligne inversée) bouge d'1 point, ou après 12 h
+    for h in hcps:  # rappel si l'écart (ou la ligne inversée) bouge d'1 point, ou après 12 h
         ref, bal, shown = h["ref"], h["bal"], h["shown"]
         team = lambda s: ref.home if s == "home" else ref.away
         k = "%s|%s|%s|hcp" % (ref.home, ref.away, ref.start.date())

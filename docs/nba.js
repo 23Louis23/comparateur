@@ -32,8 +32,11 @@ async function latestDataUrl() {
   return { url: RAW_DATA + '?t=' + Date.now(), sha: null };  // repli : adresse mise en cache ~5 min
 }
 
-const state = { data: null, error: null, gameId: null, playerId: null, search: '', off: new Set(), view: 'joueur', focusStat: null };
+const state = { data: null, error: null, gameId: null, playerId: null, search: '', off: new Set(), view: 'joueur', focusStat: null,
+  page: 'matchs', gapSport: 'nba', openGaps: new Set() };
 try { state.view = localStorage.getItem('view') || 'joueur'; } catch {}
+try { state.page = localStorage.getItem('page') || 'matchs'; state.gapSport = localStorage.getItem('gapSport') || 'nba'; } catch {}
+if (new URLSearchParams(location.search).get('page') === 'ecarts') state.page = 'ecarts';
 const qsView = new URLSearchParams(location.search).get('vue');
 if (qsView === 'tableau' || qsView === 'joueur') state.view = qsView;
 try { JSON.parse(localStorage.getItem('off') || '[]').forEach(b => state.off.add(b)); } catch {}
@@ -188,7 +191,7 @@ function renderLineup(g) {
 // ------------------------------------------------------------ rendu
 // Zones qui défilent : bandeau des matchs, tableau, liste des joueurs, paliers de la fiche joueur
 const SCROLLERS = '#games, .tbl-wrap, .picker, .cuts';
-const viewKey = () => `${state.gameId}|${state.view}|${state.view === 'joueur' ? state.playerId : ''}`;
+const viewKey = () => state.page === 'ecarts' ? `ecarts|${state.gapSport}` : `${state.gameId}|${state.view}|${state.view === 'joueur' ? state.playerId : ''}`;
 function saveScroll() {
   return { key: viewKey(), y: window.scrollY, els: [...document.querySelectorAll(SCROLLERS)].map(el => [el.scrollLeft, el.scrollTop]) };
 }
@@ -212,6 +215,9 @@ function render() {
 
 function draw() {
   renderStatus();
+  renderPages();
+  $('games').hidden = state.page === 'ecarts';
+  if (state.page === 'ecarts') { $('match').innerHTML = renderGaps(); return; }
   $('demo').innerHTML = DEMO ? `<div class="demo-flag">⚠️ Mode démo : joueurs réels, cotes fictives. <a href="./">Voir les vraies cotes</a></div>` : '';
   const games = state.data?.games || [];
 
@@ -459,6 +465,83 @@ function renderCut({ cut, cell, books }, yes, vals) {
   </div>`;
 }
 
+// ------------------------------------------------------------ page « Écarts » (écarts de ligne en cours)
+const GAP_SPORTS = [['nba', 'NBA'], ['europe', 'Basket européen']];
+const currentGaps = s => (state.data?.gaps?.[s] || []).filter(x => new Date(x.start) > Date.now());
+const bookName = b => BOOKS[b]?.name || ({ pmu: 'PMU' }[b] || b);
+
+function renderPages() {
+  const n = GAP_SPORTS.reduce((t, [s]) => t + currentGaps(s).length, 0);
+  $('pages').innerHTML = `<button class="${state.page === 'matchs' ? 'on' : ''}" data-page="matchs">Matchs</button>
+    <button class="${state.page === 'ecarts' ? 'on' : ''}" data-page="ecarts">Écarts${n ? `<span class="pg-n">${n}</span>` : ''}</button>`;
+}
+
+function renderGaps() {
+  const list = currentGaps(state.gapSport).sort((x, y) => new Date(x.start) - new Date(y.start) || y.gap - x.gap);
+  const at = state.gapSport === 'europe' ? state.data?.gaps?.europeAt : state.data?.generatedAt;
+  return `<section class="gaps">
+    <div class="gaps-h"><h2>Écarts de ligne</h2>
+      <p class="small">Deux bookmakers n'ont pas la même ligne à l'équilibre : au moins 3 d'écart pour les points et les combinés (P+R+A, P+R, P+A),
+      2 pour les rebonds, passes, R+A, paniers à 3 pts et interceptions, 3 au handicap, ou un handicap inversé.
+      Un écart disparaît dès qu'il se referme ou que le match commence.</p></div>
+    <div class="tabs">${GAP_SPORTS.map(([k, l]) => `<button class="tab ${state.gapSport === k ? 'on' : ''}" data-gapsport="${k}">${l}<span class="n">${currentGaps(k).length}</span></button>`).join('')}</div>
+    ${at ? `<div class="small gaps-note">Cotes lues ${ago(at)} · ${state.gapSport === 'europe' ? 'relues toutes les 10 min' : 'relues toutes les 2 min'}</div>` : ''}
+    ${list.length ? list.map(gapCard).join('')
+      : `<div class="empty"><div class="big">📏</div>Aucun écart de ligne en ce moment${state.gapSport === 'europe' ? ' en basket européen' : ' en NBA'}.</div>`}
+  </section>`;
+}
+
+function gapCard(x) {
+  const prop = x.kind === 'prop', d = new Date(x.start);
+  const fmtL = l => (!prop && Number(l) > 0 ? '+' : '') + String(l).replace('.', ',');
+  const books = Object.keys(x.books).sort((a, b) => Number(x.books[a].main ?? 1e9) - Number(x.books[b].main ?? 1e9));
+  const mains = books.map(b => x.books[b].main).filter(l => l != null).map(Number);
+  const lines = [...new Set(books.flatMap(b => Object.keys(x.books[b].lines)))].sort((a, b) => Number(a) - Number(b));
+  const near = l => Number(l) >= Math.min(...mains) - 2 && Number(l) <= Math.max(...mains) + 2;
+  const far = lines.filter(l => !near(l)).length;
+  const open = state.openGaps.has(x.id);
+  const link = (b, inner, cls) => x.books[b].url
+    ? `<a class="${cls} lnk" href="${esc(x.books[b].url)}" target="_blank" rel="noopener" title="Ouvrir le match chez ${esc(bookName(b))}">${inner}</a>`
+    : `<span class="${cls}">${inner}</span>`;
+  const odd = (b, l, i) => { const o = x.books[b]?.lines[l]?.[i]; return o == null ? '–' : fmt(o); };
+  // les deux paris de l'écart : ligne basse jouée « Plus » (ou équipe à domicile au plus gros handicap), ligne haute « Moins »
+  const lo = x.books[x.lo], hi = x.books[x.hi];
+  const bets = x.lo === x.hi || lo?.main == null || hi?.main == null ? '' : prop
+    ? `${link(x.lo, `Plus de <b>${fmtL(lo.main)}</b> chez ${esc(bookName(x.lo))} : <b>${odd(x.lo, lo.main, 0)}</b>`, 'gc-bet')}
+       ${link(x.hi, `Moins de <b>${fmtL(hi.main)}</b> chez ${esc(bookName(x.hi))} : <b>${odd(x.hi, hi.main, 1)}</b>`, 'gc-bet')}`
+    : `${link(x.hi, `${esc(x.home)} <b>${fmtL(hi.main)}</b> chez ${esc(bookName(x.hi))} : <b>${odd(x.hi, hi.main, 0)}</b>`, 'gc-bet')}
+       ${link(x.lo, `${esc(x.away)} <b>${fmtL(String(-Number(lo.main)))}</b> chez ${esc(bookName(x.lo))} : <b>${odd(x.lo, lo.main, 1)}</b>`, 'gc-bet')}`;
+  const h = x.game ? findTeam(x.home) : null, a = x.game ? findTeam(x.away) : null;
+  const match = h ? `${a.nick} @ ${h.nick}` : `${x.home} – ${x.away}`;
+  const flipped = (x.flipped || []).map(bookName).join(' et ');
+  const cell = (b, l) => {
+    const v = x.books[b].lines[l];
+    if (!v) return '<td class="gm-na">·</td>';
+    const main = x.books[b].main === l;
+    return `<td class="${main ? 'main' : ''} ${main && (b === x.lo || b === x.hi) ? 'ext' : ''}">${link(b,
+      `<span class="gm-o"><i class="up">${prop ? '▲' : ''}</i>${odd(b, l, 0)}</span><span class="gm-o"><i class="down">${prop ? '▼' : ''}</i>${odd(b, l, 1)}</span>`, 'gm-c')}</td>`;
+  };
+  return `<article class="gap-card ${open ? 'open' : ''}">
+    <div class="gc-top">
+      ${prop && x.game ? `<button class="gc-name" data-gotoplayer="${esc(x.player)}" data-gotogame="${esc(x.game)}" data-stat="${esc(x.stat)}" title="Voir la fiche du joueur">${esc(x.name)}</button>`
+        : `<span class="gc-name">${esc(x.name)}</span>`}
+      ${prop ? `<span class="gc-cat">${esc(x.cat)}</span>` : ''}
+      ${x.inverted ? '<span class="gc-inv">Handicap inversé</span>' : ''}
+      <span class="gc-gap">écart ${String(x.gap).replace('.', ',')}</span>
+    </div>
+    <div class="gc-match">${esc(match)} · ${esc(dayLabel(d))} ${timeFmt.format(d)}${x.league && !x.game && x.league !== 'NBA' ? ` · ${esc(x.league)}` : ''}</div>
+    ${flipped ? `<div class="gc-flip">${esc(flipped)} donne des points à ${esc(x.fav)} alors qu'il est favori.</div>` : ''}
+    ${bets ? `<div class="gc-bets">${bets}</div>` : ''}
+    <div class="gm-wrap"><table class="gm">
+      <thead><tr><th class="gm-line">${prop ? 'Ligne' : `Handicap ${esc(h ? h.nick : x.home)}`}</th>${books.map(b =>
+        `<th class="${b === x.lo || b === x.hi ? 'ext' : ''}">${bk(b)} ${esc(bookName(b))}</th>`).join('')}</tr></thead>
+      <tbody>${lines.map(l => `<tr class="${near(l) ? '' : 'gm-far'}"><th class="gm-line num">${fmtL(l)}</th>${books.map(b => cell(b, l)).join('')}</tr>`).join('')}</tbody>
+    </table></div>
+    <div class="gc-foot small">${prop ? '▲ cote Plus · ▼ cote Moins' : `En haut : ${esc(x.home)} · en bas : ${esc(x.away)}`} · encadré : ligne à l'équilibre du bookmaker
+      ${far ? `<button class="gm-more" data-gapmore="${esc(x.id)}">${open ? 'Masquer les lignes éloignées' : `Voir les ${far} autres lignes`}</button>` : ''}</div>
+  </article>`;
+}
+
 function renderStatus() {
   const d = state.data;
   if (!d) { $('status').innerHTML = ''; return; }
@@ -474,7 +557,21 @@ document.addEventListener('click', e => {
   const t = e.target.closest('button, [data-cell]');
   if (!t) return;
   if (t.id === 'refresh') return load();
-  if (t.dataset.game) { state.gameId = t.dataset.game; state.playerId = null; state.search = ''; }
+  if (t.dataset.page) {
+    state.page = t.dataset.page;
+    try { localStorage.setItem('page', state.page); } catch {}
+    window.scrollTo(0, 0);
+  }
+  else if (t.dataset.gapsport) {
+    state.gapSport = t.dataset.gapsport;
+    try { localStorage.setItem('gapSport', state.gapSport); } catch {}
+  }
+  else if (t.dataset.gapmore) { const id = t.dataset.gapmore; state.openGaps.has(id) ? state.openGaps.delete(id) : state.openGaps.add(id); }
+  else if (t.dataset.gotoplayer) {  // écart NBA → fiche du joueur, sur la catégorie concernée
+    Object.assign(state, { page: 'matchs', gameId: t.dataset.gotogame, playerId: t.dataset.gotoplayer, view: 'joueur', focusStat: t.dataset.stat });
+    try { localStorage.setItem('page', 'matchs'); } catch {}
+  }
+  else if (t.dataset.game) { state.gameId = t.dataset.game; state.playerId = null; state.search = ''; }
   else if (t.dataset.view) {
     state.view = t.dataset.view;
     try { localStorage.setItem('view', state.view); } catch {}

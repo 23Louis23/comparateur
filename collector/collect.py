@@ -264,6 +264,24 @@ def fetch_only(name):
         traceback.print_exc()
 
 
+def page_gaps(games):
+    """Page « Écarts » du site : écarts de ligne NBA en cours + ceux du basket européen (tâche europe.py,
+    handicaps NBA compris), tant que le match n'a pas commencé."""
+    gaps = {"nba": [], "europe": [], "europeAt": None}
+    try:
+        gaps["nba"] = alerts.gap_entries(games, STAT_LABELS, {b.NAME for b in LOCAL_BOOKS})
+    except Exception as e:  # noqa: BLE001 — la page des écarts ne doit pas bloquer la publication
+        log("écarts NBA : erreur", type(e).__name__)
+        traceback.print_exc()
+    eu = load(BUILD / "gaps-europe.json", {})
+    if eu.get("at") and now() - datetime.fromisoformat(eu["at"][:-1] + "+00:00") < timedelta(minutes=40):
+        gaps["europeAt"] = eu["at"]
+        for x in eu.get("gaps", []):
+            if datetime.fromisoformat(x["start"][:-1] + "+00:00") > now():
+                gaps[x.get("sport", "europe")].append(x)
+    return gaps
+
+
 def main():
     st = load(STATE, {})
     board = Board()
@@ -348,7 +366,7 @@ def main():
         log("alertes : erreur", type(e).__name__)
     books = sorted({b for g in games for b in g["updated"]})
     out = {"generatedAt": iso(now()), "source": {"status": "ok", "lastRun": iso(now()), "collector": "imac", "books": status},
-           "books": books, "stats": STAT_LABELS, "games": games}
+           "books": books, "stats": STAT_LABELS, "games": games, "gaps": page_gaps(games)}
     out_path.write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")))
     STATE.write_text(json.dumps(st, indent=1, ensure_ascii=False))
     log("%d matchs, %d joueurs" % (len(games), sum(len(g["players"]) for g in games)))
