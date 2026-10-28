@@ -527,16 +527,17 @@ def player_name(members, pk):
 
 
 def page_gaps(found):
-    """Cotes anormales en cours sur les marqueurs d'essai, pour la page « Écarts » du site."""
+    """Cotes anormales en cours, pour la page « Écarts » du site : tous les marchés (résultat, double chance,
+    handicap…), et pour les marqueurs d'essai le nom du joueur en titre."""
     out = []
     for ref, members, key, bb, best, by in found:
         k = key.split("|")
-        if k[0] not in ("try", "try1"):
-            continue
-        name = player_name(members, k[1])
+        if k[0] in ("try", "try1"):
+            name, cat = player_name(members, k[1]), "Premier marqueur d'essai" if k[0] == "try1" else "Marqueur d'essai"
+        else:
+            name, _, cat = describe(key, ref.home, ref.away).partition(" : ")
         out.append({"id": "%s|%s|%s|%s" % (ref.home, ref.away, ref.start.date(), key), "sport": "rugby", "kind": "odds",
-                    "name": name, "stat": k[0], "cat": "Premier marqueur d'essai" if k[0] == "try1" else "Marqueur d'essai",
-                    "sel": "", "start": iso(ref.start), "home": ref.home, "away": ref.away,
+                    "name": name, "stat": k[0], "cat": cat, "sel": "", "start": iso(ref.start), "home": ref.home, "away": ref.away,
                     "league": members[bb][0].league or ref.league, "best": bb,
                     "books": {b: {"odds": o, "url": members[b][0].url} for b, o in by.items()}})
     return out
