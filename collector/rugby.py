@@ -37,7 +37,7 @@ import europe  # noqa: E402
 import pmu  # noqa: E402
 import unibet  # noqa: E402
 import winamax  # noqa: E402
-from common import get, now  # noqa: E402
+from common import get, iso, now  # noqa: E402
 from europe import EGame, bc_state, key_line, num, same_game, when  # noqa: E402
 
 EDGE = 1.50          # meilleure cote ≥ autre cote × 1,50
@@ -46,6 +46,7 @@ MAX_ODDS_TRY = 6.0   # marqueurs d'essai : les avants à 8-10 varient beaucoup d
 HORIZON_H = 168      # une semaine : les cotes du week-end sortent dès le lundi
 REPEAT_H = 6
 STATE = HERE / "build" / "rugby-state.json"
+PAGE = HERE / "build" / "gaps-rugby.json"  # écarts en cours sur les joueurs, publiés sur le site par collect.py
 EXCLUDE = re.compile(r"\(F\)|\sF\.(?:\s|$)|F[ée]minin|Femmes|Women|WXV|[ÉE]lite 1|Sevens|\bà 7\b", re.I)
 BOOK_NAMES = {"pmu": "PMU", "winamax": "Winamax", "unibet": "Unibet", "betclic": "Betclic"}
 BETCLIC = "https://www.betclic.fr"
@@ -112,29 +113,45 @@ def band(text):
 
 
 def pkey(name):
-    """Joueur → « initiale nom » : « Antoine Dupont », « A. Dupont », « Dupont, Antoine » → « a dupont »."""
+    """Joueur → nom complet normalisé : « Antoine Dupont », « Dupont, Antoine » → « antoine dupont » ;
+    une initiale reste telle quelle (« A. Dupont » → « a dupont ») et se rapproche ensuite d'un nom complet."""
     name = (name or "").strip()
     if "," in name:
         last, _, first = name.partition(",")
         name = first + " " + last
-    t = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode().lower().replace(".", " ").split()
-    if len(t) < 2:
-        return " ".join(t)
-    init = [w for w in t if len(w) == 1]
-    if init:
-        return "%s %s" % (init[0], " ".join(w for w in t if len(w) > 1))
-    return "%s %s" % (t[0][0], " ".join(t[1:]))
+    return " ".join(unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode().lower().replace(".", " ").split())
+
+
+def unify_names(books):
+    """Marqueurs écrits avec une initiale chez un bookmaker (« t francis ») → nom complet vu ailleurs dans le match,
+    seulement s'il n'y a qu'un seul joueur possible (« tony francis » et « tupou francis » : on ne rapproche pas)."""
+    full = {k.split("|", 1)[1] for sel in books.values() for k in sel if k.startswith("try") and len(k.split("|", 1)[1].split()[0]) > 1}
+    for sel in books.values():
+        for key in [k for k in sel if k.startswith("try")]:
+            kind, name = key.split("|", 1)
+            first, *rest = name.split()
+            if len(first) == 1 and rest:
+                cands = [f for f in full if f.split()[0][0] == first and f.split()[1:] == rest]
+                if len(cands) == 1:
+                    sel["%s|%s" % (kind, cands[0])] = sel.pop(key)
+
+
+TRY_ANY = {"marque un essai", "marqueur d'essai", "marqueur d'essai (à tout moment)", "marqueur d'essai à tout moment",
+           "marque un essai (à tout moment)", "buteur"}
+TRY_FIRST = {"1er marqueur d'essai", "premier marqueur d'essai", "1er essayeur", "premier essayeur"}
 
 
 def try_market(title, g, outs):
-    """Marqueurs d'essai : [(libellé joueur, cote)] → clés try / try1 (les marchés d'équipe sont ignorés)."""
-    t = title.lower()
-    if "essai" not in t or re.search(r"dernier|au moins 2|2 essais|deux essais|[ée]quipe|nombre|total|transform", t):
+    """Marqueurs d'essai à tout moment (try) et premier marqueur du match (try1) — seulement ces deux marchés :
+    « au moins 2 essais », « 2e marqueur », « 1re mi-temps », marqueur d'une seule équipe… sont ignorés."""
+    t = re.sub(r"\s*-\s*(prolongations incluses|temps réglementaire|80 mins|match)$", "", title.strip().lower())
+    kind = "try" if t in TRY_ANY else "try1" if t in TRY_FIRST else None
+    if not kind:
         return
-    kind = "try1" if "premier" in t else "try"
     for label, odds in outs:
-        if label and not who(g, label) and not re.search(r"\d|aucun|autre", label, re.I):
+        if label and not who(g, label) and not re.search(r"\d|aucun|autre|pas d'essai|\sou\s|\set\s", label, re.I):
             g.add("%s|%s" % (kind, pkey(label)), odds)
+            g.__dict__.setdefault("names", {})[pkey(label)] = label.strip()  # nom complet, pour l'affichage
 
 
 # ------------------------------------------------------------------ PMU (Kambi)
@@ -168,7 +185,7 @@ def pmu_market(g, label, outs):
     odds = lambda o: o["odds"] / 1000
     line = lambda o: key_line(o["line"] / 1000)
     ou = lambda o: {"OT_OVER": "over", "OT_UNDER": "under"}.get(o.get("type"))
-    if any(o.get("participant") and o.get("type") not in KAMBI for o in outs):  # marché de joueurs
+    if re.search(r"essai|marqueur", label, re.I) and any(o.get("participant") and o.get("type") not in KAMBI for o in outs):  # joueurs
         try_market(label, g, [(o["participant"], odds(o)) for o in outs if o.get("participant")])
         return
     for o in outs:
@@ -503,6 +520,28 @@ def describe(key, home, away):
     return key
 
 
+def player_name(members, pk):
+    """Nom complet du joueur tel qu'écrit par un bookmaker (« Tony Francis »), sinon la clé en capitales."""
+    names = [getattr(g, "names", {}).get(pk) for g, _ in members.values()]
+    return max((n for n in names if n), key=len, default=pk.title())
+
+
+def page_gaps(found):
+    """Cotes anormales en cours sur les marqueurs d'essai, pour la page « Écarts » du site."""
+    out = []
+    for ref, members, key, bb, best, by in found:
+        k = key.split("|")
+        if k[0] not in ("try", "try1"):
+            continue
+        name = player_name(members, k[1])
+        out.append({"id": "%s|%s|%s|%s" % (ref.home, ref.away, ref.start.date(), key), "sport": "rugby", "kind": "odds",
+                    "name": name, "stat": k[0], "cat": "Premier marqueur d'essai" if k[0] == "try1" else "Marqueur d'essai",
+                    "sel": "", "start": iso(ref.start), "home": ref.home, "away": ref.away,
+                    "league": members[bb][0].league or ref.league, "best": bb,
+                    "books": {b: {"odds": o, "url": members[b][0].url} for b, o in by.items()}})
+    return out
+
+
 def main():
     dry = "--dry" in sys.argv
     per_book = {}
@@ -529,10 +568,12 @@ def main():
 
     found, ratios = [], []
     for ref, members in groups:
+        books = {b: {swap(k) if inv else k: o for k, o in g.sel.items()} for b, (g, inv) in members.items()}
+        unify_names(books)
         odds = {}
-        for b, (g, inv) in members.items():
-            for key, o in g.sel.items():
-                odds.setdefault(swap(key) if inv else key, {})[b] = o
+        for b, sel in books.items():
+            for key, o in sel.items():
+                odds.setdefault(key, {})[b] = o
         for key, by in odds.items():
             if len(by) < 2:
                 continue
@@ -551,35 +592,41 @@ def main():
                 b, (g, _) = next(iter(m.items()))
                 print("  seul chez %s : %s – %s (%s)" % (b, g.home, g.away, g.league))
 
+    PAGE.parent.mkdir(exist_ok=True)
+    PAGE.write_text(json.dumps({"at": iso(now()), "gaps": page_gaps(found)}, ensure_ascii=False))
     state = json.loads(STATE.read_text()) if STATE.exists() else {}
     sent = state.setdefault("sent", {})
     for k in [k for k, v in sent.items() if datetime.fromisoformat(v["t"]) < now() - timedelta(days=3)]:
         del sent[k]
     todo = []
     for ref, members, key, bb, best, by in found:
-        k = "%s|%s|%s|%s" % (ref.home, ref.away, ref.start.date(), key)
-        prev = sent.get(k)
+        # une clé par façon d'écrire le match chez chaque bookmaker : pas de rappel quand le match de référence change de nom
+        ks = sorted({"%s|%s|%s|%s" % ((g.away, g.home) if inv else (g.home, g.away)) + (ref.start.date(), key) for g, inv in members.values()})
+        prev = max((sent[x] for x in ks if x in sent), key=lambda v: v["t"], default=None)
         if prev and best <= prev["v"] + 0.05 and datetime.fromisoformat(prev["t"]) > now() - timedelta(hours=REPEAT_H):
             continue
         rest = " · ".join("%s %s" % (BOOK_NAMES[b], alerts.odds_fr(o)) for b, o in sorted(by.items(), key=lambda kv: -kv[1]) if b != bb)
         title = "🏉 %s · %s – %s" % (BOOK_NAMES[bb], ref.home, ref.away)
+        what = describe(key, ref.home, ref.away)
+        if key.startswith("try"):
+            what = what.split(" : ")[0] + " : " + player_name(members, key.split("|", 1)[1])
         msg = "%s\n%s : %s\nAutres bookmakers : %s\n%s · %s" % (
-            describe(key, ref.home, ref.away), BOOK_NAMES[bb], alerts.odds_fr(best), rest,
+            what, BOOK_NAMES[bb], alerts.odds_fr(best), rest,
             members[bb][0].league or ref.league, when(ref.start))
-        todo.append((title, msg, k, best))
+        todo.append((title, msg, ks, best))
     if dry:
         for t in todo:
             print("---\n" + t[0] + "\n" + t[1])
         log("%d alerte(s) (essai à blanc, rien envoyé)" % len(todo))
         return
-    for title, msg, k, best in todo[:10]:
+    for title, msg, ks, best in todo[:10]:
         alerts.push(title, msg, "rugby_football")
-        sent[k] = {"v": best, "t": now().isoformat()}
+        sent.update({k: {"v": best, "t": now().isoformat()} for k in ks})
     if len(todo) > 10:
         alerts.push("%d autres écarts en rugby" % (len(todo) - 10),
                     "\n".join("• " + t[0][2:] + " — " + t[1].split("\n")[0] for t in todo[10:30]), "rugby_football")
         for t in todo[10:]:
-            sent[t[2]] = {"v": t[3], "t": now().isoformat()}
+            sent.update({k: {"v": t[3], "t": now().isoformat()} for k in t[2]})
     STATE.parent.mkdir(exist_ok=True)
     STATE.write_text(json.dumps(state, ensure_ascii=False))
     log("%d matchs comparés (2+ bookmakers), %d alerte(s) envoyée(s)" % (sum(1 for _, m in groups if len(m) >= 2), len(todo)))

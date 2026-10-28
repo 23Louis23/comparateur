@@ -466,7 +466,8 @@ function renderCut({ cut, cell, books }, yes, vals) {
 }
 
 // ------------------------------------------------------------ page « Écarts » (écarts de ligne en cours)
-const GAP_SPORTS = [['nba', 'NBA'], ['europe', 'Basket européen']];
+const GAP_SPORTS = [['nba', 'NBA'], ['europe', 'Basket européen'], ['rugby', 'Rugby']];
+const GAP_EVERY = { nba: 'relues toutes les 2 min', europe: 'relues toutes les 10 min', rugby: 'relues toutes les 12 min' };
 const currentGaps = s => (state.data?.gaps?.[s] || []).filter(x => new Date(x.start) > Date.now());
 const bookName = b => BOOKS[b]?.name || ({ pmu: 'PMU' }[b] || b);
 
@@ -478,16 +479,19 @@ function renderPages() {
 
 function renderGaps() {
   const list = currentGaps(state.gapSport).sort((x, y) => new Date(x.start) - new Date(y.start) || y.gap - x.gap);
-  const at = state.gapSport === 'europe' ? state.data?.gaps?.europeAt : state.data?.generatedAt;
+  const at = state.gapSport === 'nba' ? state.data?.generatedAt : state.data?.gaps?.[state.gapSport + 'At'];
   return `<section class="gaps">
-    <div class="gaps-h"><h2>Écarts de ligne</h2>
-      <p class="small">Deux bookmakers n'ont pas la même ligne à l'équilibre : au moins 3 d'écart pour les points et les combinés (P+R+A, P+R, P+A),
-      2 pour les rebonds, passes, R+A, paniers à 3 pts et interceptions, 3 au handicap, ou un handicap inversé.
-      Un écart disparaît dès qu'il se referme ou que le match commence.</p></div>
+    <div class="gaps-h"><h2>Écarts</h2>
+      <p class="small">Écarts de ligne et écarts de cote sur les joueurs (et handicaps), tant qu'ils sont d'actualité.</p>
+      <details class="small gaps-how"><summary>Comment c'est calculé ?</summary>
+      <b>Écart de ligne</b> : deux bookmakers n'ont pas la même ligne à l'équilibre (au moins 3 pour les points et les combinés P+R+A, P+R, P+A ;
+      2 pour les rebonds, passes, R+A, paniers à 3 pts et interceptions ; 3 au handicap, ou handicap inversé).
+      <b>Écart de cote</b> : un bookmaker paie nettement plus que les autres sur un joueur (NBA : +30 % sur la 2e meilleure cote, au moins 3 bookmakers ;
+      basket européen et marqueurs d'essai en rugby : +50 %). Un écart disparaît dès qu'il se referme ou que le match commence.</details></div>
     <div class="tabs">${GAP_SPORTS.map(([k, l]) => `<button class="tab ${state.gapSport === k ? 'on' : ''}" data-gapsport="${k}">${l}<span class="n">${currentGaps(k).length}</span></button>`).join('')}</div>
-    ${at ? `<div class="small gaps-note">Cotes lues ${ago(at)} · ${state.gapSport === 'europe' ? 'relues toutes les 10 min' : 'relues toutes les 2 min'}</div>` : ''}
-    ${list.length ? list.map(gapCard).join('')
-      : `<div class="empty"><div class="big">📏</div>Aucun écart de ligne en ce moment${state.gapSport === 'europe' ? ' en basket européen' : ' en NBA'}.</div>`}
+    ${at ? `<div class="small gaps-note">Cotes lues ${ago(at)} · ${GAP_EVERY[state.gapSport]}</div>` : ''}
+    ${list.length ? list.map(x => x.kind === 'odds' ? oddsCard(x) : gapCard(x)).join('')
+      : `<div class="empty"><div class="big">📏</div>Aucun écart en ce moment${{ nba: ' en NBA', europe: ' en basket européen', rugby: ' en rugby' }[state.gapSport]}.</div>`}
   </section>`;
 }
 
@@ -527,7 +531,7 @@ function gapCard(x) {
         : `<span class="gc-name">${esc(x.name)}</span>`}
       ${prop ? `<span class="gc-cat">${esc(x.cat)}</span>` : ''}
       ${x.inverted ? '<span class="gc-inv">Handicap inversé</span>' : ''}
-      <span class="gc-gap">écart ${String(x.gap).replace('.', ',')}</span>
+      <span class="gc-gap">écart de ligne ${String(x.gap).replace('.', ',')}</span>
     </div>
     <div class="gc-match">${esc(match)} · ${esc(dayLabel(d))} ${timeFmt.format(d)}${x.league && !x.game && x.league !== 'NBA' ? ` · ${esc(x.league)}` : ''}</div>
     ${flipped ? `<div class="gc-flip">${esc(flipped)} donne des points à ${esc(x.fav)} alors qu'il est favori.</div>` : ''}
@@ -539,6 +543,29 @@ function gapCard(x) {
     </table></div>
     <div class="gc-foot small">${prop ? '▲ cote Plus · ▼ cote Moins' : `En haut : ${esc(x.home)} · en bas : ${esc(x.away)}`} · encadré : ligne à l'équilibre du bookmaker
       ${far ? `<button class="gm-more" data-gapmore="${esc(x.id)}">${open ? 'Masquer les lignes éloignées' : `Voir les ${far} autres lignes`}</button>` : ''}</div>
+  </article>`;
+}
+
+// Écart de cote sur un joueur : la cote de chaque bookmaker sur la sélection, la plus haute en vert
+function oddsCard(x) {
+  const d = new Date(x.start);
+  const h = x.game ? findTeam(x.home) : null, a = x.game ? findTeam(x.away) : null;
+  const match = h ? `${a.nick} @ ${h.nick}` : `${x.home} – ${x.away}`;
+  const books = Object.entries(x.books).sort((p, q) => q[1].odds - p[1].odds);
+  const chip = ([b, v]) => {
+    const inner = `${bk(b)}<span class="oc-bn">${esc(bookName(b))}</span><b class="num">${fmt(v.odds)}</b>`;
+    const cls = `oc-chip ${b === x.best ? 'best' : ''}`;
+    return v.url ? `<a class="${cls} lnk" href="${esc(v.url)}" target="_blank" rel="noopener" title="Ouvrir le match chez ${esc(bookName(b))}">${inner}</a>` : `<span class="${cls}">${inner}</span>`;
+  };
+  return `<article class="gap-card">
+    <div class="gc-top">
+      ${x.game ? `<button class="gc-name" data-gotoplayer="${esc(x.player)}" data-gotogame="${esc(x.game)}" data-stat="${esc(x.stat)}" title="Voir la fiche du joueur">${esc(x.name)}</button>`
+        : `<span class="gc-name">${esc(x.name)}</span>`}
+      <span class="gc-cat">${esc(x.cat)}${x.sel ? ` · ${esc(x.sel.replace('.', ','))}` : ''}</span>
+      <span class="gc-gap odds">écart de cote</span>
+    </div>
+    <div class="gc-match">${esc(match)} · ${esc(dayLabel(d))} ${timeFmt.format(d)}${x.league && !x.game ? ` · ${esc(x.league)}` : ''}</div>
+    <div class="oc-books">${books.map(chip).join('')}</div>
   </article>`;
 }
 

@@ -480,10 +480,20 @@ def handicaps(groups):
     return out
 
 
-def page_gaps(gaps, hcps):
-    """Écarts en cours pour la page « Écarts » du site : chaque bookmaker avec toutes ses lignes
-    ({ligne: [cote Plus, cote Moins]} ; handicap : {ligne de « home »: [cote home, cote away]})."""
+def page_gaps(gaps, hcps, found):
+    """Écarts en cours pour la page « Écarts » du site : écarts de ligne avec toutes les lignes de chaque bookmaker
+    ({ligne: [cote Plus, cote Moins]} ; handicap : {ligne de « home »: [cote home, cote away]}), et cotes anormales
+    sur les joueurs (cote de chaque bookmaker sur la sélection)."""
     out = []
+    for ref, members, key, bb, best, by in found:
+        k = key.split("|")
+        if k[0] not in ("p", "pl"):
+            continue
+        out.append({"id": "%s|%s|%s|%s" % (ref.home, ref.away, ref.start.date(), key), "sport": "europe", "kind": "odds",
+                    "name": k[1].title(), "stat": k[2], "cat": STAT_FR.get(k[2], k[2]).capitalize(),
+                    "sel": "%s+" % k[3] if k[0] == "p" else "%s %s" % ("Plus" if k[4] == "over" else "Moins", k[3].replace(".", ",")),
+                    "start": iso(ref.start), "home": ref.home, "away": ref.away, "league": ref.league, "best": bb,
+                    "books": {b: {"odds": o, "url": members[b][0].url} for b, o in by.items()}})
     for ref, members, player, stat, lo_b, hi_b, bal, books in gaps:
         out.append({"id": "%s|%s|%s|%s|%s" % (ref.home, ref.away, ref.start.date(), player, stat), "sport": "europe",
                     "kind": "prop", "name": player.title(), "stat": stat, "cat": STAT_FR.get(stat, stat).capitalize(),
@@ -613,7 +623,7 @@ def main():
                     gaps.append((ref, members, player, stat, lo_b, hi_b, bal, books))
     hcps = handicaps(groups)
     PAGE.parent.mkdir(exist_ok=True)
-    PAGE.write_text(json.dumps({"at": iso(now()), "gaps": page_gaps(gaps, hcps)}, ensure_ascii=False))
+    PAGE.write_text(json.dumps({"at": iso(now()), "gaps": page_gaps(gaps, hcps, found)}, ensure_ascii=False))
     todo = []
     for ref, members, player, stat, lo_b, hi_b, bal, _ in gaps:
         k = "%s|%s|%s|gap|%s|%s" % (ref.home, ref.away, ref.start.date(), player, stat)

@@ -85,7 +85,7 @@ def find(games, labels, local):
                         found.append(dict(kind="cote", key=(g["id"], p["id"], stat, "c" + cut), player=p["name"], cat=cat,
                                           short="Oui" if yes else cut + "+",
                                           long="réalise un %s" % cat.lower() if yes else "palier %s ou plus" % cut,
-                                          hit=hit, odds=odds, match=match))
+                                          hit=hit, odds=odds, match=match, g=g, p=p))
             for stat, lines in (p.get("lines") or {}).items():
                 cat = labels.get(stat, stat)
                 for line, sides in lines.items():
@@ -97,7 +97,7 @@ def find(games, labels, local):
                             found.append(dict(kind="cote", key=(g["id"], p["id"], stat, side + line), player=p["name"], cat=cat,
                                               short="%s %s" % (word, line.replace(".", ",")),
                                               long="ligne %s de %s" % (word, line.replace(".", ",")),
-                                              hit=hit, odds=odds, match=match))
+                                              hit=hit, odds=odds, match=match, g=g, p=p))
                     if over and under:
                         bo, o = max(over.items(), key=lambda kv: kv[1])
                         bu, u = max(under.items(), key=lambda kv: kv[1])
@@ -220,6 +220,20 @@ def gap_entries(games, labels, local):
         out.append({"id": "|".join(f["key"]), "kind": "prop", "game": g["id"], "player": p["id"], "name": p["name"],
                     "stat": stat, "cat": f["cat"], "start": g["date"], "home": g["home"], "away": g["away"],
                     "gap": f["gap"], "lo": f["lo"][0], "hi": f["hi"][0], "books": books})
+    return out
+
+
+def odds_entries(games, labels, local):
+    """Cotes anormales en cours sur les joueurs (un bookmaker nettement au-dessus des autres), pour la page
+    « Écarts » du site : la cote de chaque bookmaker sur la sélection, et le lien vers le match."""
+    out = []
+    for f in find(games, labels, local):
+        if f["kind"] != "cote":
+            continue
+        g, p = f["g"], f["p"]
+        out.append({"id": "|".join(f["key"]), "kind": "odds", "game": g["id"], "player": p["id"], "name": p["name"],
+                    "stat": f["key"][2], "cat": f["cat"], "sel": f["short"], "start": g["date"], "home": g["home"], "away": g["away"],
+                    "best": f["hit"][0], "books": {b: {"odds": o, "url": (g.get("links") or {}).get(b)} for b, o in f["odds"].items()}})
     return out
 
 
