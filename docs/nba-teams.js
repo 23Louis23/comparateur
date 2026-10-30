@@ -35,7 +35,8 @@ const NBA_TEAMS = [
 // Retrouve une équipe à partir du nom renvoyé par le fournisseur (« Denver Nuggets », « LA Clippers »…)
 function findTeam(name) {
   const n = String(name || '').toLowerCase();
-  return NBA_TEAMS.find(t => n.includes(t.nick.toLowerCase()))
-    || NBA_TEAMS.find(t => n.includes(t.city.toLowerCase()))
+  const has = w => new RegExp(`\\b${w.toLowerCase()}\\b`).test(n);  // mot entier : « Hornets » contient « nets »
+  return NBA_TEAMS.find(t => has(t.nick))
+    || NBA_TEAMS.find(t => has(t.city))
     || { abbr: String(name || '?').slice(0, 3).toUpperCase(), city: '', nick: name || '?', c1: '#334155', c2: '#64748b' };
 }
