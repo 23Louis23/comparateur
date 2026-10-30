@@ -255,9 +255,15 @@ def fetch_only(name):
     """Tâche séparée (Betclic, lent) : lit le bookmaker et range ses cotes en cache, sans publier."""
     book = next(b for b in LOCAL_BOOKS if b.NAME == name)
     BUILD.mkdir(exist_ok=True)
+    cache = BUILD / ("cache-%s.json" % name)
     try:
         games = book.fetch({})
-        save_games(BUILD / ("cache-%s.json" % name), games, iso(now()))
+        kept, at = load_games(cache)
+        if not any(g.count() for g in games) and any(g.count() for g in kept) \
+                and now() - datetime.fromisoformat(at[:-1] + "+00:00") < timedelta(minutes=30):
+            log(name, "lecture vide ignorée — on garde les %d cotes précédentes" % sum(g.count() for g in kept))
+            return  # une lecture vide isolée n'efface pas le cache ; la suivante, si elle est vide aussi, fait foi
+        save_games(cache, games, iso(now()))
         log(name, "lu (%d cotes) — en cache pour la collecte principale" % sum(g.count() for g in games))
     except Exception as e:  # noqa: BLE001
         log(name, "erreur :", type(e).__name__)
