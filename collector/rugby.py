@@ -71,12 +71,12 @@ def log(*a):
 
 
 def page(url):
-    """Page d'un match ; une erreur passagère du site (5xx) ou un match retiré (404, au coup d'envoi) fait sauter
+    """Page d'un match ; une erreur passagère du site (5xx) ou un match retiré (404 ou 410, au coup d'envoi) fait sauter
     ce match, pas tout le bookmaker."""
     try:
         return get(url)
     except urllib.error.HTTPError as e:
-        if e.code >= 500 or e.code == 404:
+        if e.code >= 500 or e.code in (404, 410):
             log("page ignorée (%s) : %s" % (e.code, url.split("/")[2]))
             return None
         raise
