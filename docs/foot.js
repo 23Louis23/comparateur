@@ -6,7 +6,7 @@
   const STAT_KEYS = COLUMNS.map(([k]) => k);
   const stored = k => { try { return localStorage.getItem(k); } catch { return null; } };
   const store = (k, v) => { try { v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch {} };
-  const foot = { enc: null, data: null, key: stored(KEY_STORE), n: stored('footN') === '5' ? 5 : 3, sort: null, side: 0,
+  const foot = { enc: null, data: null, key: stored(KEY_STORE), n: stored('footN') === '5' ? 5 : 3, sort: null, side: 0, full: false,
                  busy: false, at: 0, missing: false, wrong: false, opening: false };
 
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -159,6 +159,24 @@
     return `<div class="ft-tw"><table><tbody>${rows}</tbody></table></div>`;
   }
 
+  // Lignes de classement : [rang, équipe, MJ, V, N, D, buts marqués, buts encaissés, points]
+  function standingTable(rows, mark) {
+    const line = ([rank, team, mj, v, n, l, gf, ga, pts], group) => `<tr class="${mark.includes(team) ? 'ft-me' : ''}"><td>${rank}. ${esc(team)}${group ? `<span class="ft-pp">${esc(group)}</span>` : ''}</td>
+      <td>${mj}</td><td>${v}</td><td>${n}</td><td>${l}</td><td>${gf}</td><td>${ga}</td><td>${gf > ga ? '+' : ''}${gf - ga}</td><td><b>${pts}</b></td></tr>`;
+    return `<div class="ft-tw"><table><thead><tr><th>Équipe</th><th>MJ</th><th>V</th><th>N</th><th>D</th><th>${label('Buts marqués', 'BM')}</th><th>${label('Buts encaissés', 'BE')}</th><th>Diff</th><th>Pts</th></tr></thead>
+      <tbody>${rows.map(r => line(r.row, r.group)).join('')}</tbody></table></div>`;
+  }
+
+  function standing(f) {
+    const groups = foot.data.tables?.[f.lg] || [], teams = [f.home, f.away];
+    const mine = teams.flatMap(team => groups.flatMap(g => g.rows.filter(r => r[1] === team).map(row => ({ row, group: g.name }))));
+    if (!mine.length) return '';
+    const body = foot.full
+      ? groups.filter(g => g.rows.some(r => teams.includes(r[1]))).map(g => `${g.name ? `<h4>${esc(g.name)}</h4>` : ''}${standingTable(g.rows.map(row => ({ row })), teams)}`).join('')
+      : standingTable(mine, []);
+    return `<h4>Classement</h4>${body}<button class="ft-more" data-ftfull="1">${foot.full ? 'Réduire' : 'Voir tout le classement'}</button>`;
+  }
+
   function renderMatch(id) {
     const d = foot.data, f = d.fixtures.find(x => x.id === id);
     if (!f) return '<a class="ft-back" href="#">‹ Tous les matchs</a><div class="ft-empty">Ce match n\'est plus dans la liste.</div>';
@@ -174,9 +192,10 @@
     return `<a class="ft-back" href="#">‹ Tous les matchs</a>
       <div class="ft-head"><div class="ft-ttl">${esc(f.home)} – ${esc(f.away)}</div>
         <div class="small">${esc(league?.name)} · ${parisDay(start) === parisDay(new Date()) ? "aujourd'hui" : 'demain'} à ${hour.format(start)}</div></div>
+      ${standing(f)}
       <div class="ft-seg ft-pick"><button class="${foot.side === 0 ? 'on' : ''}" data-ftside="0">${esc(f.home)}</button><button class="${foot.side === 1 ? 'on' : ''}" data-ftside="1">${esc(f.away)}</button></div>
       <div class="ft-grid">${block(f.home, 0)}${block(f.away, 1)}</div>
-      <p class="small">Chaque joueur a une ligne par match, du plus récent au plus ancien, sur les ${foot.n} derniers matchs de championnat (coupes et Europe non comptées). Cad. : tirs cadrés, PC : passes clés, PD : passes décisives. Joueurs classés par xG + xA cumulés ; touchez un titre de colonne pour les classer sur le total de cette stat.</p>`;
+      <p class="small">Chaque joueur a une ligne par match, du plus récent au plus ancien, sur les ${foot.n} derniers matchs de championnat (coupes et Europe non comptées). MJ : matchs joués, BM : buts marqués, BE : buts encaissés, Cad. : tirs cadrés, PC : passes clés, PD : passes décisives. Joueurs classés par xG + xA cumulés ; touchez un titre de colonne pour les classer sur le total de cette stat.</p>`;
   }
 
   function lockScreen() {
@@ -217,17 +236,19 @@
     if (pass) unlock(pass);
   });
   document.addEventListener('click', e => {
-    const t = e.target.closest('[data-ftn], [data-ftside], [data-ftsort], [data-ftlock]');
+    const t = e.target.closest('[data-ftn], [data-ftside], [data-ftsort], [data-ftfull], [data-ftlock]');
     if (!t) return;
     if (t.dataset.ftn) { foot.n = Number(t.dataset.ftn); store('footN', foot.n); }
     else if (t.dataset.ftside) foot.side = Number(t.dataset.ftside);
     else if (t.dataset.ftsort) foot.sort = foot.sort === t.dataset.ftsort ? null : t.dataset.ftsort;
+    else if (t.dataset.ftfull) foot.full = !foot.full;
     else { foot.key = null; foot.data = null; store(KEY_STORE, null); }
     render();
   });
   window.addEventListener('hashchange', () => {
     if (state.page !== 'foot') return;
     foot.side = 0;
+    foot.full = false;
     render();
     window.scrollTo(0, 0);
   });
