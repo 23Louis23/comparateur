@@ -195,7 +195,7 @@ def publish(path):
         subprocess.run(["git", "init", "-q", "-b", "data", str(BUILD)], check=True)
         subprocess.run(["git", "-C", str(BUILD), "remote", "add", "origin", REMOTE], check=True)
     run = lambda *a: subprocess.run(["git", "-C", str(BUILD), *a], capture_output=True, text=True)
-    run("add", "nba.json")
+    run("add", "nba.json", *[f for f in ("foot.enc",) if (BUILD / f).exists()])  # foot.enc : chiffré par la tâche foot
     run("-c", "user.name=coteradar-imac", "-c", "user.email=coteradar-imac@users.noreply.github.com",
         "commit", "-q", "--amend" if run("rev-parse", "HEAD").returncode == 0 else "--allow-empty", "-m", "Props NBA (iMac)")
     r = run("push", "-q", "-f", "origin", "HEAD:data")

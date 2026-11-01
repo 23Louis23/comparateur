@@ -334,6 +334,86 @@
   a.lnk:hover { box-shadow: 0 0 0 1px var(--muted) inset; }
   a.lnk.best:hover { box-shadow: 0 0 0 2px #fff inset; }
   .tc { cursor: pointer; }
+
+  /* page « Analyse map foot » */
+  .ft-s { display: none; }
+  .ft { padding: 14px 0 40px; }
+  .ft h3 { font-size: 16px; margin: 0 0 8px; font-weight: 800; }
+  .ft h4 { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 14px 0 6px; font-weight: 700; }
+  .ft a { color: inherit; text-decoration: none; }
+  .ft-top { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+  .ft-top h2 { margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -.02em; }
+  .ft-at { margin-left: auto; }
+  .ft-lockbtn { background: none; border: 1px solid var(--line); border-radius: 8px; padding: 4px 9px; font-size: 12px; color: var(--muted); }
+  .ft-seg { display: inline-flex; gap: 2px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 3px; }
+  .ft-seg button { background: none; border: 0; padding: 5px 11px; border-radius: 7px; font-weight: 700; font-size: 13px; color: var(--muted); white-space: nowrap; }
+  .ft-seg button.on { background: var(--accent); color: var(--accent-ink); }
+  .ft-note { background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--warn); border-radius: 10px; padding: 9px 12px; margin-bottom: 14px; font-size: 13px; color: var(--muted); }
+  .ft-empty { text-align: center; color: var(--muted); padding: 50px 16px; }
+  .ft-day { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); margin: 22px 0 8px; }
+  .ft-lg { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; margin-bottom: 10px; overflow: hidden; }
+  .ft-lg-h { padding: 8px 14px; font-weight: 700; font-size: 13px; border-bottom: 1px solid var(--line); background: var(--panel-2); }
+  .ft-lg-h span { color: var(--muted); font-weight: 500; }
+  .ft-fx { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-bottom: 1px solid var(--line); }
+  .ft-fx:last-child { border-bottom: 0; }
+  .ft-fx:hover { background: var(--panel-2); }
+  .ft-t { width: 44px; flex: none; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .ft-teams { flex: 1; min-width: 0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ft-tag { flex: none; font-size: 11.5px; color: var(--warn); }
+  .ft-go { flex: none; color: var(--faint); }
+  .ft-back { display: inline-block; color: var(--muted) !important; font-size: 13px; margin-bottom: 10px; }
+  .ft-head { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; margin-bottom: 14px; }
+  .ft-ttl { font-size: 20px; font-weight: 800; letter-spacing: -.02em; }
+  .ft-pick { display: none; margin-bottom: 14px; }
+  .ft-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; margin-bottom: 12px; }
+  @media (max-width: 1199px) { .ft-pick { display: inline-flex; } .ft-team.off { display: none; } }
+  @media (min-width: 1200px) { .ft-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+  .ft-tw { overflow-x: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; -webkit-overflow-scrolling: touch; }
+  .ft-tw-in { overflow-x: auto; }
+  .ft table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  .ft th { text-align: right; color: var(--muted); font-size: 11.5px; font-weight: 700; padding: 8px 9px; border-bottom: 1px solid var(--line); white-space: nowrap; background: var(--panel-2); }
+  .ft td { text-align: right; padding: 7px 9px; border-bottom: 1px solid var(--line); white-space: nowrap; font-variant-numeric: tabular-nums; vertical-align: top; }
+  .ft tr:last-child > td { border-bottom: 0; }
+  .ft th:first-child, .ft td:first-child { text-align: left; position: sticky; left: 0; background: var(--panel); z-index: 1; }
+  .ft th:first-child { background: var(--panel-2); }
+  .ft-m { color: var(--muted); }
+  .ft-sort { cursor: pointer; }
+  .ft-sort.on { color: var(--accent) !important; }
+  .ft .ft-avg td { font-weight: 700; background: var(--panel-2); }
+  .ft-res { display: inline-block; min-width: 42px; text-align: center; font-weight: 700; }
+  .ft-res.w { color: var(--up); } .ft-res.l { color: var(--down); } .ft-res.d { color: var(--muted); }
+  .ft-pl { cursor: pointer; }
+  .ft .ft-pl:hover td { background: var(--panel-2); }
+  .ft .ft-pl.open td { background: var(--panel-3); }
+  .ft-pn { font-weight: 600; display: block; max-width: 132px; overflow: hidden; text-overflow: ellipsis; }
+  .ft-pp { font-size: 11px; color: var(--muted); display: block; max-width: 132px; overflow: hidden; text-overflow: ellipsis; }
+  .ft-mins { font-size: 11px; color: var(--muted); display: block; }
+  .ft-zero { color: var(--faint); }
+  .ft-hot { color: var(--accent); font-weight: 700; }
+  .ft .ft-det > td { position: static; background: var(--bg); padding: 8px; text-align: left; white-space: normal; }
+  .ft-det table { font-size: 12.5px; }
+  .ft .ft-det th, .ft .ft-det th:first-child { background: transparent; }
+  .ft .ft-det td:first-child { background: transparent; position: static; }
+  .ft-abs td { color: var(--faint); }
+  .ft-lock { max-width: 380px; margin: 40px auto; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 20px; text-align: center; }
+  .ft-lock h2 { margin: 0 0 6px; font-size: 19px; font-weight: 800; }
+  .ft-lock form { display: flex; gap: 8px; margin-top: 14px; }
+  .ft-lock input { flex: 1; min-width: 0; background: var(--panel-2); border: 1px solid var(--line); border-radius: 9px; padding: 9px 11px; font-size: 16px; }
+  .ft-lock button { background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 9px; padding: 9px 14px; font-weight: 700; }
+  .ft-wrong { color: var(--down); font-size: 13px; margin-top: 10px; }
+  @media (max-width: 560px) {
+    .ft-l { display: none; } .ft-s { display: inline; }
+    .bar { gap: 7px; padding: 10px 12px; }
+    .logo { font-size: 15px; white-space: nowrap; gap: 4px; }
+    .pages button { padding: 5px 7px; font-size: 12.5px; }
+    .ft table { font-size: 12.5px; }
+    .ft th, .ft td { padding: 7px 5px; }
+    .ft th:first-child, .ft td:first-child { padding-left: 9px; }
+    .ft-pn, .ft-pp { max-width: 92px; }
+    .ft-mins { font-size: 10px; }
+    .ft-res { min-width: 34px; }
+    .ft-at { display: none; }
+  }
 </style>
 </head>
 <body>
@@ -350,8 +430,9 @@
   <section id="match"></section>
 </main>
 <footer class="wrap">Cotes indicatives, à vérifier chez le bookmaker. Les jeux d'argent et de hasard peuvent être dangereux : pertes d'argent, conflits familiaux, addiction… Appelez le 09 74 75 13 13 (appel non surtaxé). Interdit aux moins de 18 ans.</footer>
-<script src="nba-teams.js?v=202610301200"></script>
-<script src="nba-demo.js?v=202610301200"></script>
-<script src="nba.js?v=202610301200"></script>
+<script src="nba-teams.js?v=202611011800"></script>
+<script src="nba-demo.js?v=202611011800"></script>
+<script src="foot.js?v=202611011800"></script>
+<script src="nba.js?v=202611011800"></script>
 </body>
 </html>

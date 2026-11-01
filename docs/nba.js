@@ -36,7 +36,8 @@ const state = { data: null, error: null, gameId: null, playerId: null, search: '
   page: 'matchs', gapSport: 'nba', openGaps: new Set() };
 try { state.view = localStorage.getItem('view') || 'joueur'; } catch {}
 try { state.page = localStorage.getItem('page') || 'matchs'; state.gapSport = localStorage.getItem('gapSport') || 'nba'; } catch {}
-if (new URLSearchParams(location.search).get('page') === 'ecarts') state.page = 'ecarts';
+const qsPage = new URLSearchParams(location.search).get('page');
+if (qsPage === 'ecarts' || qsPage === 'foot') state.page = qsPage;
 const qsView = new URLSearchParams(location.search).get('vue');
 if (qsView === 'tableau' || qsView === 'joueur') state.view = qsView;
 try { JSON.parse(localStorage.getItem('off') || '[]').forEach(b => state.off.add(b)); } catch {}
@@ -190,8 +191,8 @@ function renderLineup(g) {
 
 // ------------------------------------------------------------ rendu
 // Zones qui défilent : bandeau des matchs, tableau, liste des joueurs, paliers de la fiche joueur
-const SCROLLERS = '#games, .tbl-wrap, .picker, .cuts';
-const viewKey = () => state.page === 'ecarts' ? `ecarts|${state.gapSport}` : `${state.gameId}|${state.view}|${state.view === 'joueur' ? state.playerId : ''}`;
+const SCROLLERS = '#games, .tbl-wrap, .picker, .cuts, .ft-tw';
+const viewKey = () => state.page === 'foot' ? `foot|${location.hash}` : state.page === 'ecarts' ? `ecarts|${state.gapSport}` : `${state.gameId}|${state.view}|${state.view === 'joueur' ? state.playerId : ''}`;
 function saveScroll() {
   return { key: viewKey(), y: window.scrollY, els: [...document.querySelectorAll(SCROLLERS)].map(el => [el.scrollLeft, el.scrollTop]) };
 }
@@ -216,7 +217,8 @@ function render() {
 function draw() {
   renderStatus();
   renderPages();
-  $('games').hidden = state.page === 'ecarts';
+  $('games').hidden = state.page !== 'matchs';
+  if (state.page === 'foot') { if (!footTyping()) $('match').innerHTML = renderFoot(); return; }
   if (state.page === 'ecarts') { $('match').innerHTML = renderGaps(); return; }
   $('demo').innerHTML = DEMO ? `<div class="demo-flag">⚠️ Mode démo : joueurs réels, cotes fictives. <a href="./">Voir les vraies cotes</a></div>` : '';
   const games = state.data?.games || [];
@@ -474,7 +476,8 @@ const bookName = b => BOOKS[b]?.name || ({ pmu: 'PMU' }[b] || b);
 function renderPages() {
   const n = GAP_SPORTS.reduce((t, [s]) => t + currentGaps(s).length, 0);
   $('pages').innerHTML = `<button class="${state.page === 'matchs' ? 'on' : ''}" data-page="matchs">Matchs</button>
-    <button class="${state.page === 'ecarts' ? 'on' : ''}" data-page="ecarts">Écarts${n ? `<span class="pg-n">${n}</span>` : ''}</button>`;
+    <button class="${state.page === 'ecarts' ? 'on' : ''}" data-page="ecarts">Écarts${n ? `<span class="pg-n">${n}</span>` : ''}</button>
+    <button class="${state.page === 'foot' ? 'on' : ''}" data-page="foot"><span class="ft-l">Analyse map foot</span><span class="ft-s">Foot</span></button>`;
 }
 
 function renderGaps() {
