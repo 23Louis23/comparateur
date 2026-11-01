@@ -2,11 +2,11 @@
 // Le mot de passe ne quitte jamais l'appareil : il sert ici, dans le navigateur, à retrouver la clé qui déchiffre le fichier.
 (() => {
   const KEY_STORE = 'footKey', REFRESH_MS = 10 * 60e3, RETRY_MS = 60e3;
-  const STAT_KEYS = ['min', 's', 'sot', 'g', 'xg', 'kp', 'a', 'xa'];
-  const COLUMNS = [['s', 'Tirs', 'Tirs'], ['sot', 'Cadrés', 'Cad.'], ['xg', 'xG', 'xG'], ['kp', 'Passes clés', 'PC'], ['xa', 'xA', 'xA']];
+  const COLUMNS = [['min', 'Min'], ['s', 'Tirs'], ['sot', 'Cad.'], ['xg', 'xG'], ['g', 'But'], ['kp', 'PC'], ['xa', 'xA'], ['a', 'PD']];
+  const STAT_KEYS = COLUMNS.map(([k]) => k);
   const stored = k => { try { return localStorage.getItem(k); } catch { return null; } };
   const store = (k, v) => { try { v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch {} };
-  const foot = { enc: null, data: null, key: stored(KEY_STORE), n: stored('footN') === '5' ? 5 : 3, sort: null, open: null, side: 0,
+  const foot = { enc: null, data: null, key: stored(KEY_STORE), n: stored('footN') === '5' ? 5 : 3, sort: null, side: 0,
                  busy: false, at: 0, missing: false, wrong: false, opening: false };
 
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -119,6 +119,8 @@
   }
 
   // ---------------------------------------------------------- détail d'un match
+  const gameLabel = g => `${g.start ? shortDay.format(new Date(g.start)) : ''} <span class="ft-m">${g.side ? 'à' : 'vs'}</span> ${esc(g.opp)}`;
+
   function teamTable(t) {
     if (!t.games.length) return '<div class="ft-tw"><div class="ft-empty">Matchs pas encore lus.</div></div>';
     const stat = (g, k, f) => g.st[k] ? f(g.st[k][g.side]) : '–';
@@ -128,7 +130,7 @@
     };
     const rows = t.games.map(g => {
       const cls = g.gf > g.ga ? 'w' : g.gf < g.ga ? 'l' : 'd';
-      return `<tr><td>${g.start ? shortDay.format(new Date(g.start)) : ''} <span class="ft-m">${g.side ? 'à' : 'vs'}</span> ${esc(g.opp)}</td>
+      return `<tr><td>${gameLabel(g)}</td>
         <td><span class="ft-res ${cls}">${g.gf}-${g.ga}</span></td><td>${stat(g, 'pos', v => `${v} %`)}</td><td>${stat(g, 'sh', v => v)}</td>
         <td>${stat(g, 'sot', v => v)}</td><td>${stat(g, 'xg', dec2)}</td></tr>`;
     }).join('');
@@ -136,33 +138,25 @@
       <tbody>${rows}<tr class="ft-avg"><td>Moyenne</td><td></td><td>${mean('pos', v => `${Math.round(v)} %`)}</td><td>${mean('sh', dec1)}</td><td>${mean('sot', dec1)}</td><td>${mean('xg', dec2)}</td></tr></tbody></table></div>`;
   }
 
-  function playerDetail(t, p) {
-    const rows = t.games.map(g => {
+  // Une ligne par match pour chaque joueur, même s'il n'a pas joué
+  function playerLines(t, p) {
+    const cell = (r, k) => `<td class="${r[k] ? '' : 'ft-zero'}">${k === 'xg' || k === 'xa' ? dec2(r[k]) : k === 'min' ? `${r[k]}'` : r[k]}</td>`;
+    return t.games.map(g => {
       const r = p.rows[g.id];
-      const name = `${g.start ? shortDay.format(new Date(g.start)) : ''} ${g.side ? 'à' : 'vs'} ${esc(g.opp)}`;
-      if (!g.pl.length) return `<tr class="ft-abs"><td>${name}</td><td colspan="8">stats joueurs indisponibles</td></tr>`;
-      if (!r) return `<tr class="ft-abs"><td>${name}</td><td colspan="8">n'a pas joué</td></tr>`;
-      return `<tr><td>${name}</td><td>${r.min}'</td><td>${r.s}</td><td>${r.sot}</td><td>${dec2(r.xg)}</td><td>${r.g}</td><td>${r.kp}</td><td>${dec2(r.xa)}</td><td>${r.a}</td></tr>`;
+      if (!g.pl.length) return `<tr class="ft-abs"><td>${gameLabel(g)}</td><td colspan="${COLUMNS.length}">stats indisponibles</td></tr>`;
+      if (!r) return `<tr class="ft-abs"><td>${gameLabel(g)}</td><td colspan="${COLUMNS.length}">n'a pas joué</td></tr>`;
+      return `<tr><td>${gameLabel(g)}</td>${COLUMNS.map(([k]) => cell(r, k)).join('')}</tr>`;
     }).join('');
-    return `<div class="ft-tw-in"><table><thead><tr><th>Match</th><th>Min</th><th>Tirs</th><th>${label('Cadrés', 'Cad.')}</th><th>xG</th><th>Buts</th><th>${label('Passes clés', 'PC')}</th><th>xA</th><th>${label('Passes déc.', 'PD')}</th></tr></thead><tbody>${rows}</tbody></table></div>`;
   }
 
-  function playerTable(t, key) {
-    const played = t.games.filter(g => g.pl.length);
+  function playerTable(t) {
     if (!t.players.length) return '<div class="ft-tw"><div class="ft-empty">Stats joueurs pas encore lues.</div></div>';
     const by = foot.sort;
     const list = [...t.players].sort((a, b) => by ? b[by] - a[by] : (b.xg + b.xa) - (a.xg + a.xa));
-    const top = Object.fromEntries(COLUMNS.map(([k]) => [k, Math.max(...list.map(p => p[k]))]));
-    const cell = (p, k) => `<td class="${!p[k] ? 'ft-zero' : p[k] === top[k] ? 'ft-hot' : ''}">${k === 'xg' || k === 'xa' ? dec2(p[k]) : p[k]}</td>`;
-    const rows = list.map(p => {
-      const id = `${key}|${p.id}`, open = foot.open === id;
-      const mins = played.map(g => p.rows[g.id] ? p.rows[g.id].min : '–').join(' · ');
-      return `<tr class="ft-pl ${open ? 'open' : ''}" data-ftplayer="${esc(id)}"><td><span class="ft-pn">${esc(p.n)}</span><span class="ft-pp">${esc(p.p)}</span></td>
-        <td><b>${p.min}'</b><span class="ft-mins">${mins}</span></td>${COLUMNS.map(([k]) => cell(p, k)).join('')}</tr>
-        ${open ? `<tr class="ft-det"><td colspan="7">${playerDetail(t, p)}</td></tr>` : ''}`;
-    }).join('');
-    return `<div class="ft-tw"><table><thead><tr><th>Joueur</th><th class="ft-sort ${by === 'min' ? 'on' : ''}" data-ftsort="min">${label('Temps de jeu', 'Min')}</th>
-      ${COLUMNS.map(([k, l, c]) => `<th class="ft-sort ${by === k ? 'on' : ''}" data-ftsort="${k}">${label(l, c)}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>`;
+    // Les titres sont répétés à chaque joueur : la liste est longue et ils sortiraient vite de l'écran
+    const heads = COLUMNS.map(([k, c]) => `<td class="ft-sort ${by === k ? 'on' : ''}" data-ftsort="${k}">${c}</td>`).join('');
+    const rows = list.map(p => `<tr class="ft-ph"><td><span class="ft-pn">${esc(p.n)}</span><span class="ft-pp">${esc(p.p)}</span></td>${heads}</tr>${playerLines(t, p)}`).join('');
+    return `<div class="ft-tw"><table><tbody>${rows}</tbody></table></div>`;
   }
 
   function renderMatch(id) {
@@ -175,14 +169,14 @@
       return `<section class="ft-team ${foot.side === i ? '' : 'off'}"><h3>${esc(name)}</h3>
         ${missing > 0 ? `<div class="ft-note">${missing} match(s) pas encore lu(s) pour cette équipe.</div>` : ''}
         <h4>${foot.n} derniers matchs de championnat</h4>${teamTable(t)}
-        <h4>Joueurs</h4>${playerTable(t, `${f.id}|${i}`)}</section>`;
+        <h4>Joueurs, match par match</h4>${playerTable(t)}</section>`;
     };
     return `<a class="ft-back" href="#">‹ Tous les matchs</a>
       <div class="ft-head"><div class="ft-ttl">${esc(f.home)} – ${esc(f.away)}</div>
         <div class="small">${esc(league?.name)} · ${parisDay(start) === parisDay(new Date()) ? "aujourd'hui" : 'demain'} à ${hour.format(start)}</div></div>
       <div class="ft-seg ft-pick"><button class="${foot.side === 0 ? 'on' : ''}" data-ftside="0">${esc(f.home)}</button><button class="${foot.side === 1 ? 'on' : ''}" data-ftside="1">${esc(f.away)}</button></div>
       <div class="ft-grid">${block(f.home, 0)}${block(f.away, 1)}</div>
-      <p class="small">Totaux sur les ${foot.n} derniers matchs de championnat (coupes et Europe non comptées). PC : passes clés, PD : passes décisives. Sous le temps de jeu : les minutes de chaque match, du plus récent au plus ancien. En vert : le meilleur de l'équipe. Touchez un joueur pour le détail match par match, un titre de colonne pour trier.</p>`;
+      <p class="small">Chaque joueur a une ligne par match, du plus récent au plus ancien, sur les ${foot.n} derniers matchs de championnat (coupes et Europe non comptées). Cad. : tirs cadrés, PC : passes clés, PD : passes décisives. Joueurs classés par xG + xA cumulés ; touchez un titre de colonne pour les classer sur le total de cette stat.</p>`;
   }
 
   function lockScreen() {
@@ -223,18 +217,16 @@
     if (pass) unlock(pass);
   });
   document.addEventListener('click', e => {
-    const t = e.target.closest('[data-ftn], [data-ftside], [data-ftsort], [data-ftplayer], [data-ftlock]');
+    const t = e.target.closest('[data-ftn], [data-ftside], [data-ftsort], [data-ftlock]');
     if (!t) return;
     if (t.dataset.ftn) { foot.n = Number(t.dataset.ftn); store('footN', foot.n); }
     else if (t.dataset.ftside) foot.side = Number(t.dataset.ftside);
     else if (t.dataset.ftsort) foot.sort = foot.sort === t.dataset.ftsort ? null : t.dataset.ftsort;
-    else if (t.dataset.ftlock) { foot.key = null; foot.data = null; store(KEY_STORE, null); }
-    else foot.open = foot.open === t.dataset.ftplayer ? null : t.dataset.ftplayer;
+    else { foot.key = null; foot.data = null; store(KEY_STORE, null); }
     render();
   });
   window.addEventListener('hashchange', () => {
     if (state.page !== 'foot') return;
-    foot.open = null;
     foot.side = 0;
     render();
     window.scrollTo(0, 0);
