@@ -322,13 +322,19 @@ function tableChips(obj) {
 }
 
 // ------------------------------------------------------------ 5 derniers matchs (ESPN)
-// valeurs stockées par match : [pts, reb, ast, 3pts, int, contres, balles perdues, minutes]
+// valeurs stockées par match : [pts, reb, ast, 3pts, int, contres, balles perdues, minutes, tirs réussis, tirs tentés]
 const L5_IDX = { pts: [0], reb: [1], ast: [2], '3pt': [3], stl: [4], blk: [5], tov: [6], pra: [0, 1, 2], pr: [0, 1], pa: [0, 2], ra: [1, 2], sb: [4, 5] };
 function l5Vals(p, s) {
   const g = p.l5?.g;
   if (!g?.length) return null;
   if (s === 'dd' || s === 'td') return g.map(r => [r[0], r[1], r[2], r[4], r[5]].filter(v => v >= 10).length >= (s === 'dd' ? 2 : 3) ? 1 : 0);
   return L5_IDX[s] ? g.map(r => L5_IDX[s].reduce((t, i) => t + r[i], 0)) : null;
+}
+// Sous chaque match : tirs réussis/tentés pour les points, xA pour les passes
+function l5Sub(p, s) {
+  if (s === 'pts' && p.l5?.g.some(r => r[9] != null)) return { label: 'Tirs', title: 'tirs réussis/tentés', vals: p.l5.g.map(r => r[9] != null ? `${r[8]}/${r[9]}` : '–') };
+  if (s === 'ast' && p.l5?.xa?.some(x => x != null)) return { label: 'xA', title: 'xA (Potential AST sur NBA.com)', vals: p.l5.xa.map(x => x ?? '–') };
+  return null;
 }
 const l5Avg = (p, s) => { const v = l5Vals(p, s); return v ? v.reduce((a, b) => a + b, 0) / v.length : null; };
 const dec1 = x => (Math.round(x * 10) / 10).toString().replace('.', ',');
@@ -357,8 +363,9 @@ function l5Head(p, s, line, extra) {
   const prev = p.l5.prev ? `, dont ${p.l5.prev} de la saison passée (en pâle)` : '';
   const left = `<span class="tc-l5 ${yes ? '' : l5Class(avg, line)}" title="Moyenne des ${n} derniers matchs">${yes
     ? `<b class="num">${Math.round(avg * n)}/${n}</b> derniers matchs` : `moy. <b class="num">${dec1(avg)}</b>`}</span>`;
-  const right = yes ? '' : `<span class="tc-l5v num" title="${n} derniers matchs, le plus récent à gauche${prev}">${
-    v.map((x, i) => `<i class="${l5Class(x, line)}${i >= n - (p.l5.prev || 0) ? ' prev' : ''}">${dec1(x)}</i>`).join('')}</span>`;
+  const sub = yes ? null : l5Sub(p, s);
+  const right = yes ? '' : `<span class="tc-l5v num" title="${n} derniers matchs, le plus récent à gauche${prev}${sub ? ` ; dessous : ${sub.title}` : ''}">${sub ? `<i class="lab">${sub.label}</i>` : ''}${
+    v.map((x, i) => `<i class="${l5Class(x, line)}${i >= n - (p.l5.prev || 0) ? ' prev' : ''}">${dec1(x)}${sub ? `<small>${sub.vals[i]}</small>` : ''}</i>`).join('')}</span>`;
   return `<span class="tc-head"><span class="tc-head-l">${left}${extra || ''}</span>${right}</span>`;
 }
 
@@ -401,7 +408,7 @@ function renderTable(g, players) {
       </tr>`;
     }).join('')}</tbody>
   </table></div>
-  <div class="small tbl-legend">▲ cotes Plus · ▼ cotes Moins de chaque bookmaker sur sa ligne à l'équilibre (meilleure en vert) ; quand les bookmakers n'ont pas la même ligne, chaque ligne est affichée. En haut de chaque case : moyenne des 5 derniers matchs puis le détail, du plus récent au plus ancien (vert au-dessus de la ligne, rouge en dessous). Sans plus/moins : le palier le plus proche de 2,00. Touchez une case pour voir tous les paliers.</div>`;
+  <div class="small tbl-legend">▲ cotes Plus · ▼ cotes Moins de chaque bookmaker sur sa ligne à l'équilibre (meilleure en vert) ; quand les bookmakers n'ont pas la même ligne, chaque ligne est affichée. En haut de chaque case : moyenne des 5 derniers matchs puis le détail, du plus récent au plus ancien (vert au-dessus de la ligne, rouge en dessous). Sous les points : tirs réussis/tentés. Sous les passes : xA, les passes qui ont mené à un tir, réussi ou non (« Potential AST » sur NBA.com) ; « – » si le chiffre de ce match n'est pas connu. Sans plus/moins : le palier le plus proche de 2,00. Touchez une case pour voir tous les paliers.</div>`;
 }
 
 function renderPlayer(g, p) {
@@ -449,7 +456,9 @@ function l5Detail(p, s) {
   const v = l5Vals(p, s);
   if (!v || s === 'dd' || s === 'td') return '';
   const prev = p.l5.prev ? ` <span class="small">(dont ${p.l5.prev} de la saison passée)</span>` : '';
-  return `<div class="l5-detail small">${p.l5.n} derniers matchs : ${v.map(x => `<b class="num">${dec1(x)}</b>`).join(' · ')}${prev}</div>`;
+  const sub = l5Sub(p, s);
+  return `<div class="l5-detail small">${p.l5.n} derniers matchs : ${v.map(x => `<b class="num">${dec1(x)}</b>`).join(' · ')}${prev}${
+    sub ? `<br>${sub.label} : ${sub.vals.map(x => `<b class="num">${x}</b>`).join(' · ')}` : ''}</div>`;
 }
 
 function renderCut({ cut, cell, books }, yes, vals) {

@@ -17,7 +17,7 @@ ESPN_TEAM = {"ATL": "atl", "BOS": "bos", "BKN": "bkn", "CHA": "cha", "CHI": "chi
              "MEM": "mem", "MIA": "mia", "MIL": "mil", "MIN": "min", "NOP": "no", "NYK": "ny", "OKC": "okc",
              "ORL": "orl", "PHI": "phi", "PHX": "phx", "POR": "por", "SAC": "sac", "SAS": "sa", "TOR": "tor",
              "UTA": "utah", "WAS": "wsh"}
-COLS = ["pts", "reb", "ast", "3pt", "stl", "blk", "tov", "min"]  # ordre des valeurs stockées par match
+COLS = ["pts", "reb", "ast", "3pt", "stl", "blk", "tov", "min", "fgm", "fga"]  # ordre des valeurs stockées par match
 ROSTER_HOURS = 24
 PLAYER_HOURS = 6
 MAX_PER_RUN = 150  # journaux lus par passage (le reste au passage suivant)
@@ -34,7 +34,7 @@ def roster(abbr):
 
 
 def gamelog(pid, season):
-    """→ [(date ISO, label saison, [pts, reb, ast, 3pm, stl, blk, tov, min])] du plus récent au plus ancien."""
+    """→ [(date ISO, label saison, [valeurs dans l'ordre de COLS])] du plus récent au plus ancien."""
     d = json.loads(get(GAMELOG % (pid, season)))
     names = d.get("names") or []
     idx = {n: i for i, n in enumerate(names)}
@@ -59,7 +59,8 @@ def gamelog(pid, season):
                     return float(v.split("-")[0]) if "-" in v else float(v)
                 row = [num("points"), num("totalRebounds"), num("assists"),
                        num("threePointFieldGoalsMade-threePointFieldGoalsAttempted"),
-                       num("steals"), num("blocks"), num("turnovers"), mins]
+                       num("steals"), num("blocks"), num("turnovers"), mins,
+                       *map(float, s[idx["fieldGoalsMade-fieldGoalsAttempted"]].split("-"))]
                 date = (events.get(e.get("eventId")) or {}).get("gameDate", "")
                 out.append((date, label.split(" ")[0], row))
     return sorted(out, key=lambda x: x[0], reverse=True)
@@ -68,11 +69,12 @@ def gamelog(pid, season):
 def last5(pid):
     cur = season_year()
     games = gamelog(pid, cur)
+    played = len(games)  # rang du dernier match dans la saison : sert à retrouver ses xA (xa.py)
     if len(games) < 5:
         games += gamelog(pid, cur - 1)
     games = games[:5]
     label = "%d-%02d" % (cur - 1, cur % 100)  # « 2026-27 »
-    return {"n": len(games), "prev": sum(1 for g in games if g[1] != label),
+    return {"n": len(games), "sn": played, "prev": sum(1 for g in games if g[1] != label),
             "seasons": sorted({g[1] for g in games}), "dates": [g[0][:10] for g in games], "g": [g[2] for g in games]}
 
 

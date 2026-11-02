@@ -25,6 +25,7 @@ import lineups  # noqa: E402
 import betclic  # noqa: E402
 import pmu  # noqa: E402
 import stats  # noqa: E402
+import xa  # noqa: E402
 import pokerstars  # noqa: E402
 import unibet  # noqa: E402
 import winamax  # noqa: E402
@@ -236,17 +237,26 @@ def stats_only():
         path.write_text(json.dumps(cache, ensure_ascii=False))
         log("stats ESPN : erreur", type(e).__name__)
         traceback.print_exc()
+    try:
+        n = xa.update(cache)
+        path.write_text(json.dumps(cache, ensure_ascii=False))
+        if n:
+            log("xA : %d relevé(s) lu(s)" % n)
+    except Exception as e:  # noqa: BLE001 — les xA manquants n'empêchent rien
+        log("xA : erreur", type(e).__name__)
 
 
 def attach_stats(board):
     """Moyennes des 5 derniers matchs + équipe (effectif ESPN) de chaque joueur."""
-    players = load(BUILD / "cache-stats.json", {}).get("players", {})
+    cache = load(BUILD / "cache-stats.json", {})
+    players = cache.get("players", {})
     for g in board.games.values():
         for key, p in g["players"].items():
             s = players.get(key)
             if not s or not s.get("n"):
                 continue
             p["l5"] = {k: s[k] for k in ("n", "prev", "seasons", "dates", "g")}
+            p["l5"]["xa"] = xa.by_game(cache.get("xa"), key, s)
             if not p.get("team") and s.get("team") in (g["_h"], g["_a"]):
                 p["team"] = "home" if s["team"] == g["_h"] else "away"
 
