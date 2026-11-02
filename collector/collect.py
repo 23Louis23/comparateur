@@ -41,6 +41,9 @@ ARROW_MINUTES = 60              # durée d'affichage d'une variation de cote
 STAT_LABELS = {"pts": "Points", "reb": "Rebonds", "ast": "Passes", "3pt": "Paniers à 3 pts", "pra": "Pts + Reb + Pas",
                "pr": "Pts + Reb", "pa": "Pts + Pas", "ra": "Reb + Pas", "stl": "Interceptions", "blk": "Contres",
                "sb": "Int + Contres", "tov": "Balles perdues", "dd": "Double-double", "td": "Triple-double"}
+# Prénoms qu'aucune règle d'écriture ne relie au nom ESPN (surnom, coquille) : joueur par joueur, jamais une règle générale
+ALIASES = {"ron holland": "ronald holland", "alexandre sarr": "alex sarr", "benedict mathurin": "bennedict mathurin",
+           "gregory jackson": "gg jackson", "sviatoslav mykhailiuk": "svi mykhailiuk"}
 
 
 def log(*a):
@@ -89,6 +92,61 @@ class Board:
         cell["o"][book] = max(odds, cell["o"].get(book, 0))
         if fallback:  # cote OddsPapi (ancienne) : affichée, mais jamais source d'alerte
             cell.setdefault("f", []).append(book)
+
+    @staticmethod
+    def merge(g, key, name):
+        """Reporte toute la ligne key sur le joueur name (même bookmaker des deux côtés : la meilleure cote, comme add)."""
+        p = g["players"].pop(key)
+        for stat, lines in (p.get("lines") or {}).items():
+            for line, sides in lines.items():
+                for side, books in sides.items():
+                    for b, odds in books.items():
+                        Board.add_line(g, name, stat, line, side, b, odds)
+        for stat, cuts in p["stats"].items():
+            for cut, cell in cuts.items():
+                for b, odds in cell["o"].items():
+                    Board.add(g, name, stat, cut, b, odds, fallback=b in cell.get("f", []))
+
+
+def is_initial_of(key, full):
+    """« g antetokounmpo » → « giannis antetokounmpo » ; le nom peut ne reprendre que la fin (« k towns » →
+    « karl anthony towns ») ou être collé (« t dasilva » → « tristan da silva »)."""
+    first, *rest = key.split()
+    words = full.split()
+    return full.startswith(first) and any("".join(words[i:]) == "".join(rest) for i in range(1, len(words)))
+
+
+def other_spelling(own, name, known, squads_known):
+    """Clé, parmi les noms connus du match, du joueur que désigne la ligne own ; None s'il n'y en a aucun, ou plusieurs
+    (dans le doute on ne réunit pas). Sans les deux effectifs, une initiale ne suffit pas : l'homonyme peut ne pas avoir de cotes."""
+    key = own
+    if "," in name:  # « Brown, Mikel », « Washington Jr., P.J. »
+        last, _, first = name.partition(",")
+        key = norm_name(first + " " + last)
+    if key != own and key in known:
+        return key
+    if ALIASES.get(key) in known:
+        return ALIASES[key]
+    cands = {k for k in known if k != own and k.replace(" ", "") == key.replace(" ", "")}  # « dayron sharpe » / « day ron sharpe »
+    words = key.split()
+    if not cands and squads_known and len(words) > 1 and len(words[0]) == 1:  # « S.Gilgeous-Alexander », « G.Antetokounmpo »
+        cands = {k for k in known if k != own and is_initial_of(key, k)}
+    return cands.pop() if len(cands) == 1 else None
+
+
+def unify_names(board, rosters):
+    """Un joueur écrit autrement selon le bookmaker (ou le marché, chez Unibet) → une seule ligne, au nom complet.
+    Référence : les effectifs ESPN des deux équipes (cache de stats.py), en plus des noms présents dans le match. Ainsi
+    « J.Williams » reste à part à OKC (Jalen et Jaylin), même les jours où un seul des deux a des cotes."""
+    for g in board.games.values():
+        squads = [rosters[t]["players"] for t in (g["_h"], g["_a"]) if t in rosters]
+        squad = {norm_name(n): n for players in squads for _, n in players}
+        for key in sorted(g["players"], key=lambda k: len(k.split(" ")[0]) == 1):  # initiales en dernier : autres écritures déjà réunies
+            if key not in squad:
+                known = squad | {k: p["name"] for k, p in g["players"].items()}
+                target = other_spelling(key, g["players"][key]["name"], known, len(squads) == 2)
+                if target:
+                    Board.merge(g, key, known[target])
 
 
 def add_fallback(board, covered, covered_lines=frozenset()):
@@ -367,6 +425,11 @@ def main():
                      for stat, lines in (p.get("lines") or {}).items() for sides in lines.values()
                      for books in sides.values() for b in books}
     add_fallback(board, covered, covered_lines)
+    try:
+        unify_names(board, load(BUILD / "cache-stats.json", {}).get("rosters", {}))
+    except Exception as e:  # noqa: BLE001 — des doublons valent mieux qu'une publication manquée
+        log("noms : erreur", type(e).__name__)
+        traceback.print_exc()
     attach_lineups(board, get_lineups())
     attach_stats(board)
 
