@@ -44,7 +44,6 @@ HCP_GAP = 3          # écart entre les handicaps équilibrés de deux bookmaker
 HCP_FAV = 1.60       # favori net (cote moyenne au vainqueur)…
 HCP_FLIP = 1.5       # …à qui un bookmaker donne pourtant au moins +1,5 point : handicap inversé
 HORIZON_H = 48
-REPEAT_H = 6
 STATE = HERE / "build" / "europe-state.json"
 PAGE = HERE / "build" / "gaps-europe.json"  # écarts en cours, publiés sur le site par collect.py
 EXCLUDE = re.compile(r"\bNBA\b|WNBA|NCAA|\bNBL\b|Australie|Chine|Japon|Cor[ée]e|Philippines|\(F\)|F[ée]minin|Femmes|Women|LFB|"
@@ -558,6 +557,7 @@ def main():
     sent = state.setdefault("sent", {})
     for k in [k for k, v in sent.items() if datetime.fromisoformat(v["t"]) < now() - timedelta(days=2)]:
         del sent[k]
+    recent = alerts.recent_subjects(sent, alerts.subject_eu)
     found = []
     for ref, members in groups:
         if len(members) < 2:
@@ -631,8 +631,7 @@ def main():
     for ref, members, player, stat, lo_b, hi_b, bal, _ in gaps:
         k = "%s|%s|%s|gap|%s|%s" % (ref.home, ref.away, ref.start.date(), player, stat)
         gap = bal[hi_b][0] - bal[lo_b][0]
-        prev = sent.get(k)
-        if prev and abs(gap - prev["v"]) < 1 and datetime.fromisoformat(prev["t"]) > now() - timedelta(hours=REPEAT_H * 2):
+        if k in recent:
             continue
         ln = lambda x: ("%g" % x).replace(".", ",")
         title = "📏 %s · %s · écart de ligne %s" % (player.title(), STAT_FR.get(stat, stat), ln(gap))
@@ -641,13 +640,12 @@ def main():
             alerts.odds_fr(bal[hi_b][2]), " · ".join("%s %s" % (BOOK_NAMES[b], ln(v[0])) for b, v in sorted(bal.items(), key=lambda kv: kv[1][0])),
             ref.home, ref.away, when(ref.start))
         todo.append((title, msg, members[lo_b][0].url, k, gap))
-    for h in hcps:  # rappel si l'écart (ou la ligne inversée) bouge d'1 point, ou après 12 h
+    for h in hcps:
         ref, bal, shown = h["ref"], h["bal"], h["shown"]
         team = lambda s: ref.home if s == "home" else ref.away
         k = "%s|%s|%s|hcp" % (ref.home, ref.away, ref.start.date())
         v = h["gap"] if len(bal) > 1 else shown[h["flipped"][0]]
-        prev = sent.get(k)
-        if prev and abs(v - prev["v"]) < 1 and datetime.fromisoformat(prev["t"]) > now() - timedelta(hours=REPEAT_H * 2):
+        if k in recent:
             continue
         ln = lambda x: ("+" if x > 0 else "") + ("%g" % x).replace(".", ",")
         fav_team = team(h["side"])
@@ -671,9 +669,8 @@ def main():
         url = h["members"][(h["flipped"] or [h["hi_b"]])[0]][0].url
         todo.append((title, "\n".join(rows), url, k, v))
     for ref, members, key, bb, best, by in found:
-        k = "%s|%s|%s|%s" % (ref.home, ref.away, ref.start.date(), key)
-        prev = sent.get(k)
-        if prev and best <= prev["v"] + 0.05 and datetime.fromisoformat(prev["t"]) > now() - timedelta(hours=REPEAT_H):
+        k = alerts.subject_eu("%s|%s|%s|%s" % (ref.home, ref.away, ref.start.date(), key))
+        if k in recent:
             continue
         what = describe(key, ref.home, ref.away)
         league = members.get(bb, (ref, False))[0].league or ref.league

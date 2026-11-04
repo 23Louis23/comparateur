@@ -44,7 +44,6 @@ EDGE = 1.50          # meilleure cote ≥ autre cote × 1,50
 MAX_ODDS = 10.0      # au-delà, les écarts entre bookmakers sont normaux (un outsider à 8 contre 4 ailleurs reste une erreur)
 MAX_ODDS_TRY = 6.0   # marqueurs d'essai : les avants à 8-10 varient beaucoup d'un bookmaker à l'autre
 HORIZON_H = 168      # une semaine : les cotes du week-end sortent dès le lundi
-REPEAT_H = 6
 STATE = HERE / "build" / "rugby-state.json"
 PAGE = HERE / "build" / "gaps-rugby.json"  # écarts en cours sur les joueurs, publiés sur le site par collect.py
 EXCLUDE = re.compile(r"\(F\)|\sF\.(?:\s|$)|F[ée]minin|Femmes|Women|WXV|[ÉE]lite 1|Sevens|\bà 7\b", re.I)
@@ -600,12 +599,13 @@ def main():
     sent = state.setdefault("sent", {})
     for k in [k for k, v in sent.items() if datetime.fromisoformat(v["t"]) < now() - timedelta(days=3)]:
         del sent[k]
+    recent = alerts.recent_subjects(sent, alerts.subject_eu)
     todo = []
     for ref, members, key, bb, best, by in found:
         # une clé par façon d'écrire le match chez chaque bookmaker : pas de rappel quand le match de référence change de nom
-        ks = sorted({"%s|%s|%s|%s" % (((g.away, g.home) if inv else (g.home, g.away)) + (ref.start.date(), key)) for g, inv in members.values()})
-        prev = max((sent[x] for x in ks if x in sent), key=lambda v: v["t"], default=None)
-        if prev and best <= prev["v"] + 0.05 and datetime.fromisoformat(prev["t"]) > now() - timedelta(hours=REPEAT_H):
+        ks = sorted({alerts.subject_eu("%s|%s|%s|%s" % (((g.away, g.home) if inv else (g.home, g.away)) + (ref.start.date(), key)))
+                     for g, inv in members.values()})
+        if recent.intersection(ks):
             continue
         rest = " · ".join("%s %s" % (BOOK_NAMES[b], alerts.odds_fr(o)) for b, o in sorted(by.items(), key=lambda kv: -kv[1]) if b != bb)
         title = "🏉 %s · %s – %s" % (BOOK_NAMES[bb], ref.home, ref.away)

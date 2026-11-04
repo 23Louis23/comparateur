@@ -4,6 +4,7 @@ ligne Plus/Moins, envoyées sur le téléphone via ntfy (https://ntfy.sh).
 Le nom du canal ntfy est secret (quiconque le connaît reçoit les alertes) : il est rangé dans
 ~/Library/Application Support/CoteRadar/config.json, jamais dans le dépôt public."""
 import json
+import re
 import secrets
 import urllib.request
 from datetime import datetime, timedelta
@@ -17,7 +18,7 @@ EDGE = 1.30          # meilleure cote ≥ 2e meilleure × 1,30 (elle sort seule 
 MIN_BOOKS = 3        # au moins 3 bookmakers sur la même sélection
 MAX_ODDS = 4.0       # au-delà, les écarts entre bookmakers sont normaux
 FRESH_MIN = 20       # seules les cotes lues en direct depuis moins de 20 min comptent (Betclic : relu toutes les 15 min)
-REPEAT_HOURS = 6     # pas de rappel pour la même alerte avant 6 h (sauf cote encore plus haute)
+REPEAT_HOURS = 24    # une même alerte part au plus une fois par 24 h, même si la ligne ou la cote bouge entre-temps
 MAX_PUSH = 5         # au-delà, un seul message récapitulatif
 BOOK_NAMES = {"unibet": "Unibet", "winamax": "Winamax", "pmu": "PMU", "betclic": "Betclic", "pokerstars": "PokerStars", "bet365": "bet365"}
 
@@ -42,6 +43,32 @@ def push(title, message, tags="basketball", priority=4):
                                  headers={"Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=15):
         pass
+
+
+def subject(key):
+    """NBA (« match|joueur|catégorie|sorte+ligne ») : clé sans la ligne ni le palier, car « Plus 22,5 » puis
+    « Plus 23,5 » sur le même joueur, c'est la même alerte."""
+    *head, kind = key.split("|")
+    return "|".join(head + [kind if kind in ("l5", "gap") else kind.rstrip("0123456789.")])
+
+
+def subject_eu(key):
+    """Europe et rugby (« domicile|extérieur|date|sélection ») : sélection sans ses nombres (ligne, palier)."""
+    parts = key.split("|")
+    return "|".join(parts[:3] + [p for p in parts[3:] if not re.fullmatch(r"[-+]?\d+(\.\d+)?", p)])
+
+
+def recent_subjects(sent, subj):
+    """Range la mémoire des envois par alerte (clé sans ligne, en gardant l'envoi le plus récent).
+    → alertes déjà parties depuis moins de REPEAT_HOURS : on ne les renvoie pas."""
+    for k in list(sent):
+        s = subj(k)
+        if s != k:
+            v = sent.pop(k)
+            if s not in sent or sent[s]["t"] < v["t"]:
+                sent[s] = v
+    limit = now() - timedelta(hours=REPEAT_HOURS)
+    return {k for k, v in sent.items() if datetime.fromisoformat(v["t"].replace("Z", "+00:00")) > limit}
 
 
 def fresh_books(g, local):
@@ -243,12 +270,11 @@ def run(games, labels, local, st):
     limit = now() - timedelta(days=2)
     for k in [k for k, v in sent.items() if datetime.fromisoformat(v["t"][:-1] + "+00:00") < limit]:
         del sent[k]
+    recent = recent_subjects(sent, subject)
     todo = []
-    for f in find_l5(games, labels, local):  # écart ligne / moyenne : rappel seulement si la ligne bouge d'1 point
-        k = "|".join(f["key"])
-        prev = sent.get(k)
-        if prev and abs(float(f["line"]) - prev["v"]) < 1 and \
-                datetime.fromisoformat(prev["t"][:-1] + "+00:00") > now() - timedelta(hours=REPEAT_HOURS * 2):
+    for f in find_l5(games, labels, local):  # écart ligne / moyenne des 5 derniers matchs
+        k = subject("|".join(f["key"]))
+        if k in recent:
             continue
         sent[k] = {"v": float(f["line"]), "t": iso(now())}
         line = f["line"].replace(".", ",")
@@ -259,11 +285,9 @@ def run(games, labels, local, st):
             line, fmt1(f["avg"]), side, " · ".join(fmt1(v) for v in f["vals"]),
             " (dont %d de la saison passée)" % f["prev"] if f["prev"] else "", best(f["over"]), best(f["under"]), f["match"])
         todo.append((title, msg, "bar_chart", "%s · %s %s : moyenne %s" % (f["player"], f["cat"], line, fmt1(f["avg"]))))
-    for f in find_line_gaps(games, labels, local):  # écart de ligne : rappel si l'écart change d'1 ou après 12 h
-        k = "|".join(f["key"])
-        prev = sent.get(k)
-        if prev and abs(f["gap"] - prev["v"]) < 1 and \
-                datetime.fromisoformat(prev["t"][:-1] + "+00:00") > now() - timedelta(hours=REPEAT_HOURS * 2):
+    for f in find_line_gaps(games, labels, local):  # écart de ligne entre bookmakers
+        k = subject("|".join(f["key"]))
+        if k in recent:
             continue
         sent[k] = {"v": f["gap"], "t": iso(now())}
         lo_b, lo, lo_o, lo_u = f["lo"]
@@ -276,13 +300,10 @@ def run(games, labels, local, st):
             " · ".join("%s %s" % (name(b), ln(v[0])) for b, v in sorted(f["all"].items(), key=lambda kv: kv[1][0])), f["match"])
         todo.append((title, msg, "straight_ruler", "%s · %s : %s %s / %s %s" % (f["player"], f["cat"], name(lo_b), ln(lo), name(hi_b), ln(hi))))
     for f in find(games, labels, local):
-        k = "|".join(f["key"])
-        value = f["hit"][1] if f["kind"] == "cote" else f["hit"][4]
-        prev = sent.get(k)
-        if prev and value <= prev["v"] + (0.05 if f["kind"] == "cote" else 0.3) and \
-                datetime.fromisoformat(prev["t"][:-1] + "+00:00") > now() - timedelta(hours=REPEAT_HOURS):
+        k = subject("|".join(f["key"]))
+        if k in recent:
             continue
-        sent[k] = {"v": value, "t": iso(now())}
+        sent[k] = {"v": f["hit"][1] if f["kind"] == "cote" else f["hit"][4], "t": iso(now())}
         if f["kind"] == "cote":
             book, best, second = f["hit"]
             name = BOOK_NAMES.get(book, book)
