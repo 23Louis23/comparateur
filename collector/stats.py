@@ -17,7 +17,7 @@ ESPN_TEAM = {"ATL": "atl", "BOS": "bos", "BKN": "bkn", "CHA": "cha", "CHI": "chi
              "MEM": "mem", "MIA": "mia", "MIL": "mil", "MIN": "min", "NOP": "no", "NYK": "ny", "OKC": "okc",
              "ORL": "orl", "PHI": "phi", "PHX": "phx", "POR": "por", "SAC": "sac", "SAS": "sa", "TOR": "tor",
              "UTA": "utah", "WAS": "wsh"}
-COLS = ["pts", "reb", "ast", "3pt", "stl", "blk", "tov", "min", "fgm", "fga"]  # ordre des valeurs stockées par match
+COLS = ["pts", "reb", "ast", "3pt", "stl", "blk", "tov", "min", "fgm", "fga", "ftm", "fta"]  # ordre des valeurs stockées par match
 ROSTER_HOURS = 24
 PLAYER_HOURS = 6
 MAX_PER_RUN = 150  # journaux lus par passage (le reste au passage suivant)
@@ -60,7 +60,8 @@ def gamelog(pid, season):
                 row = [num("points"), num("totalRebounds"), num("assists"),
                        num("threePointFieldGoalsMade-threePointFieldGoalsAttempted"),
                        num("steals"), num("blocks"), num("turnovers"), mins,
-                       *map(float, s[idx["fieldGoalsMade-fieldGoalsAttempted"]].split("-"))]
+                       *map(float, s[idx["fieldGoalsMade-fieldGoalsAttempted"]].split("-")),
+                       *map(float, s[idx["freeThrowsMade-freeThrowsAttempted"]].split("-"))]
                 date = (events.get(e.get("eventId")) or {}).get("gameDate", "")
                 out.append((date, label.split(" ")[0], row))
     return sorted(out, key=lambda x: x[0], reverse=True)
