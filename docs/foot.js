@@ -115,13 +115,15 @@
     };
     const html = block("Aujourd'hui", parisDay(new Date())) + block('Demain', parisDay(new Date(Date.now() + 864e5)));
     return (d.read < d.total ? `<div class="ft-note">Lecture en cours : ${d.read} matchs lus sur ${d.total}. La page se complète toute seule.</div>` : '')
-      + (html || '<div class="ft-empty">Aucun match aujourd\'hui ni demain dans ces championnats.</div>');
+      + (html || '<div class="ft-empty">Aucun match aujourd\'hui ni demain dans ces compétitions.</div>');
   }
 
   // ---------------------------------------------------------- détail d'un match
   const gameLabel = g => `${g.start ? shortDay.format(new Date(g.start)) : ''} <span class="ft-m">${g.side ? 'à' : 'vs'}</span> ${esc(g.opp)}`;
+  // Compétition d'un match (affichée quand l'historique mélange championnat, coupes et Europe)
+  const compOf = g => (g.c || foot.data.leagues.find(l => l.id === g.lg)?.name || '').replace(/ - Phase de ligue$/, '');
 
-  function teamTable(t) {
+  function teamTable(t, all) {
     if (!t.games.length) return '<div class="ft-tw"><div class="ft-empty">Matchs pas encore lus.</div></div>';
     const stat = (g, k, f) => g.st[k] ? f(g.st[k][g.side]) : '–';
     const mean = (k, f) => {
@@ -130,7 +132,7 @@
     };
     const rows = t.games.map(g => {
       const cls = g.gf > g.ga ? 'w' : g.gf < g.ga ? 'l' : 'd';
-      return `<tr><td>${gameLabel(g)}</td>
+      return `<tr><td>${gameLabel(g)}${all ? `<span class="ft-pp">${esc(compOf(g))}</span>` : ''}</td>
         <td><span class="ft-res ${cls}">${g.gf}-${g.ga}</span></td><td>${stat(g, 'pos', v => `${v} %`)}</td><td>${stat(g, 'sh', v => v)}</td>
         <td>${stat(g, 'sot', v => v)}</td><td>${stat(g, 'xg', dec2)}</td></tr>`;
     }).join('');
@@ -180,13 +182,13 @@
   function renderMatch(id) {
     const d = foot.data, f = d.fixtures.find(x => x.id === id);
     if (!f) return '<a class="ft-back" href="#">‹ Tous les matchs</a><div class="ft-empty">Ce match n\'est plus dans la liste.</div>';
-    const league = d.leagues.find(l => l.id === f.lg), start = new Date(f.start);
+    const league = d.leagues.find(l => l.id === f.lg), start = new Date(f.start), all = !!league?.all;
     const block = (name, i) => {
       const t = teamData(f.lg, name);
       const missing = Math.min(foot.n, (d.teams[`${f.lg}|${name}`] || []).length) - t.games.filter(g => g.pl.length).length;
       return `<section class="ft-team ${foot.side === i ? '' : 'off'}"><h3>${esc(name)}</h3>
         ${missing > 0 ? `<div class="ft-note">${missing} match(s) pas encore lu(s) pour cette équipe.</div>` : ''}
-        <h4>${foot.n} derniers matchs de championnat</h4>${teamTable(t)}
+        <h4>${foot.n} derniers matchs${all ? ', toutes compétitions' : ' de championnat'}</h4>${teamTable(t, all)}
         <h4>Joueurs, match par match</h4>${playerTable(t)}</section>`;
     };
     return `<a class="ft-back" href="#">‹ Tous les matchs</a>
@@ -195,7 +197,7 @@
       ${standing(f)}
       <div class="ft-seg ft-pick"><button class="${foot.side === 0 ? 'on' : ''}" data-ftside="0">${esc(f.home)}</button><button class="${foot.side === 1 ? 'on' : ''}" data-ftside="1">${esc(f.away)}</button></div>
       <div class="ft-grid">${block(f.home, 0)}${block(f.away, 1)}</div>
-      <p class="small">Chaque joueur a une ligne par match, du plus récent au plus ancien, sur les ${foot.n} derniers matchs de championnat (coupes et Europe non comptées). MJ : matchs joués, BM : buts marqués, BE : buts encaissés, Cad. : tirs cadrés, PC : passes clés, PD : passes décisives. Joueurs classés par xG + xA cumulés ; touchez un titre de colonne pour les classer sur le total de cette stat.</p>`;
+      <p class="small">Chaque joueur a une ligne par match, du plus récent au plus ancien, sur les ${foot.n} derniers matchs ${all ? 'toutes compétitions (matchs amicaux non comptés)' : 'de championnat (coupes et Europe non comptées)'}. MJ : matchs joués, BM : buts marqués, BE : buts encaissés, Cad. : tirs cadrés, PC : passes clés, PD : passes décisives. Joueurs classés par xG + xA cumulés ; touchez un titre de colonne pour les classer sur le total de cette stat.</p>`;
   }
 
   function lockScreen() {
