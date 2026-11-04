@@ -37,6 +37,9 @@ BOOKS = {"unibet": r"unibet", "winamax": r"winamax", "pmu": r"\bpmu", "betclic":
          "bwin": r"bwin", "pokerstars": r"pokerstars", "bet365": r"bet365"}
 # Bookmakers interrogés ici : ceux que l'iMac ne lit pas (ou pas en entier) en direct.
 ONLY = set(os.environ.get("ODDSPAPI_BOOKS", "pokerstars,bet365").split(","))
+# bet365.fr ne propose pas de Plus/Moins sur les joueurs NBA (constaté le 2026-11-04) : ceux d'OddsPapi viennent
+# sans doute de bet365 international. On n'en garde que les paliers « 25 ou plus ».
+MILESTONES_ONLY = {"bet365"}
 
 # Statistiques suivies : clé → (motif sur le nom du marché OddsPapi, libellé)
 STATS = {
@@ -250,6 +253,8 @@ def collect(api, st, games, diag):
                             diag["non_reconnus"][n] = diag["non_reconnus"].get(n, 0) + 1
                         break
                     stat, _, kind, line, outs = m
+                    if kind == "over" and book in MILESTONES_ONLY:
+                        break
                     side = str(outs.get(str(oid)) or "")
                     if kind == "over" and side not in ("Over", "Under"):
                         continue
