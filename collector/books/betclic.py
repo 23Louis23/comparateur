@@ -18,9 +18,14 @@ TABS = ["Points", "Statistiques joueurs", "Marqueurs"]  # en plus de « Le Top �
 STATS = [  # motif sur le titre du marché (le plus spécifique d'abord) → statistique
     (r"pts\s*\+\s*reb\s*\+\s*pas|points \+ rebonds \+ passes", "pra"), (r"pts\s*\+\s*reb|points \+ rebonds", "pr"),
     (r"pts\s*\+\s*pas|points \+ passes", "pa"), (r"reb\s*\+\s*pas|rebonds \+ passes", "ra"),
-    (r"triple", "td"), (r"double", "dd"), (r"3 points|paniers? à 3", "3pt"), (r"points", "pts"),
+    (r"triple[\s-]*double", "td"), (r"double[\s-]*double", "dd"),  # « Double Chance » n'est pas un double-double
+    (r"3 points|paniers? à 3", "3pt"), (r"points", "pts"),
     (r"rebonds", "reb"), (r"passes", "ast"), (r"interceptions", "stl"), (r"contres", "blk"),
 ]
+# Paris sur deux joueurs à la fois (« Double Chance - Un des deux joueurs inscrit 20 pts ou + », « Chaque joueur
+# inscrit 20 points ou plus », nom « T. Maxey & J. Brown ») ou joueur + victoire de l'équipe : on ne garde que les
+# paris d'un seul joueur
+NOT_SINGLE = re.compile(r"deux joueurs|2 joueurs|chaque joueur|[ée]quipe gagne", re.I)
 APP = Path.home() / "Library/Application Support/CoteRadar"
 os.environ.setdefault("PLAYWRIGHT_BROWSERS_PATH", str(APP / "browsers"))
 
@@ -93,6 +98,8 @@ def add_row(g, row):
     if not stat or odds is None:
         return
     name, label = (row.get("name") or "").strip(), (row.get("label") or "").strip()
+    if NOT_SINGLE.search(row.get("title") or "") or "&" in name or "&" in label:
+        return
     text = label if name and label else (name or label)
     over = re.search(r"\+\s*de\s+([\d.,]+)$", text)
     mile = re.search(r"(\d+)\s*(?:\+|ou \+|ou plus)$", text)
