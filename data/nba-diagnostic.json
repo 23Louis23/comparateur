@@ -1,5 +1,5 @@
 {
- "run": "2026-11-05T16:52:01Z",
+ "run": "2026-11-05T22:27:21Z",
  "bookmakers": {
   "bet365": "cotes reçues",
   "pokerstars": "cotes reçues"
@@ -7,18 +7,18 @@
  "par_bookmaker": {
   "bet365": {},
   "pokerstars": {
-   "pr": 8,
-   "ra": 19,
-   "blk": 4,
-   "pa": 21,
-   "pra": 22,
-   "td": 2,
-   "reb": 78,
-   "dd": 16,
-   "3pt": 84,
+   "pa": 214,
+   "pra": 234,
+   "pr": 219,
    "stl": 17,
-   "pts": 92,
-   "ast": 37
+   "td": 2,
+   "ra": 19,
+   "reb": 82,
+   "3pt": 85,
+   "pts": 90,
+   "dd": 16,
+   "blk": 4,
+   "ast": 69
   }
  },
  "non_reconnus": {},
