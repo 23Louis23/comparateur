@@ -1,6 +1,6 @@
 {
  "month": "2026-11",
- "used": 21,
+ "used": 23,
  "cache": {
   "books": {
    "bet365": "bet365.fr",
@@ -3547,6 +3547,6 @@
   "bwin.fr": "2026-10-21T07:34:46Z"
  },
  "status": "ok",
- "lastRun": "2026-11-05T22:27:21Z",
- "nextGame": null
+ "lastRun": "2026-11-06T17:01:35Z",
+ "nextGame": "2026-11-07T00:00:00Z"
 }
