@@ -330,11 +330,13 @@ function l5Vals(p, s) {
   if (s === 'dd' || s === 'td') return g.map(r => [r[0], r[1], r[2], r[4], r[5]].filter(v => v >= 10).length >= (s === 'dd' ? 2 : 3) ? 1 : 0);
   return L5_IDX[s] ? g.map(r => L5_IDX[s].reduce((t, i) => t + r[i], 0)) : null;
 }
-// Sous chaque match : tirs puis lancers francs réussis/tentés pour les points, xA pour les passes
+// Sous chaque match : tirs puis lancers francs réussis/tentés pour les points, tirs à 3 pts pour les 3 points,
+// xA pour les passes (m, a : rang des réussis et des tentés dans une ligne de match)
 function l5Sub(p, s) {
-  const made = (i, label, name, title) => p.l5.g.some(r => r[i + 1] != null)
-    ? [{ label, name, title, vals: p.l5.g.map(r => r[i + 1] != null ? `${r[i]}/${r[i + 1]}` : '–') }] : [];
-  if (s === 'pts' && p.l5) return [...made(8, 'Tirs', 'Tirs', 'tirs réussis/tentés'), ...made(10, 'LF', 'Lancers francs', 'lancers francs réussis/tentés')];
+  const made = (m, a, label, name, title) => p.l5.g.some(r => r[a] != null)
+    ? [{ label, name, title, vals: p.l5.g.map(r => r[a] != null ? `${r[m]}/${r[a]}` : '–') }] : [];
+  if (s === 'pts' && p.l5) return [...made(8, 9, 'Tirs', 'Tirs', 'tirs réussis/tentés'), ...made(10, 11, 'LF', 'Lancers francs', 'lancers francs réussis/tentés')];
+  if (s === '3pt' && p.l5) return made(3, 12, 'Tirs', 'Tirs à 3 pts', 'tirs à 3 points réussis/tentés');
   if (s === 'ast' && p.l5?.xa?.some(x => x != null)) return [{ label: 'xA', name: 'xA', title: 'xA (Potential AST sur NBA.com)', vals: p.l5.xa.map(x => x ?? '–') }];
   return [];
 }
@@ -411,7 +413,7 @@ function renderTable(g, players) {
       </tr>`;
     }).join('')}</tbody>
   </table></div>
-  <div class="small tbl-legend">▲ cotes Plus · ▼ cotes Moins de chaque bookmaker sur sa ligne à l'équilibre (meilleure en vert) ; quand les bookmakers n'ont pas la même ligne, chaque ligne est affichée. En haut de chaque case : moyenne des 5 derniers matchs puis le détail, du plus récent au plus ancien (vert au-dessus de la ligne, rouge en dessous). Sous les points : tirs réussis/tentés, puis lancers francs (LF) réussis/tentés. Sous les passes : xA, les passes qui ont mené à un tir, réussi ou non (« Potential AST » sur NBA.com) ; « – » si le chiffre de ce match n'est pas connu. Sans plus/moins : le palier le plus proche de 2,00. Touchez une case pour voir tous les paliers.</div>`;
+  <div class="small tbl-legend">▲ cotes Plus · ▼ cotes Moins de chaque bookmaker sur sa ligne à l'équilibre (meilleure en vert) ; quand les bookmakers n'ont pas la même ligne, chaque ligne est affichée. En haut de chaque case : moyenne des 5 derniers matchs puis le détail, du plus récent au plus ancien (vert au-dessus de la ligne, rouge en dessous). Sous les points : tirs réussis/tentés, puis lancers francs (LF) réussis/tentés. Sous les 3 points : tirs à 3 points réussis/tentés. Sous les passes : xA, les passes qui ont mené à un tir, réussi ou non (« Potential AST » sur NBA.com) ; « – » si le chiffre de ce match n'est pas connu. Sans plus/moins : le palier le plus proche de 2,00. Touchez une case pour voir tous les paliers.</div>`;
 }
 
 function renderPlayer(g, p) {
