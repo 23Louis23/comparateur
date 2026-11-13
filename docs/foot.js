@@ -121,7 +121,9 @@
   // ---------------------------------------------------------- détail d'un match
   const gameLabel = g => `${g.start ? shortDay.format(new Date(g.start)) : ''} <span class="ft-m">${g.side ? 'à' : 'vs'}</span> ${esc(g.opp)}`;
   // Compétition d'un match (affichée quand l'historique mélange championnat, coupes et Europe)
-  const compOf = g => (g.c || foot.data.leagues.find(l => l.id === g.lg)?.name || '').replace(/ - Phase de ligue$/, '');
+  const compOf = g => (g.c || foot.data.leagues.find(l => l.id === g.lg)?.name || '').replace(/ - Phase de ligue$/, '')
+    .replace(/^Ligue des Nations UEFA - /, 'Ligue des nations · ').replace(/^Championnat du Monde( - Phase Finale)?$/, 'Coupe du monde')
+    .replace(/^Championnat du Monde - Qualification$/, 'Qualif. Coupe du monde');
 
   function teamTable(t, all) {
     if (!t.games.length) return '<div class="ft-tw"><div class="ft-empty">Matchs pas encore lus.</div></div>';
