@@ -550,6 +550,7 @@ function gapCard(x) {
       <span class="gc-gap">écart de ligne ${String(x.gap).replace('.', ',')}</span>
     </div>
     <div class="gc-match">${esc(match)} · ${esc(dayLabel(d))} ${timeFmt.format(d)}${x.league && !x.game && x.league !== 'NBA' ? ` · ${esc(x.league)}` : ''}</div>
+    ${prop ? gapHistory(x) : ''}
     ${flipped ? `<div class="gc-flip">${esc(flipped)} donne des points à ${esc(x.fav)} alors qu'il est favori.</div>` : ''}
     ${bets ? `<div class="gc-bets">${bets}</div>` : ''}
     <div class="gm-wrap"><table class="gm">
@@ -560,6 +561,14 @@ function gapCard(x) {
     <div class="gc-foot small">${prop ? '▲ cote Plus · ▼ cote Moins' : `En haut : ${esc(x.home)} · en bas : ${esc(x.away)}`} · encadré : ligne à l'équilibre du bookmaker
       ${far ? `<button class="gm-more" data-gapmore="${esc(x.id)}">${open ? 'Masquer les lignes éloignées' : `Voir les ${far} autres lignes`}</button>` : ''}</div>
   </article>`;
+}
+
+// Sous un écart NBA sur un joueur : ses 5 derniers matchs dans cette stat, avec les tirs, lancers francs ou xA
+// en dessous, comme sur sa fiche
+function gapHistory(x) {
+  const p = x.game && x.player && state.data?.games.find(g => g.id === x.game)?.players.find(q => q.id === x.player);
+  if (!p?.l5 || !l5Vals(p, x.stat)) return '';
+  return `<div class="gc-l5">${l5Badge(p, x.stat, null)}${l5Detail(p, x.stat)}</div>`;
 }
 
 // Écart de cote sur un joueur : la cote de chaque bookmaker sur la sélection, la plus haute en vert
@@ -581,6 +590,7 @@ function oddsCard(x) {
       <span class="gc-gap odds">écart de cote</span>
     </div>
     <div class="gc-match">${esc(match)} · ${esc(dayLabel(d))} ${timeFmt.format(d)}${x.league && !x.game ? ` · ${esc(x.league)}` : ''}</div>
+    ${gapHistory(x)}
     <div class="oc-books">${books.map(chip).join('')}</div>
   </article>`;
 }
