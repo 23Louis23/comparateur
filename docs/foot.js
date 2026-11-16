@@ -225,6 +225,12 @@
     return `<section class="ft">${body}</section>`;
   };
 
+  // Page « Écarts », basket européen : l'historique des joueurs voyage dans ce même fichier chiffré
+  window.footVault = () => {
+    if (foot.key && !foot.busy && Date.now() - foot.at > (foot.enc ? REFRESH_MS : RETRY_MS)) setTimeout(fetchEnc);
+    return { locked: !foot.key, data: foot.data };
+  };
+
   // Le site se redessine à chaque passage : on ne touche pas au champ pendant la saisie du mot de passe
   window.footTyping = () => {
     const i = document.getElementById('ft-pass');

@@ -350,13 +350,14 @@ function mainLine(p, s) {
   return [...main].sort((x, y) => count(y) - count(x))[0] || null;
 }
 const l5Class = (avg, line) => line == null || avg == null ? '' : avg > Number(line) ? 'above' : avg < Number(line) ? 'below' : '';
+const lastN = n => n > 1 ? `${n} derniers matchs` : 'dernier match';
 // Pastille « moy. 5 derniers » (ou « 2/5 » pour double/triple-double)
 function l5Badge(p, s, line) {
   const avg = l5Avg(p, s);
   if (avg == null) return '';
   const n = p.l5.n;
   if (s === 'dd' || s === 'td') return `<span class="l5" title="${n} derniers matchs">${Math.round(avg * n)}/${n} derniers matchs</span>`;
-  return `<span class="l5 ${l5Class(avg, line)}" title="Moyenne des ${n} derniers matchs">Moy. ${n} derniers : <b class="num">${dec1(avg)}</b></span>`;
+  return `<span class="l5 ${l5Class(avg, line)}" title="Moyenne des ${lastN(n)}">${n > 1 ? `Moy. ${n} derniers` : 'Dernier match'} : <b class="num">${dec1(avg)}</b></span>`;
 }
 // En-tête d'une case du tableau : moyenne des 5 derniers matchs à gauche, chaque match à droite
 // (vert au-dessus de la ligne, rouge en dessous, saison passée en pâle)
@@ -461,8 +462,10 @@ function l5Detail(p, s) {
   const v = l5Vals(p, s);
   if (!v || s === 'dd' || s === 'td') return '';
   const prev = p.l5.prev ? ` <span class="small">(dont ${p.l5.prev} de la saison passée)</span>` : '';
-  return `<div class="l5-detail small">${p.l5.n} derniers matchs : ${v.map(x => `<b class="num">${dec1(x)}</b>`).join(' · ')}${prev}${
-    l5Sub(p, s).map(sub => `<br>${sub.name} : ${sub.vals.map(x => `<b class="num">${x}</b>`).join(' · ')}`).join('')}</div>`;
+  // un seul match : sa valeur est déjà dans la pastille, on ne garde que les tirs, lancers francs ou xA
+  const lines = [...(p.l5.n > 1 ? [`${p.l5.n} derniers matchs : ${v.map(x => `<b class="num">${dec1(x)}</b>`).join(' · ')}${prev}`] : []),
+    ...l5Sub(p, s).map(sub => `${sub.name} : ${sub.vals.map(x => `<b class="num">${x}</b>`).join(' · ')}`)];
+  return lines.length ? `<div class="l5-detail small">${lines.join('<br>')}</div>` : '';
 }
 
 function renderCut({ cut, cell, books }, yes, vals) {
@@ -506,6 +509,8 @@ function renderGaps() {
       basket européen : +50 % sur les joueurs, le vainqueur, le total, le handicap et les points d'une équipe, cote jusqu'à 6 ; rugby : +50 % sur tous les marchés, marqueurs d'essai compris, cote jusqu'à 10 et 6 pour les marqueurs). Un écart disparaît dès qu'il se referme ou que le match commence.</details></div>
     <div class="tabs">${GAP_SPORTS.map(([k, l]) => `<button class="tab ${state.gapSport === k ? 'on' : ''}" data-gapsport="${k}">${l}<span class="n">${currentGaps(k).length}</span></button>`).join('')}</div>
     ${at ? `<div class="small gaps-note">Cotes lues ${ago(at)} · ${GAP_EVERY[state.gapSport]}</div>` : ''}
+    ${state.gapSport === 'europe' && list.some(x => euroStat(x.stat)) && window.footVault?.().locked
+      ? '<div class="small gaps-note">🔒 Historique des joueurs (5 derniers matchs) : <button class="lnkbtn" data-page="foot">ouvrez la page Foot</button> avec votre mot de passe sur cet appareil.</div>' : ''}
     ${list.length ? list.map(x => x.kind === 'odds' ? oddsCard(x) : gapCard(x)).join('')
       : `<div class="empty"><div class="big">📏</div>Aucun écart en ce moment${{ nba: ' en NBA', europe: ' en basket européen', rugby: ' en rugby' }[state.gapSport]}.</div>`}
   </section>`;
@@ -566,9 +571,102 @@ function gapCard(x) {
 // Sous un écart NBA sur un joueur : ses 5 derniers matchs dans cette stat, avec les tirs, lancers francs ou xA
 // en dessous, comme sur sa fiche
 function gapHistory(x) {
+  if (x.sport === 'europe') return euroHistory(x);
   const p = x.game && x.player && state.data?.games.find(g => g.id === x.game)?.players.find(q => q.id === x.player);
   if (!p?.l5 || !l5Vals(p, x.stat)) return '';
   return `<div class="gc-l5">${l5Badge(p, x.stat, null)}${l5Detail(p, x.stat)}</div>`;
+}
+
+// Basket européen : 5 derniers matchs de l'équipe du joueur (toutes compétitions), lus sur Flashscore par l'iMac et
+// publiés chiffrés avec la page Foot, donc visibles sur cet appareil une fois la page Foot déverrouillée.
+// Chaque match devient une ligne au format NBA (L5_IDX, l5Sub) pour reprendre le même affichage.
+const EU_ROW = ['pts', 'reb', 'ast', 'tpm', 'stl', 'blk', 'tov', 'min', 'fgm', 'fga', 'ftm', 'fta', 'tpa'];
+const euroStat = s => !!(L5_IDX[s] || YES_STATS.has(s));
+const fold = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+const nameWords = s => fold(s).split(/[^a-z0-9]+/).filter(Boolean);
+const TEAM_GENERIC = new Set(['basket', 'basketball', 'club', 'baloncesto', 'pallacanestro', 'the', 'del', 'les', 'city']);
+const teamWords = s => nameWords(s).filter(w => w.length > 2 && !TEAM_GENERIC.has(w));
+const sameWord = (a, b) => a === b || (a.length >= 5 && b.length >= 5 && a.slice(0, 5) === b.slice(0, 5));  // Barcelona / Barcelone
+const sameTeam = (a, b) => teamWords(a).some(x => teamWords(b).some(y => sameWord(x, y)));
+
+// Rencontre Flashscore de l'écart : même heure (à 45 min près) et au moins une équipe reconnue
+function euroFixture(b, x) {
+  const t = new Date(x.start).getTime();
+  const scored = b.fixtures.filter(f => Math.abs(new Date(f.start) - t) <= 45 * 60e3).map(f => [f, Math.max(
+    sameTeam(f.home, x.home) + sameTeam(f.away, x.away), sameTeam(f.home, x.away) + sameTeam(f.away, x.home))])
+    .filter(([, s]) => s).sort((p, q) => q[1] - p[1]);
+  return scored.length && (scored.length === 1 || scored[0][1] > scored[1][1]) ? scored[0][0] : null;
+}
+
+// Nom du bookmaker (« timothe luwawu cabarrot », « n. ongenda ») contre l'adresse Flashscore (« luwawu-cabarrot-timothe »)
+function nameScore(slug, name) {
+  const a = String(slug).split('-'), b = nameWords(name);
+  if (!b.length) return 0;
+  if (a.length === b.length && b.every(w => a.includes(w))) return 3;
+  const full = b.filter(w => w.length > 1), rest = a.filter(w => !full.includes(w));
+  if (full.length && full.every(w => a.includes(w)) && b.filter(w => w.length === 1).every(i => rest.some(w => w[0] === i))) return 2;
+  const [first, ...last] = b;  // prénom raccourci (« Nick » / « Nicholas ») : nom complet et même initiale
+  return last.length && last.every(w => a.includes(w)) && a.some(w => !last.includes(w) && w[0] === first[0]) ? 1 : 0;
+}
+
+// Sigle d'une équipe : le seul présent dans tous ses matchs lus (les adversaires changent) ; avec un seul match lu,
+// celui qui ressemble à son nom (« TEN » pour Tenerife)
+function teamAbbr(b, col, k) {
+  let common = null;
+  for (const id of b.teams[k] || []) {
+    const m = b.matches[id];
+    if (!m?.pl.length) continue;
+    const s = new Set(m.pl.map(r => r[col.t]));
+    common = common ? new Set([...common].filter(a => s.has(a))) : s;
+  }
+  const list = [...(common || [])];
+  if (list.length < 2) return list[0];
+  const name = fold(k.slice(k.indexOf('|') + 1)).replace(/[^a-z]/g, '');
+  const inName = a => { let i = 0; for (const c of name) if (c === a[i]) i++; return i === a.length && a[0] === name[0]; };
+  const hit = list.filter(a => name.startsWith(a.toLowerCase())).concat(list.filter(a => inName(a.toLowerCase())));
+  return hit[0];
+}
+
+function euroL5(b, x) {
+  const f = euroFixture(b, x);
+  if (!f) return null;
+  const col = Object.fromEntries(b.cols.map((c, i) => [c, i]));
+  const keys = [f.home, f.away].map(t => `${f.lg}|${t}`);
+  const found = new Map();
+  for (const k of keys) for (const id of b.teams[k] || []) for (const r of b.matches[id]?.pl || []) {
+    const sc = nameScore(r[col.s], x.name);
+    if (!sc) continue;
+    const q = found.get(r[col.id]) || { id: r[col.id], sc, t: r[col.t], seen: {} };
+    q.seen[k] = (q.seen[k] || 0) + 1;
+    found.set(r[col.id], q);
+  }
+  const list = [...found.values()].sort((p, q) => q.sc - p.sc);
+  if (!list.length || (list[1] && list[1].sc === list[0].sc)) return { fixture: f };
+  // son équipe : celle dont il porte le sigle, sinon celle avec qui on le voit le plus souvent
+  const p = list[0], [k1, k2] = keys, n1 = p.seen[k1] || 0, n2 = p.seen[k2] || 0;
+  const key = keys.find(k => teamAbbr(b, col, k) === p.t) || (n1 > n2 ? k1 : n2 > n1 ? k2 : null);
+  if (!key) return { fixture: f };
+  const out = { fixture: f, team: key.slice(key.indexOf('|') + 1), n: (b.teams[key] || []).length, miss: 0, unread: 0, l5: { n: 0, prev: 0, g: [] } };
+  for (const id of b.teams[key] || []) {
+    const m = b.matches[id], r = m?.pl.find(row => row[col.id] === p.id);
+    if (!m?.pl.length) out.unread++;
+    else if (!r || !r[col.min]) out.miss++;
+    else out.l5.g.push(EU_ROW.map(c => r[col[c]]));
+  }
+  out.l5.n = out.l5.g.length;
+  return out;
+}
+
+function euroHistory(x) {
+  if (!euroStat(x.stat)) return '';
+  const b = window.footVault?.().data?.basket;
+  const h = b && euroL5(b, x);
+  if (!h) return '';  // compétition non suivie, ou page Foot verrouillée (message en haut de la liste)
+  if (!h.team) return '<div class="gc-l5 small gc-src">Historique : joueur pas encore trouvé dans les matchs lus sur Flashscore.</div>';
+  const p = { l5: h.l5 };
+  const note = [h.miss ? `absent ${h.miss} fois` : '', h.unread ? `${h.unread} pas encore lu${h.unread > 1 ? 's' : ''}` : ''].filter(Boolean).join(', ');
+  return `<div class="gc-l5">${h.l5.n ? l5Badge(p, x.stat, null) + l5Detail(p, x.stat) : ''}
+    <div class="small gc-src">Flashscore · ${h.n} derniers matchs ${/^[aeiouy]/.test(fold(h.team)) ? 'd’' : 'de '}${esc(h.team)}, toutes compétitions${note ? ` (${note})` : ''}</div></div>`;
 }
 
 // Écart de cote sur un joueur : la cote de chaque bookmaker sur la sélection, la plus haute en vert
