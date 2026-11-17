@@ -1,25 +1,47 @@
 {
- "run": "2026-11-17T12:14:29Z",
+ "run": "2026-11-17T20:56:05Z",
  "bookmakers": {
   "bet365": "cotes reçues",
   "pokerstars": "cotes reçues"
  },
  "par_bookmaker": {
+  "bet365": {
+   "pts": 425,
+   "dd": 58,
+   "reb": 259,
+   "3pt": 433,
+   "td": 12,
+   "ast": 267,
+   "blk": 89,
+   "stl": 107
+  },
   "pokerstars": {
-   "pa": 46,
-   "td": 4,
-   "reb": 156,
-   "dd": 38,
-   "pra": 46,
-   "pts": 175,
+   "ast": 145,
    "ra": 37,
-   "pr": 19,
-   "3pt": 219,
+   "pts": 230,
+   "pra": 141,
+   "pa": 116,
+   "stl": 50,
+   "dd": 38,
+   "pr": 119,
+   "reb": 195,
    "blk": 15,
-   "ast": 141,
-   "stl": 34
+   "3pt": 217,
+   "td": 2
   }
  },
- "non_reconnus": {},
+ "non_reconnus": {
+  "Player First Point [result, ligne 0.0, issues Yes]": 5,
+  "Over Under Player Assists First Quarter [p1, ligne 2.5, issues Over/Under]": 5,
+  "Over Under Player Assists First Quarter [p1, ligne 0.5, issues Under/Over]": 5,
+  "Over Under Player Points First Quarter [p1, ligne 2.5, issues Under/Over]": 5,
+  "Over Under Player Points First Quarter [p1, ligne 9.5, issues Under/Over]": 5,
+  "Over Under Player Points First Quarter [p1, ligne 6.5, issues Over/Under]": 5,
+  "Over Under Player Rebounds First Quarter [p1, ligne 2.5, issues Under/Over]": 5,
+  "Over Under Player Assists First Quarter [p1, ligne 4.5, issues Under/Over]": 5,
+  "Over Under Player Rebounds First Quarter [p1, ligne 0.5, issues Under/Over]": 5,
+  "Over Under Player Points First Quarter [p1, ligne 4.5, issues Over/Under]": 5,
+  "Over Under Player Rebounds First Quarter [p1, ligne 4.5, issues Over/Under]": 5
+ },
  "formats_paliers": {}
 }
