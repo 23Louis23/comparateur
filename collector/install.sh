@@ -97,7 +97,7 @@ launchctl bootout "gui/$(id -u)/$R_LABEL" 2>/dev/null || true
 sed -e "s#$E_LABEL#$R_LABEL#" -e "s#$DEST/europe.py#$DEST/rugby.py#" -e "s#<integer>600</integer>#<integer>720</integer>#" "$E_PLIST" > "$R_PLIST"
 launchctl bootstrap "gui/$(id -u)" "$R_PLIST"
 
-# Autres sports, paris annexes (foot pour commencer ; alertes et page Écarts) : tâche à part toutes les 11 min,
+# Autres sports, paris annexes (foot, hockey, foot US, handball, volley, snooker, tennis ; alertes et page Écarts) : tâche à part toutes les 11 min,
 # décalée des deux autres
 P_LABEL=fr.coteradar.sports
 P_PLIST="$HOME/Library/LaunchAgents/$P_LABEL.plist"

@@ -484,9 +484,13 @@ function renderCut({ cut, cell, books }, yes, vals) {
 }
 
 // ------------------------------------------------------------ page « Écarts » (écarts de ligne en cours)
-const GAP_SPORTS = [['nba', 'NBA'], ['europe', 'Basket européen'], ['rugby', 'Rugby'], ['foot', 'Football']];
-const GAP_EVERY = { nba: 'relues toutes les 2 min', europe: 'relues toutes les 10 min', rugby: 'relues toutes les 12 min',
-  foot: 'relues toutes les 11 min (matchs des 3 prochaines heures ; plus espacé au-delà)' };
+const GAP_SPORTS = [['nba', 'NBA'], ['europe', 'Basket européen'], ['rugby', 'Rugby'], ['foot', 'Football'],
+  ['hockey', 'Hockey'], ['nfl', 'Foot US'], ['handball', 'Handball'], ['volley', 'Volley'], ['snooker', 'Snooker'], ['tennis', 'Tennis']];
+const GAP_MAIN = 4;  // les autres onglets n'apparaissent que s'ils ont des écarts (ou qu'on est dessus)
+const GAP_LABEL = { nba: 'en NBA', europe: 'en basket européen', rugby: 'en rugby', foot: 'en football', hockey: 'en hockey',
+  nfl: 'en foot US', handball: 'en handball', volley: 'en volley', snooker: 'en snooker', tennis: 'en tennis' };
+const GAP_EVERY = { nba: 'relues toutes les 2 min', europe: 'relues toutes les 10 min', rugby: 'relues toutes les 12 min' };
+const gapEvery = s => GAP_EVERY[s] || 'relues toutes les 11 min (matchs des 3 prochaines heures ; plus espacé au-delà)';
 const currentGaps = s => (state.data?.gaps?.[s] || []).filter(x => new Date(x.start) > Date.now());
 const bookName = b => BOOKS[b]?.name || ({ pmu: 'PMU' }[b] || b);
 
@@ -507,15 +511,16 @@ function renderGaps() {
       <b>Écart de ligne</b> : deux bookmakers n'ont pas la même ligne à l'équilibre (au moins 3 pour les points et les combinés P+R+A, P+R, P+A ;
       2 pour les rebonds, passes, R+A, paniers à 3 pts et interceptions ; 3 au handicap, ou handicap inversé).
       <b>Écart de cote</b> : un bookmaker paie nettement plus que les autres sur la même sélection (NBA : joueurs à +30 % sur la 2e meilleure cote, au moins 3 bookmakers, et handicaps à +50 % ;
-      basket européen : +50 % sur les joueurs, le vainqueur, le total, le handicap et les points d'une équipe, cote jusqu'à 6 ; rugby : +50 % sur tous les marchés, marqueurs d'essai compris, cote jusqu'à 10 et 6 pour les marqueurs ; football : +50 % sur le total de buts, les buts d'une équipe, les handicaps,
-      les 2 équipes marquent, cote jusqu'à 6, et +60 % sur les buteurs et passeurs, cote jusqu'à 5, au-delà de l'écart habituel
-      entre les deux sites sur ce match ; écart de ligne d'1 but sur les totaux et le handicap, ou handicap inversé). Un écart disparaît dès qu'il se referme ou que le match commence.</details></div>
-    <div class="tabs">${GAP_SPORTS.map(([k, l]) => `<button class="tab ${state.gapSport === k ? 'on' : ''}" data-gapsport="${k}">${l}<span class="n">${currentGaps(k).length}</span></button>`).join('')}</div>
-    ${at ? `<div class="small gaps-note">Cotes lues ${ago(at)} · ${GAP_EVERY[state.gapSport]}</div>` : ''}
+      basket européen : +50 % sur les joueurs, le vainqueur, le total, le handicap et les points d'une équipe, cote jusqu'à 6 ; rugby : +50 % sur tous les marchés, marqueurs d'essai compris, cote jusqu'à 10 et 6 pour les marqueurs ; football, hockey, foot US, handball, volley, snooker, tennis : +50 % sur les totaux,
+      les handicaps et les marchés du match, cote jusqu'à 6, et +60 % sur les joueurs (buteurs, passeurs, points, touchdowns, yards),
+      cote jusqu'à 5, au-delà de l'écart habituel entre les deux sites sur ce match ; écart de ligne d'1 but au foot et au hockey,
+      3 points en foot US, 3 buts au handball, 1 set au volley, 2 manches au snooker, ou handicap inversé). Un écart disparaît dès qu'il se referme ou que le match commence.</details></div>
+    <div class="tabs">${GAP_SPORTS.filter(([k], i) => i < GAP_MAIN || currentGaps(k).length || state.gapSport === k).map(([k, l]) => `<button class="tab ${state.gapSport === k ? 'on' : ''}" data-gapsport="${k}">${l}<span class="n">${currentGaps(k).length}</span></button>`).join('')}</div>
+    ${at ? `<div class="small gaps-note">Cotes lues ${ago(at)} · ${gapEvery(state.gapSport)}</div>` : ''}
     ${state.gapSport === 'europe' && list.some(x => euroStat(x.stat)) && window.footVault?.().locked
       ? '<div class="small gaps-note">🔒 Historique des joueurs (5 derniers matchs) : <button class="lnkbtn" data-page="foot">ouvrez la page Foot</button> avec votre mot de passe sur cet appareil.</div>' : ''}
     ${list.length ? list.map(x => x.kind === 'odds' ? oddsCard(x) : gapCard(x)).join('')
-      : `<div class="empty"><div class="big">📏</div>Aucun écart en ce moment${{ nba: ' en NBA', europe: ' en basket européen', rugby: ' en rugby', foot: ' en football' }[state.gapSport]}.</div>`}
+      : `<div class="empty"><div class="big">📏</div>Aucun écart en ce moment ${GAP_LABEL[state.gapSport] || ''}.</div>`}
   </section>`;
 }
 
