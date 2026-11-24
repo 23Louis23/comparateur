@@ -340,22 +340,23 @@ def fetch_only(name):
 
 def page_gaps(games):
     """Page « Écarts » du site : écarts de ligne et cotes anormales en cours sur les joueurs NBA, plus ceux
-    laissés par les tâches basket européen (europe.py, handicaps NBA compris) et rugby (rugby.py),
-    tant que le match n'a pas commencé."""
-    gaps = {"nba": [], "europe": [], "rugby": [], "europeAt": None, "rugbyAt": None}
+    laissés par les tâches basket européen (europe.py, handicaps NBA compris), rugby (rugby.py) et autres sports
+    (sports.py : foot pour commencer), tant que le match n'a pas commencé."""
+    gaps = {"nba": [], "europe": [], "rugby": [], "foot": [], "europeAt": None, "rugbyAt": None, "footAt": None}
     local = {b.NAME for b in LOCAL_BOOKS}
     try:
         gaps["nba"] = alerts.gap_entries(games, STAT_LABELS, local) + alerts.odds_entries(games, STAT_LABELS, local)
     except Exception as e:  # noqa: BLE001 — la page des écarts ne doit pas bloquer la publication
         log("écarts NBA : erreur", type(e).__name__)
         traceback.print_exc()
-    for job in ("europe", "rugby"):
+    for job in ("europe", "rugby", "sports"):
         data = load(BUILD / ("gaps-%s.json" % job), {})
         if data.get("at") and now() - datetime.fromisoformat(data["at"][:-1] + "+00:00") < timedelta(minutes=40):
-            gaps[job + "At"] = data["at"]
+            for sport in data.get("sports") or [job]:  # sports.py couvre plusieurs sports, chacun son onglet
+                gaps[sport + "At"] = data["at"]
             for x in data.get("gaps", []):
                 if datetime.fromisoformat(x["start"][:-1] + "+00:00") > now():
-                    gaps[x.get("sport", job)].append(x)
+                    gaps.setdefault(x.get("sport", job), []).append(x)
     return gaps
 
 

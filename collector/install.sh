@@ -16,8 +16,10 @@ if [[ "${1:-}" == "--remove" ]]; then
   launchctl bootout "gui/$(id -u)/fr.coteradar.stats" 2>/dev/null || true
   launchctl bootout "gui/$(id -u)/fr.coteradar.europe" 2>/dev/null || true
   launchctl bootout "gui/$(id -u)/fr.coteradar.rugby" 2>/dev/null || true
+  launchctl bootout "gui/$(id -u)/fr.coteradar.sports" 2>/dev/null || true
   rm -f "$PLIST" "$HOME/Library/LaunchAgents/fr.coteradar.betclic.plist" "$HOME/Library/LaunchAgents/fr.coteradar.stats.plist" \
-        "$HOME/Library/LaunchAgents/fr.coteradar.europe.plist" "$HOME/Library/LaunchAgents/fr.coteradar.rugby.plist"
+        "$HOME/Library/LaunchAgents/fr.coteradar.europe.plist" "$HOME/Library/LaunchAgents/fr.coteradar.rugby.plist" \
+        "$HOME/Library/LaunchAgents/fr.coteradar.sports.plist"
   echo "Collecte automatique désinstallée."; exit 0
 fi
 
@@ -94,4 +96,12 @@ R_PLIST="$HOME/Library/LaunchAgents/$R_LABEL.plist"
 launchctl bootout "gui/$(id -u)/$R_LABEL" 2>/dev/null || true
 sed -e "s#$E_LABEL#$R_LABEL#" -e "s#$DEST/europe.py#$DEST/rugby.py#" -e "s#<integer>600</integer>#<integer>720</integer>#" "$E_PLIST" > "$R_PLIST"
 launchctl bootstrap "gui/$(id -u)" "$R_PLIST"
+
+# Autres sports, paris annexes (foot pour commencer ; alertes et page Écarts) : tâche à part toutes les 11 min,
+# décalée des deux autres
+P_LABEL=fr.coteradar.sports
+P_PLIST="$HOME/Library/LaunchAgents/$P_LABEL.plist"
+launchctl bootout "gui/$(id -u)/$P_LABEL" 2>/dev/null || true
+sed -e "s#$E_LABEL#$P_LABEL#" -e "s#$DEST/europe.py#$DEST/sports.py#" -e "s#<integer>600</integer>#<integer>660</integer>#" "$E_PLIST" > "$P_PLIST"
+launchctl bootstrap "gui/$(id -u)" "$P_PLIST"
 echo "Collecte automatique installée (toutes les 2 min, Betclic toutes les 15 min en parallèle). Journal : ~/Library/Logs/CoteRadar.log"
