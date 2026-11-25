@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Basket européen — alertes uniquement (pas d'interface) : écart de cote ≥ 50 % entre deux
-bookmakers sur une même sélection, écart de ligne sur un même joueur, et veille des handicaps
-(écart ≥ 3 points entre bookmakers, ou handicap inversé : le favori reçoit des points). La NBA
-passe aussi ici, mais seulement pour le vainqueur et le handicap (ses props sont suivies par collect.py). Euroligue, Eurocoupe, Betclic Élite, Grèce A1, Turquie BSL,
+Basket européen — alertes et page « Écarts » : écart de cote ≥ 50 % entre deux bookmakers sur une même
+sélection, écart de ligne sur un même joueur ; sur les handicaps, seulement les surebets (≥ 1 % de gain garanti)
+et les énormes erreurs (cote au moins 2 fois plus haute qu'ailleurs). La NBA passe aussi ici, mais seulement pour
+le handicap (ses props sont suivies par collect.py). Euroligue, Eurocoupe, Betclic Élite, Grèce A1, Turquie BSL,
 ligue Adriatique, Allemagne BBL, Espagne ACB, Italie Lega A, BCL… (compétitions féminines,
 NBA, WNBA, NCAA et Australie exclues).
 
@@ -40,9 +40,7 @@ from common import get, iso, norm_name, now, over_cut, price  # noqa: E402
 
 EDGE = 1.50          # meilleure cote ≥ autre cote × 1,50
 MAX_ODDS = 6.0       # au-delà, les écarts entre bookmakers sont normaux
-HCP_GAP = 3          # écart entre les handicaps équilibrés de deux bookmakers
-HCP_FAV = 1.60       # favori net (cote moyenne au vainqueur)…
-HCP_FLIP = 1.5       # …à qui un bookmaker donne pourtant au moins +1,5 point : handicap inversé
+HCP_FAV = 1.60       # favori net (cote moyenne au vainqueur), pour --diag
 HORIZON_H = 48
 STATE = HERE / "build" / "europe-state.json"
 PAGE = HERE / "build" / "gaps-europe.json"  # écarts en cours, publiés sur le site par collect.py
@@ -457,33 +455,20 @@ def favourite(books):
     return (side, avg[side]) if side and avg[side] <= HCP_FAV else None
 
 
-def handicaps(groups):
-    """Veille des handicaps : écart ≥ HCP_GAP entre bookmakers, ou handicap inversé (favori qui reçoit des points)."""
-    out = []
-    for ref, members in groups:
-        books = {b: {swap(k) if inv else k: o for k, o in g.sel.items()} for b, (g, inv) in members.items()}
-        bal = {b: v for b, v in ((b, hcp_main(sel)) for b, sel in books.items()) if v}
-        if not bal:
-            continue
-        fav = favourite(books)
-        side = fav[0] if fav else "home"
-        sign = 1 if side == "home" else -1
-        fair = {b: sign * v[0] for b, v in bal.items()}  # handicaps vus du favori (sinon de l'équipe à domicile)
-        shown = {b: sign * v[1] for b, v in bal.items()}
-        flipped = [b for b in bal if fav and fair[b] >= HCP_FLIP]
-        lo_b, hi_b = min(bal, key=lambda b: bal[b][0]), max(bal, key=lambda b: bal[b][0])
-        gap = bal[hi_b][0] - bal[lo_b][0]
-        opposite = min(-bal[lo_b][0], bal[hi_b][0]) >= HCP_FLIP + 1  # favori différent d'un bookmaker à l'autre
-        if flipped or gap >= HCP_GAP:
-            out.append(dict(ref=ref, members=members, bal=bal, fav=fav, side=side, shown=shown, flipped=flipped,
-                            lo_b=lo_b, hi_b=hi_b, gap=gap, inverted=bool(flipped or opposite)))
-    return out
+def leg(key):
+    """Handicap à 2 issues, pour alerts.surebets."""
+    k = key.split("|")
+    return ("hcp", k[1], num(k[2]), 2) if k[0] == "hcp" else None
 
 
-def page_gaps(gaps, hcps, found):
+def leg_text(ref):
+    return lambda key: describe(key, ref.home, ref.away).partition(" : ")[2]
+
+
+def page_gaps(gaps, sures, found):
     """Écarts en cours pour la page « Écarts » du site : écarts de ligne avec toutes les lignes de chaque bookmaker
-    ({ligne: [cote Plus, cote Moins]} ; handicap : {ligne de « home »: [cote home, cote away]}), et cotes anormales
-    sur les joueurs et les marchés du match (cote de chaque bookmaker sur la sélection)."""
+    ({ligne: [cote Plus, cote Moins]}), cotes anormales sur les joueurs et les marchés du match (cote de chaque
+    bookmaker sur la sélection), et surebets sur les handicaps (les paris à faire et leur mise)."""
     out = []
     for ref, members, key, bb, best, by in found:
         k = key.split("|")
@@ -504,23 +489,12 @@ def page_gaps(gaps, hcps, found):
                     "books": {b: {"main": key_line(bal[b][0]) if b in bal else None, "url": members[b][0].url,
                                   "lines": {l: [v.get("over"), v.get("under")] for l, v in lines.items()}}
                               for b, lines in books.items()}})
-    for h in hcps:
-        ref, bal = h["ref"], h["bal"]
-        books = {}
-        for b, (g, inv) in h["members"].items():
-            lines = {}
-            for key, o in g.sel.items():
-                k = (swap(key) if inv else key).split("|")
-                if k[0] == "hcp":
-                    line = key_line(0.0 + (num(k[2]) if k[1] == "home" else -num(k[2])))
-                    lines.setdefault(line, [None, None])[0 if k[1] == "home" else 1] = o
-            if lines:
-                books[b] = {"main": key_line(bal[b][1]) if b in bal else None, "url": g.url, "lines": lines}
-        out.append({"id": "%s|%s|%s|hcp" % (ref.home, ref.away, ref.start.date()), "sport": "nba" if ref.nba else "europe",
-                    "kind": "hcp", "name": "Handicap", "cat": "Handicap", "start": iso(ref.start), "home": ref.home,
-                    "away": ref.away, "league": "NBA" if ref.nba else ref.league, "gap": abs(bal[h["hi_b"]][1] - bal[h["lo_b"]][1]),
-                    "lo": h["lo_b"], "hi": h["hi_b"], "inverted": h["inverted"], "flipped": h["flipped"],
-                    "fav": (ref.home if h["side"] == "home" else ref.away) if h["fav"] else None, "books": books})
+    for ref, members, market, gain, legs in sures:
+        x = {"id": "%s|%s|%s|sure|%s" % (ref.home, ref.away, ref.start.date(), market), "sport": "nba" if ref.nba else "europe",
+             "name": "Handicap", "start": iso(ref.start), "home": ref.home, "away": ref.away,
+             "league": "NBA" if ref.nba else ref.league}
+        x.update(alerts.sure_entry(gain, legs, leg_text(ref), lambda b: members[b][0].url))
+        out.append(x)
     return out
 
 
@@ -572,6 +546,8 @@ def main():
             (bb, best), = sorted(by.items(), key=lambda kv: -kv[1])[:1]
             low_b, low = min(by.items(), key=lambda kv: kv[1])
             second = sorted(by.values(), reverse=True)[1]
+            if key.startswith("hcp|") and not (best <= alerts.HUGE_MAX and best >= second * alerts.HUGE):
+                continue  # handicap : énorme erreur seulement (les surebets sont cherchés à part)
             if best <= MAX_ODDS and best >= second * EDGE:
                 found.append((ref, members, key, bb, best, by))
     if "--diag" in sys.argv:  # contrôle du rapprochement : matchs communs, sélections comparées, plus gros écarts
@@ -624,9 +600,20 @@ def main():
                 lo_b, hi_b = min(bal, key=lambda b: bal[b][0]), max(bal, key=lambda b: bal[b][0])
                 if bal[hi_b][0] - bal[lo_b][0] >= alerts.GAP_MIN[stat]:
                     gaps.append((ref, members, player, stat, lo_b, hi_b, bal, books))
-    hcps = handicaps(groups)
+    # surebets sur les handicaps ; une énorme erreur qui en crée un n'est signalée qu'une fois, comme surebet
+    sures = []
+    for ref, members in groups:
+        if len(members) < 2:
+            continue
+        odds = {}
+        for b, (g, inv) in members.items():
+            for key, o in g.sel.items():
+                odds.setdefault(swap(key) if inv else key, {})[b] = o
+        sures += [(ref, members, market, gain, legs) for market, (gain, legs) in alerts.surebets(odds, leg).items()]
+    covered = {(id(ref), market) for ref, _, market, _, _ in sures}
+    found = [f for f in found if (id(f[0]), f[2].split("|")[0]) not in covered]
     PAGE.parent.mkdir(exist_ok=True)
-    PAGE.write_text(json.dumps({"at": iso(now()), "gaps": page_gaps(gaps, hcps, found)}, ensure_ascii=False))
+    PAGE.write_text(json.dumps({"at": iso(now()), "gaps": page_gaps(gaps, sures, found)}, ensure_ascii=False))
     todo = []
     for ref, members, player, stat, lo_b, hi_b, bal, _ in gaps:
         k = "%s|%s|%s|gap|%s|%s" % (ref.home, ref.away, ref.start.date(), player, stat)
@@ -640,34 +627,13 @@ def main():
             alerts.odds_fr(bal[hi_b][2]), " · ".join("%s %s" % (BOOK_NAMES[b], ln(v[0])) for b, v in sorted(bal.items(), key=lambda kv: kv[1][0])),
             ref.home, ref.away, when(ref.start))
         todo.append((title, msg, members[lo_b][0].url, k, gap))
-    for h in hcps:
-        ref, bal, shown = h["ref"], h["bal"], h["shown"]
-        team = lambda s: ref.home if s == "home" else ref.away
-        k = "%s|%s|%s|hcp" % (ref.home, ref.away, ref.start.date())
-        v = h["gap"] if len(bal) > 1 else shown[h["flipped"][0]]
+    for ref, members, market, gain, legs in sures:
+        k = "%s|%s|%s|sure|%s" % (ref.home, ref.away, ref.start.date(), market)
         if k in recent:
             continue
-        ln = lambda x: ("+" if x > 0 else "") + ("%g" % x).replace(".", ",")
-        fav_team = team(h["side"])
-        rows = []
-        if h["inverted"]:
-            title = "🔄 Handicap inversé · %s – %s" % (ref.home, ref.away)
-            for b in h["flipped"]:
-                rows.append("%s : %s %s (cote %s) alors qu'il est favori" % (BOOK_NAMES[b], fav_team, ln(shown[b]),
-                            alerts.odds_fr(bal[b][2] if h["side"] == "home" else bal[b][3])))
-        else:
-            title = "📏 Écart de handicap %s · %s – %s" % (
-                ("%g" % abs(bal[h["hi_b"]][1] - bal[h["lo_b"]][1])).replace(".", ","), ref.home, ref.away)
-        if len(bal) > 1 and h["gap"] >= HCP_GAP:
-            hi_b, lo_b = h["hi_b"], h["lo_b"]
-            rows.append("%s %s chez %s : %s" % (ref.home, ln(bal[hi_b][1]), BOOK_NAMES[hi_b], alerts.odds_fr(bal[hi_b][2])))
-            rows.append("%s %s chez %s : %s" % (ref.away, ln(0.0 - bal[lo_b][1]), BOOK_NAMES[lo_b], alerts.odds_fr(bal[lo_b][3])))
-        rows.append("Handicap de %s : %s" % (fav_team, " · ".join("%s %s" % (BOOK_NAMES[b], ln(shown[b])) for b in sorted(bal, key=shown.get))))
-        if h["fav"]:
-            rows.append("Vainqueur : %s favori (cote moyenne %s)" % (fav_team, alerts.odds_fr(h["fav"][1])))
-        rows.append("%s · %s" % ("NBA" if ref.nba else ref.league, when(ref.start)))
-        url = h["members"][(h["flipped"] or [h["hi_b"]])[0]][0].url
-        todo.append((title, "\n".join(rows), url, k, v))
+        title = "💰 Surebet +%s %% · Handicap · %s – %s" % (("%.1f" % (gain * 100)).replace(".", ","), ref.home, ref.away)
+        rows = alerts.sure_lines(legs, leg_text(ref), BOOK_NAMES) + ["%s · %s" % ("NBA" if ref.nba else ref.league, when(ref.start))]
+        todo.append((title, "\n".join(rows), members[legs[0][1]][0].url, k, gain))
     for ref, members, key, bb, best, by in found:
         k = alerts.subject_eu("%s|%s|%s|%s" % (ref.home, ref.away, ref.start.date(), key))
         if k in recent:

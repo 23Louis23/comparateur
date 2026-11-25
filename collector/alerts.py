@@ -329,3 +329,84 @@ def run(games, labels, local, st):
         for title, msg, tag, _ in todo:
             push(title, msg, tag)
     return len(todo)
+
+
+# ------------------------------------------------------------------ handicaps : surebets et énormes erreurs
+SURE_MIN = 0.01   # surebet : au moins 1 % de gain garanti, quel que soit le score
+HUGE = 2.0        # hors surebet, un handicap n'alerte que si un site paie au moins 2 fois la cote des autres…
+HUGE_MAX = 6.0    # …sur une cote jusqu'à 6
+
+
+def surebets(odds, leg):
+    """Surebets sur les handicaps d'un match, entre bookmakers différents.
+    odds : {clé: {bookmaker: cote}}, clés vues du même côté chez tous les bookmakers ;
+    leg(clé) → (marché, côté « home »/« away », ligne de ce côté, 2) pour un handicap à 2 issues,
+               (marché, issue « home »/« draw »/« away », ligne de « home », 3) pour un handicap à 3 issues, sinon None.
+    À 2 issues, « home » à h1 chez un site et « away » à h2 chez un autre couvrent tous les scores si h1 + h2 > 0
+    (ou = 0 avec des demi-points : pas de remboursement possible) ; à 3 issues, il faut les 3 issues à la même ligne.
+    → {marché: (gain, [(clé, bookmaker, cote), …])} : la meilleure combinaison de chaque marché (gain ≥ SURE_MIN)."""
+    two, three = {}, {}
+    for key, by in odds.items():
+        x = leg(key)
+        if not x:
+            continue
+        market, side, line, ways = x
+        if (line * 2) % 1:  # quarts de point (handicap asiatique partagé) : pas pris en compte
+            continue
+        for b, o in by.items():
+            if o and o > 1:
+                if ways == 2:
+                    two.setdefault(market, {}).setdefault(side, []).append((line, b, o, key))
+                else:
+                    three.setdefault(market, {}).setdefault(line, {}).setdefault(side, []).append((o, b, key))
+    best = {}
+
+    def keep(market, legs):
+        gain = 1 / sum(1 / o for _, _, o in legs) - 1
+        if gain >= SURE_MIN and (market not in best or gain > best[market][0]):
+            best[market] = (gain, legs)
+
+    for market, sides in two.items():
+        for h1, b1, o1, k1 in sides.get("home", []):
+            for h2, b2, o2, k2 in sides.get("away", []):
+                if b1 != b2 and (h1 + h2 > 0 or (h1 + h2 == 0 and h2 % 1)):
+                    keep(market, [(k1, b1, o1), (k2, b2, o2)])
+    for market, lines in three.items():
+        for line, outs in lines.items():
+            if len(outs) == 3:
+                legs = [(k, b, o) for o, b, k in (max(v) for v in outs.values())]
+                if len({b for _, b, _ in legs}) > 1:
+                    keep(market, legs)
+    return best
+
+
+def stakes(legs, total=100):
+    """Répartition de « total » euros entre les paris d'un surebet (mise ∝ 1 / cote, au centime)
+    → ([mise de chaque pari], somme récupérée au minimum)."""
+    inv = [1 / o for _, _, o in legs]
+    bets = [round(total * x / sum(inv), 2) for x in inv]
+    return bets, min(m * o for m, (_, _, o) in zip(bets, legs))
+
+
+def leg3(side, line, ref):
+    """Issue d'un handicap à 3 issues (ligne de « home ») : « Lyon -1 », « Nul (Lyon -1) », « Lens +1 »."""
+    sg = lambda x: ("+" if x > 0 else "") + ("%g" % x).replace(".", ",")
+    if side == "draw":
+        return "Nul (%s %s)" % (ref.home, sg(line))
+    return "%s %s" % (ref.home, sg(line)) if side == "home" else "%s %s" % (ref.away, sg(0.0 - line))
+
+
+def sure_lines(legs, what, names):
+    """Message d'un surebet : un pari par ligne (sélection, site, cote, mise), puis ce qui revient au minimum."""
+    bets, back = stakes(legs)
+    rows = ["%s chez %s : %s → mise %s €" % (what(k), names[b], odds_fr(o), odds_fr(m)) for (k, b, o), m in zip(legs, bets)]
+    rows.append("Pour %s € misés : au moins %s € récupérés, quel que soit le score" % (odds_fr(sum(bets)), odds_fr(back)))
+    return rows
+
+
+def sure_entry(gain, legs, what, url):
+    """Champs d'un surebet pour la page « Écarts » (url(bookmaker) → page du match chez lui)."""
+    bets, back = stakes(legs)
+    return {"kind": "sure", "cat": "Surebet", "gain": round(gain * 100, 1), "gap": round(gain * 100, 1),
+            "stake": round(sum(bets), 2), "back": round(back, 2),
+            "legs": [{"book": b, "sel": what(k), "odds": o, "stake": m, "url": url(b)} for (k, b, o), m in zip(legs, bets)]}

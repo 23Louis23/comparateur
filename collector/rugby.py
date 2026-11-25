@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
-Rugby à XV et à XIII — alertes uniquement (pas d'interface) : écart de cote ≥ 50 % entre deux
-bookmakers sur une même sélection, sur tous les marchés que l'on sait rapprocher d'un bookmaker
-à l'autre (compétitions féminines et rugby à 7 exclus).
+Rugby à XV et à XIII — alertes et page « Écarts » : écart de cote ≥ 50 % entre deux bookmakers sur une
+même sélection, sur tous les marchés que l'on sait rapprocher d'un bookmaker à l'autre ; sur les handicaps,
+seulement les surebets (≥ 1 % de gain garanti) et les énormes erreurs (cote au moins 2 fois plus haute
+qu'ailleurs). Compétitions féminines et rugby à 7 exclus.
 
 Bookmakers : PMU (flux Kambi), Winamax, Unibet, Betclic (pages rendues côté serveur).
 Sélections comparées (clés normalisées, côté « home »/« away »/« draw » de chaque bookmaker) :
@@ -520,16 +521,40 @@ def describe(key, home, away):
     return key
 
 
+HCP_KINDS = {"hcp": "Handicap", "hthcp": "Handicap 1re mi-temps", "h3": "Handicap 3 issues"}
+
+
+def leg(key):
+    """Handicaps à 2 issues (match, 1re mi-temps) et à 3 issues, pour alerts.surebets."""
+    k = key.split("|")
+    if k[0] in ("hcp", "hthcp"):
+        return (k[0], k[1], num(k[2]), 2)
+    return ("h3", k[2], num(k[1]), 3) if k[0] == "h3" else None
+
+
+def leg_text(ref):
+    """Un pari du surebet : « Toulouse -8,5 » ; à 3 issues « Toulouse -4 », « Nul (Toulouse -4) », « Clermont +4 »."""
+    def text(key):
+        k = key.split("|")
+        return alerts.leg3(k[2], num(k[1]), ref) if k[0] == "h3" else describe(key, ref.home, ref.away).partition(" : ")[2]
+    return text
+
+
 def player_name(members, pk):
     """Nom complet du joueur tel qu'écrit par un bookmaker (« Tony Francis »), sinon la clé en capitales."""
     names = [getattr(g, "names", {}).get(pk) for g, _ in members.values()]
     return max((n for n in names if n), key=len, default=pk.title())
 
 
-def page_gaps(found):
+def page_gaps(found, sures):
     """Cotes anormales en cours, pour la page « Écarts » du site : tous les marchés (résultat, double chance,
-    handicap…), et pour les marqueurs d'essai le nom du joueur en titre."""
+    handicap…), et pour les marqueurs d'essai le nom du joueur en titre ; surebets sur les handicaps."""
     out = []
+    for ref, members, market, gain, legs in sures:
+        x = {"id": "%s|%s|%s|sure|%s" % (ref.home, ref.away, ref.start.date(), market), "sport": "rugby",
+             "name": HCP_KINDS[market], "start": iso(ref.start), "home": ref.home, "away": ref.away, "league": ref.league}
+        x.update(alerts.sure_entry(gain, legs, leg_text(ref), lambda b: members[b][0].url))
+        out.append(x)
     for ref, members, key, bb, best, by in found:
         k = key.split("|")
         if k[0] in ("try", "try1"):
@@ -567,7 +592,7 @@ def main():
             else:
                 groups.append((g, {b: (g, False)}))
 
-    found, ratios = [], []
+    found, ratios, sures = [], [], []
     for ref, members in groups:
         books = {b: {swap(k) if inv else k: o for k, o in g.sel.items()} for b, (g, inv) in members.items()}
         unify_names(books)
@@ -581,8 +606,15 @@ def main():
             (bb, best), = sorted(by.items(), key=lambda kv: -kv[1])[:1]
             second = sorted(by.values(), reverse=True)[1]
             ratios.append((best / second, key, ref, by))
+            if leg(key) and not (best <= alerts.HUGE_MAX and best >= second * alerts.HUGE):
+                continue  # handicap : énorme erreur seulement (les surebets sont cherchés à part)
             if best <= (MAX_ODDS_TRY if key.startswith("try") else MAX_ODDS) and best >= second * EDGE:
                 found.append((ref, members, key, bb, best, by))
+        if len(members) > 1:
+            sures += [(ref, members, market, gain, legs) for market, (gain, legs) in alerts.surebets(odds, leg).items()]
+    # une énorme erreur qui crée un surebet n'est signalée qu'une fois, comme surebet
+    covered = {(id(ref), market) for ref, _, market, _, _ in sures}
+    found = [f for f in found if (id(f[0]), (leg(f[2]) or ("",))[0]) not in covered]
     if "--diag" in sys.argv:  # contrôle du rapprochement : matchs communs, marchés comparés, plus gros écarts
         print("matchs par nombre de bookmakers :", collections.Counter(len(m) for _, m in groups))
         print("sélections comparées :", len(ratios), collections.Counter(r[1].split("|")[0] for r in ratios))
@@ -594,13 +626,21 @@ def main():
                 print("  seul chez %s : %s – %s (%s)" % (b, g.home, g.away, g.league))
 
     PAGE.parent.mkdir(exist_ok=True)
-    PAGE.write_text(json.dumps({"at": iso(now()), "gaps": page_gaps(found)}, ensure_ascii=False))
+    PAGE.write_text(json.dumps({"at": iso(now()), "gaps": page_gaps(found, sures)}, ensure_ascii=False))
     state = json.loads(STATE.read_text()) if STATE.exists() else {}
     sent = state.setdefault("sent", {})
     for k in [k for k, v in sent.items() if datetime.fromisoformat(v["t"]) < now() - timedelta(days=3)]:
         del sent[k]
     recent = alerts.recent_subjects(sent, alerts.subject_eu)
     todo = []
+    for ref, members, market, gain, legs in sures:
+        ks = sorted({alerts.subject_eu("%s|%s|%s|sure|%s" % (((g.away, g.home) if inv else (g.home, g.away)) + (ref.start.date(), market)))
+                     for g, inv in members.values()})
+        if recent.intersection(ks):
+            continue
+        title = "💰 Surebet +%s %% · %s · %s – %s" % (("%.1f" % (gain * 100)).replace(".", ","), HCP_KINDS[market], ref.home, ref.away)
+        rows = alerts.sure_lines(legs, leg_text(ref), BOOK_NAMES) + ["%s · %s" % (ref.league, when(ref.start))]
+        todo.append((title, "\n".join(rows), ks, gain))
     for ref, members, key, bb, best, by in found:
         # une clé par façon d'écrire le match chez chaque bookmaker : pas de rappel quand le match de référence change de nom
         ks = sorted({alerts.subject_eu("%s|%s|%s|%s" % (((g.away, g.home) if inv else (g.home, g.away)) + (ref.start.date(), key)))

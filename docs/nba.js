@@ -509,17 +509,20 @@ function renderGaps() {
       <p class="small">Écarts de ligne et écarts de cote entre bookmakers, sur les joueurs et sur les marchés du match (vainqueur, total, handicap…), tant qu'ils sont d'actualité.</p>
       <details class="small gaps-how"><summary>Comment c'est calculé ?</summary>
       <b>Écart de ligne</b> : deux bookmakers n'ont pas la même ligne à l'équilibre (au moins 3 pour les points et les combinés P+R+A, P+R, P+A ;
-      2 pour les rebonds, passes, R+A, paniers à 3 pts et interceptions ; 3 au handicap, ou handicap inversé).
-      <b>Écart de cote</b> : un bookmaker paie nettement plus que les autres sur la même sélection (NBA : joueurs à +30 % sur la 2e meilleure cote, au moins 3 bookmakers, et handicaps à +50 % ;
-      basket européen : +50 % sur les joueurs, le vainqueur, le total, le handicap et les points d'une équipe, cote jusqu'à 6 ; rugby : +50 % sur tous les marchés, marqueurs d'essai compris, cote jusqu'à 10 et 6 pour les marqueurs ; football, hockey, foot US, handball, volley, snooker, tennis : +50 % sur les totaux,
-      les handicaps et les marchés du match, cote jusqu'à 6, et +60 % sur les joueurs (buteurs, passeurs, points, touchdowns, yards),
-      cote jusqu'à 5, au-delà de l'écart habituel entre les deux sites sur ce match ; écart de ligne d'1 but au foot et au hockey,
-      3 points en foot US, 3 buts au handball, 1 set au volley, 2 manches au snooker, ou handicap inversé). Un écart disparaît dès qu'il se referme ou que le match commence.</details></div>
+      2 pour les rebonds, passes, R+A, paniers à 3 pts et interceptions ; totaux : 1 but au foot et au hockey, 3 points en foot US,
+      3 buts au handball, 1 set au volley, 2 manches au snooker).
+      <b>Écart de cote</b> : un bookmaker paie nettement plus que les autres sur la même sélection (NBA : joueurs à +30 % sur la 2e meilleure cote, au moins 3 bookmakers ;
+      basket européen : +50 % sur les joueurs, le vainqueur, le total et les points d'une équipe, cote jusqu'à 6 ; rugby : +50 % sur tous les marchés, marqueurs d'essai compris, cote jusqu'à 10 et 6 pour les marqueurs ; football, hockey, foot US, handball, volley, snooker, tennis : +50 % sur les totaux
+      et les marchés du match, cote jusqu'à 6, et +60 % sur les joueurs (buteurs, passeurs, points, touchdowns, yards),
+      cote jusqu'à 5, au-delà de l'écart habituel entre les deux sites sur ce match).
+      <b>Handicaps</b> (tous sports) : seulement les <b>surebets</b>, quand jouer les deux côtés (ou les trois issues) chez des bookmakers différents
+      rapporte au moins 1 % quel que soit le score, et les énormes erreurs : un bookmaker paie au moins 2 fois la cote des autres sur le même handicap (cote jusqu'à 6).
+      Un écart disparaît dès qu'il se referme ou que le match commence.</details></div>
     <div class="tabs">${GAP_SPORTS.filter(([k], i) => i < GAP_MAIN || currentGaps(k).length || state.gapSport === k).map(([k, l]) => `<button class="tab ${state.gapSport === k ? 'on' : ''}" data-gapsport="${k}">${l}<span class="n">${currentGaps(k).length}</span></button>`).join('')}</div>
     ${at ? `<div class="small gaps-note">Cotes lues ${ago(at)} · ${gapEvery(state.gapSport)}</div>` : ''}
     ${state.gapSport === 'europe' && list.some(x => euroStat(x.stat)) && window.footVault?.().locked
       ? '<div class="small gaps-note">🔒 Historique des joueurs (5 derniers matchs) : <button class="lnkbtn" data-page="foot">ouvrez la page Foot</button> avec votre mot de passe sur cet appareil.</div>' : ''}
-    ${list.length ? list.map(x => x.kind === 'odds' ? oddsCard(x) : gapCard(x)).join('')
+    ${list.length ? list.map(x => x.kind === 'odds' ? oddsCard(x) : x.kind === 'sure' ? sureCard(x) : gapCard(x)).join('')
       : `<div class="empty"><div class="big">📏</div>Aucun écart en ce moment ${GAP_LABEL[state.gapSport] || ''}.</div>`}
   </section>`;
 }
@@ -678,6 +681,26 @@ function euroHistory(x) {
 }
 
 // Écart de cote sur un joueur : la cote de chaque bookmaker sur la sélection, la plus haute en vert
+// Surebet : les paris à faire chez chaque bookmaker et la mise de chacun, pour un gain garanti quel que soit le score
+function sureCard(x) {
+  const d = new Date(x.start);
+  const eur = v => v.toFixed(2).replace('.', ',');
+  const leg = l => {
+    const inner = `${bk(l.book)}<span>${esc(l.sel)} chez ${esc(bookName(l.book))} : <b>${fmt(l.odds)}</b></span><span class="small">mise ${eur(l.stake)} €</span>`;
+    return l.url ? `<a class="gc-bet lnk" href="${esc(l.url)}" target="_blank" rel="noopener" title="Ouvrir le match chez ${esc(bookName(l.book))}">${inner}</a>`
+      : `<span class="gc-bet">${inner}</span>`;
+  };
+  return `<article class="gap-card">
+    <div class="gc-top">
+      <span class="gc-name">${esc(x.name)}</span>
+      <span class="gc-gap sure">surebet +${String(x.gain).replace('.', ',')} %</span>
+    </div>
+    <div class="gc-match">${esc(x.home)} – ${esc(x.away)} · ${esc(dayLabel(d))} ${timeFmt.format(d)}${x.league && x.league !== 'NBA' ? ` · ${esc(x.league)}` : ''}</div>
+    <div class="gc-bets">${x.legs.map(leg).join('')}</div>
+    <div class="gc-foot small"><span>Pour ${eur(x.stake)} € misés : au moins <b>${eur(x.back)} €</b> récupérés, quel que soit le score.</span><span>Les cotes bougent vite : vérifiez-les chez chaque bookmaker avant de jouer.</span></div>
+  </article>`;
+}
+
 function oddsCard(x) {
   const d = new Date(x.start);
   const h = x.game ? findTeam(x.home) : null, a = x.game ? findTeam(x.away) : null;
