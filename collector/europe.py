@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 Basket européen — alertes et page « Écarts » : écart de cote ≥ 50 % entre deux bookmakers sur une même
-sélection, écart de ligne sur un même joueur ; sur les handicaps, seulement les surebets (≥ 1 % de gain garanti)
-et les énormes erreurs (cote au moins 2 fois plus haute qu'ailleurs). La NBA passe aussi ici, mais seulement pour
+sélection, écart de ligne sur un même joueur ; sur les handicaps et les totaux (match, équipe), seulement les
+surebets (≥ 1 % de gain garanti) et les énormes erreurs (cote au moins 2 fois plus haute qu'ailleurs). La NBA passe aussi ici, mais seulement pour
 le handicap (ses props sont suivies par collect.py). Euroligue, Eurocoupe, Betclic Élite, Grèce A1, Turquie BSL,
 ligue Adriatique, Allemagne BBL, Espagne ACB, Italie Lega A, BCL… (compétitions féminines,
 NBA, WNBA, NCAA et Australie exclues).
@@ -456,9 +456,17 @@ def favourite(books):
 
 
 def leg(key):
-    """Handicap à 2 issues, pour alerts.surebets."""
+    """Handicaps et totaux (match, équipe), pour alerts.surebets ; le marché d'un total d'équipe garde l'équipe."""
     k = key.split("|")
-    return ("hcp", k[1], num(k[2]), 2) if k[0] == "hcp" else None
+    if k[0] == "hcp":
+        return ("hcp", k[1], num(k[2]), 2)
+    if k[0] == "tot":
+        return alerts.total_leg("tot", num(k[1]), k[2])
+    return alerts.total_leg("tt|" + k[1], num(k[2]), k[3]) if k[0] == "tt" else None
+
+
+def market_name(ref, key):
+    return describe(key, ref.home, ref.away).partition(" : ")[0]
 
 
 def leg_text(ref):
@@ -468,7 +476,7 @@ def leg_text(ref):
 def page_gaps(gaps, sures, found):
     """Écarts en cours pour la page « Écarts » du site : écarts de ligne avec toutes les lignes de chaque bookmaker
     ({ligne: [cote Plus, cote Moins]}), cotes anormales sur les joueurs et les marchés du match (cote de chaque
-    bookmaker sur la sélection), et surebets sur les handicaps (les paris à faire et leur mise)."""
+    bookmaker sur la sélection), et surebets sur les handicaps et les totaux (les paris à faire et leur mise)."""
     out = []
     for ref, members, key, bb, best, by in found:
         k = key.split("|")
@@ -491,7 +499,7 @@ def page_gaps(gaps, sures, found):
                               for b, lines in books.items()}})
     for ref, members, market, gain, legs in sures:
         x = {"id": "%s|%s|%s|sure|%s" % (ref.home, ref.away, ref.start.date(), market), "sport": "nba" if ref.nba else "europe",
-             "name": "Handicap", "start": iso(ref.start), "home": ref.home, "away": ref.away,
+             "name": market_name(ref, legs[0][0]), "start": iso(ref.start), "home": ref.home, "away": ref.away,
              "league": "NBA" if ref.nba else ref.league}
         x.update(alerts.sure_entry(gain, legs, leg_text(ref), lambda b: members[b][0].url))
         out.append(x)
@@ -546,8 +554,8 @@ def main():
             (bb, best), = sorted(by.items(), key=lambda kv: -kv[1])[:1]
             low_b, low = min(by.items(), key=lambda kv: kv[1])
             second = sorted(by.values(), reverse=True)[1]
-            if key.startswith("hcp|") and not (best <= alerts.HUGE_MAX and best >= second * alerts.HUGE):
-                continue  # handicap : énorme erreur seulement (les surebets sont cherchés à part)
+            if leg(key) and not (best <= alerts.HUGE_MAX and best >= second * alerts.HUGE):
+                continue  # handicap, total : énorme erreur seulement (les surebets sont cherchés à part)
             if best <= MAX_ODDS and best >= second * EDGE:
                 found.append((ref, members, key, bb, best, by))
     if "--diag" in sys.argv:  # contrôle du rapprochement : matchs communs, sélections comparées, plus gros écarts
@@ -600,7 +608,7 @@ def main():
                 lo_b, hi_b = min(bal, key=lambda b: bal[b][0]), max(bal, key=lambda b: bal[b][0])
                 if bal[hi_b][0] - bal[lo_b][0] >= alerts.GAP_MIN[stat]:
                     gaps.append((ref, members, player, stat, lo_b, hi_b, bal, books))
-    # surebets sur les handicaps ; une énorme erreur qui en crée un n'est signalée qu'une fois, comme surebet
+    # surebets sur les handicaps et les totaux ; une énorme erreur qui en crée un n'est signalée qu'une fois, comme surebet
     sures = []
     for ref, members in groups:
         if len(members) < 2:
@@ -611,7 +619,7 @@ def main():
                 odds.setdefault(swap(key) if inv else key, {})[b] = o
         sures += [(ref, members, market, gain, legs) for market, (gain, legs) in alerts.surebets(odds, leg).items()]
     covered = {(id(ref), market) for ref, _, market, _, _ in sures}
-    found = [f for f in found if (id(f[0]), f[2].split("|")[0]) not in covered]
+    found = [f for f in found if (id(f[0]), (leg(f[2]) or ("",))[0]) not in covered]
     PAGE.parent.mkdir(exist_ok=True)
     PAGE.write_text(json.dumps({"at": iso(now()), "gaps": page_gaps(gaps, sures, found)}, ensure_ascii=False))
     todo = []
@@ -631,7 +639,8 @@ def main():
         k = "%s|%s|%s|sure|%s" % (ref.home, ref.away, ref.start.date(), market)
         if k in recent:
             continue
-        title = "💰 Surebet +%s %% · Handicap · %s – %s" % (("%.1f" % (gain * 100)).replace(".", ","), ref.home, ref.away)
+        title = "💰 Surebet +%s %% · %s · %s – %s" % (("%.1f" % (gain * 100)).replace(".", ","), market_name(ref, legs[0][0]),
+                                                     ref.home, ref.away)
         rows = alerts.sure_lines(legs, leg_text(ref), BOOK_NAMES) + ["%s · %s" % ("NBA" if ref.nba else ref.league, when(ref.start))]
         todo.append((title, "\n".join(rows), members[legs[0][1]][0].url, k, gain))
     for ref, members, key, bb, best, by in found:

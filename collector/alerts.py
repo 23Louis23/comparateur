@@ -331,14 +331,20 @@ def run(games, labels, local, st):
     return len(todo)
 
 
-# ------------------------------------------------------------------ handicaps : surebets et énormes erreurs
+# ------------------------------------------------------------------ handicaps et totaux : surebets et énormes erreurs
 SURE_MIN = 0.01   # surebet : au moins 1 % de gain garanti, quel que soit le score
-HUGE = 2.0        # hors surebet, un handicap n'alerte que si un site paie au moins 2 fois la cote des autres…
+HUGE = 2.0        # hors surebet, un handicap ou un total n'alerte que si un site paie au moins 2 fois la cote des autres…
 HUGE_MAX = 6.0    # …sur une cote jusqu'à 6
 
 
+def total_leg(market, line, side):
+    """Un total vu comme un handicap : « Plus de L » gagne si le total dépasse L, comme « home » à -L sur l'écart
+    total - 0 ; « Moins de L » comme « away » à +L. Plus de L1 et Moins de L2 couvrent tout si L2 > L1."""
+    return (market, "home", 0.0 - line, 2) if side == "over" else (market, "away", line, 2)
+
+
 def surebets(odds, leg):
-    """Surebets sur les handicaps d'un match, entre bookmakers différents.
+    """Surebets sur les handicaps et les totaux d'un match, entre bookmakers différents.
     odds : {clé: {bookmaker: cote}}, clés vues du même côté chez tous les bookmakers ;
     leg(clé) → (marché, côté « home »/« away », ligne de ce côté, 2) pour un handicap à 2 issues,
                (marché, issue « home »/« draw »/« away », ligne de « home », 3) pour un handicap à 3 issues, sinon None.

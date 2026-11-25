@@ -508,15 +508,14 @@ function renderGaps() {
     <div class="gaps-h"><h2>Écarts</h2>
       <p class="small">Écarts de ligne et écarts de cote entre bookmakers, sur les joueurs et sur les marchés du match (vainqueur, total, handicap…), tant qu'ils sont d'actualité.</p>
       <details class="small gaps-how"><summary>Comment c'est calculé ?</summary>
-      <b>Écart de ligne</b> : deux bookmakers n'ont pas la même ligne à l'équilibre (au moins 3 pour les points et les combinés P+R+A, P+R, P+A ;
-      2 pour les rebonds, passes, R+A, paniers à 3 pts et interceptions ; totaux : 1 but au foot et au hockey, 3 points en foot US,
-      3 buts au handball, 1 set au volley, 2 manches au snooker).
+      <b>Écart de ligne</b> sur un joueur : deux bookmakers n'ont pas la même ligne à l'équilibre (au moins 3 pour les points et les combinés P+R+A, P+R, P+A ;
+      2 pour les rebonds, passes, R+A, paniers à 3 pts et interceptions ; foot US : 12 yards à la course et à la réception, 20 à la passe).
       <b>Écart de cote</b> : un bookmaker paie nettement plus que les autres sur la même sélection (NBA : joueurs à +30 % sur la 2e meilleure cote, au moins 3 bookmakers ;
-      basket européen : +50 % sur les joueurs, le vainqueur, le total et les points d'une équipe, cote jusqu'à 6 ; rugby : +50 % sur tous les marchés, marqueurs d'essai compris, cote jusqu'à 10 et 6 pour les marqueurs ; football, hockey, foot US, handball, volley, snooker, tennis : +50 % sur les totaux
-      et les marchés du match, cote jusqu'à 6, et +60 % sur les joueurs (buteurs, passeurs, points, touchdowns, yards),
+      basket européen : +50 % sur les joueurs et le vainqueur, cote jusqu'à 6 ; rugby : +50 % sur les autres marchés, marqueurs d'essai compris, cote jusqu'à 10 et 6 pour les marqueurs ;
+      football, hockey, foot US, handball, volley, snooker, tennis : +50 % sur les autres marchés du match, cote jusqu'à 6, et +60 % sur les joueurs (buteurs, passeurs, points, touchdowns, yards),
       cote jusqu'à 5, au-delà de l'écart habituel entre les deux sites sur ce match).
-      <b>Handicaps</b> (tous sports) : seulement les <b>surebets</b>, quand jouer les deux côtés (ou les trois issues) chez des bookmakers différents
-      rapporte au moins 1 % quel que soit le score, et les énormes erreurs : un bookmaker paie au moins 2 fois la cote des autres sur le même handicap (cote jusqu'à 6).
+      <b>Handicaps et totaux</b> (tous sports, total du match ou d'une équipe) : seulement les <b>surebets</b>, quand jouer les deux côtés (ou les trois issues) chez des bookmakers différents
+      rapporte au moins 1 % quel que soit le score, et les énormes erreurs : un bookmaker paie au moins 2 fois la cote des autres sur la même sélection (cote jusqu'à 6).
       Un écart disparaît dès qu'il se referme ou que le match commence.</details></div>
     <div class="tabs">${GAP_SPORTS.filter(([k], i) => i < GAP_MAIN || currentGaps(k).length || state.gapSport === k).map(([k, l]) => `<button class="tab ${state.gapSport === k ? 'on' : ''}" data-gapsport="${k}">${l}<span class="n">${currentGaps(k).length}</span></button>`).join('')}</div>
     ${at ? `<div class="small gaps-note">Cotes lues ${ago(at)} · ${gapEvery(state.gapSport)}</div>` : ''}

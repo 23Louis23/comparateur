@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
 Tous sports, paris annexes — alertes et page « Écarts » : cote anormale (≥ 50 % au-dessus du 2e meilleur bookmaker
-sur la même sélection), écart de ligne sur les totaux ; sur les handicaps, seulement les surebets (≥ 1 % de gain
-garanti, en jouant les deux côtés chez deux bookmakers) et les énormes erreurs (cote au moins 2 fois plus haute
-qu'ailleurs). Foot, hockey, foot US, handball, volley, snooker, tennis ; le basket et le rugby
+sur la même sélection), écart de ligne sur les yards d'un joueur (foot US) ; sur les handicaps et les totaux (match,
+équipe), seulement les surebets (≥ 1 % de gain garanti, en jouant les deux côtés chez deux bookmakers) et les énormes
+erreurs (cote au moins 2 fois plus haute qu'ailleurs). Foot, hockey, foot US, handball, volley, snooker, tennis ; le basket et le rugby
 ont déjà leurs tâches (europe.py, rugby.py).
 
 Bookmakers : PMU (flux Kambi), Winamax, Betclic (pages rendues côté serveur), Unibet (foot seulement) — les mêmes sites
@@ -78,6 +78,7 @@ UNITS = ("buts", "points", "jeux", "manches", "sets")
 
 # Sports : flux PMU (Kambi), identifiant Winamax, pages Betclic (et Unibet pour le foot), unité principale,
 # qualificatifs PMU qui valent « match entier » (full) ou « prolongations comprises » (ot), écarts de ligne minimaux
+# sur les joueurs (les totaux et handicaps n'alertent que sur un surebet ou une énorme erreur)
 SPORTS = {
     "foot": {"name": "Foot", "label": "en football", "emoji": "⚽", "tag": "soccer", "unit": "buts",
              "pmu": "football", "winamax": 1, "betclic": "/football-sfootball",
@@ -88,32 +89,30 @@ SPORTS = {
              "unibet_comps": ["france/ligue-1-mcdonalds", "france/ligue-2-bkt", "angleterre/premier-league", "espagne/laliga",
                               "italie/serie-a", "allemagne/bundesliga-1", "coupes-d-europe/ligue-des-champions",
                               "coupes-d-europe/ligue-europa", "coupes-d-europe/ligue-conference"],
-             "gap": {"tot": 1, "tt": 1},
+             "gap": {},
              "cap": {"pmu": 80, "winamax": 24, "betclic": 12, "unibet": 6}},
     "hockey": {"name": "Hockey", "label": "en hockey", "emoji": "🏒", "tag": "ice_hockey", "unit": "buts",
                "pmu": "ice_hockey", "winamax": 4, "betclic": "/hockey-sur-glace-sice_hockey", "betclic_comps": ["nhl-c83"],
                "full": {"Temps réglementaire"}, "ot": {"Prolongations et séance de tirs au but incluses"},
-               "gap": {"tot": 1, "tt": 1}},
+               "gap": {}},
     "nfl": {"name": "Foot US", "label": "en foot US", "emoji": "🏈", "tag": "football", "unit": "points",
             "pmu": "american_football", "winamax": 16, "betclic": "/football-americain-samerican_football",
             "betclic_comps": ["nfl-c84"], "full": {"", "Prolongations incluses", "Prolongations Incluses"},
-            "gap": {"tot": 3, "tt": 3, "ydpass": 20, "ydrec": 12, "ydrush": 12}},
+            "gap": {"ydpass": 20, "ydrec": 12, "ydrush": 12}},
     "handball": {"name": "Handball", "label": "en handball", "emoji": "🤾", "tag": "handball_person", "unit": "buts",
                  "pmu": "handball", "winamax": 6, "betclic": "/handball-shandball",
                  "betclic_comps": ["ligue-des-champions-h-c110", "ligue-europeenne-ehf-h-c7490", "allemagne-bundesliga-1-h-c252"],
-                 "gap": {"tot": 3, "tt": 2}},
+                 "gap": {}},
     "volley": {"name": "Volley", "label": "en volley", "emoji": "🏐", "tag": "volleyball", "unit": "points",
                "pmu": "volleyball", "winamax": 23, "betclic": "/volley-ball-svolleyball", "betclic_comps": [],
-               # points : 3, 4 ou 5 sets, deux bosses (≈ 140 sur un 3-0, ≈ 185 en 4 sets) ; deux lignes « à l'équilibre »
-               # très différentes peuvent être justes toutes les deux : pas d'écart de ligne en points, seulement en sets
-               "gap": {"tot~sets": 1}},
+               "gap": {}},
     "snooker": {"name": "Snooker", "label": "en snooker", "emoji": "🎱", "tag": "8ball", "unit": "manches",
                 "pmu": "snooker", "winamax": 19, "betclic": "/snooker-ssnooker", "betclic_comps": [],
-                "gap": {"tot": 2}},
+                "gap": {}},
     "tennis": {"name": "Tennis", "label": "en tennis", "emoji": "🎾", "tag": "tennis", "unit": "jeux",
                "pmu": "tennis", "winamax": 5, "betclic": "/tennis-stennis", "betclic_comps": [],
                "strict": True,  # « Handicap » sans unité chez PMU : jeux ou sets ? Pas comparé tant qu'on ne l'a pas vu
-               "gap": {}},  # jeux : même souci que les points au volley (deux bosses selon le nombre de sets)
+               "gap": {}},
 }
 
 # noms d'équipes : mots sans valeur pour le rapprochement, et noms français ou abrégés → nom local
@@ -357,8 +356,18 @@ W_PLAYER_N = [(re.compile(r"^Points du joueur : (\d) ou plus$"), "hp"), (re.comp
 W_YARDS = re.compile(r"^Nombre de yards à la (réception|passe|course) - (.+)$")
 
 
-def winamax_market(g, title, outs):
+W_OT_IN = re.compile(r"prolongations[^.]*inclus", re.I)
+
+
+def winamax_tag(sp, help):
+    """Hockey : le total et l'écart de buts de Winamax comptent les prolongations et les tirs au but (aide du pari :
+    « prolongations et tirs au but éventuels inclus »), le reste non (« Hors prolongations… ») → « ~ot » ou ""."""
+    return "~ot" if sp.get("ot") and W_OT_IN.search(help or "") and "hors prolongations" not in (help or "").lower() else ""
+
+
+def winamax_market(g, title, outs, help=""):
     sp = g.sp
+    tag = winamax_tag(sp, help)
     if title in W_RES:
         for o, x in outs:
             s = who(g, o.get("label"))
@@ -373,22 +382,22 @@ def winamax_market(g, title, outs):
         for o, x in outs:
             s = g.side(o.get("label"))
             if s:
-                g.add("dnb|" + s, x)
+                g.add("dnb%s|%s" % (tag, s), x)
     elif W_TOT.match(title):
-        k = kind_of(sp, "tot", W_TOT.match(title).group(1))
+        k = kind_of(sp, "tot", W_TOT.match(title).group(1), tag)
         for o, x in outs:
             side, line = ou(o.get("label"))
             if side:
                 g.add("%s|%s|%s" % (k, line, side), x)
     elif W_TT.match(title):
         m = W_TT.match(title)
-        k, s = kind_of(sp, "tt", m.group(1)), g.side(m.group(2))
+        k, s = kind_of(sp, "tt", m.group(1), tag), g.side(m.group(2))
         for o, x in outs:
             side, line = ou(o.get("label"))
             if side and s:
                 g.add("%s|%s|%s|%s" % (k, s, line, side), x)
     elif W_HCP.match(title):
-        k = kind_of(sp, "hcp", W_HCP.match(title).group(1))
+        k = kind_of(sp, "hcp", W_HCP.match(title).group(1), tag)
         rows = []
         for o, x in outs:
             m = re.match(r"^(.*\S)\s+([+-][\d.,]+)$", o.get("label") or "")
@@ -401,7 +410,7 @@ def winamax_market(g, title, outs):
         for o, x in outs:
             lab = plain(o.get("label"))
             if lab in ("oui", "non"):
-                g.add("btts|" + ("yes" if lab == "oui" else "no"), x)
+                g.add("btts%s|%s" % (tag, "yes" if lab == "oui" else "no"), x)
     elif title in W_PLAYER:
         for o, x in outs:
             g.player(W_PLAYER[title], o.get("label"), x)
@@ -424,7 +433,7 @@ def winamax_bets(g, st, mid, only=None):
         if b.get("matchId") != mid or not b.get("available") or (only and str(bid) != str(only)):
             continue
         outs = [(outcomes.get(str(o)) or {}, odds.get(str(o))) for o in b.get("outcomes") or []]
-        winamax_market(g, b.get("betTitle") or "", [(o, x) for o, x in outs if o.get("available", True)])
+        winamax_market(g, b.get("betTitle") or "", [(o, x) for o, x in outs if o.get("available", True)], b.get("betTypeHelp"))
 
 
 def list_winamax(sp):
@@ -888,37 +897,32 @@ def outlier(key, by, base):
 
 
 def leg(key):
-    """Handicaps à 2 issues (hcp…) et à 3 issues (eh…), pour alerts.surebets ; le marché garde l'unité (« hcp~sets »)."""
+    """Handicaps à 2 issues (hcp…) et à 3 issues (eh…), totaux (tot…, tt… d'une équipe), pour alerts.surebets ;
+    le marché garde l'unité (« hcp~sets ») et l'équipe d'un total d'équipe (« tt|home »)."""
     k = key.split("|")
     base = kind_parts(k[0])[0]
     if base == "hcp":
         return (k[0], k[1], num(k[2]), 2)
-    return (k[0], k[2], num(k[1]), 3) if base == "eh" else None
+    if base == "eh":
+        return (k[0], k[2], num(k[1]), 3)
+    if base == "tot":
+        return alerts.total_leg(k[0], num(k[1]), k[2])
+    return alerts.total_leg(k[0] + "|" + k[1], num(k[2]), k[3]) if base == "tt" else None
 
 
 def line_checks(sp, ref, v, kinds):
-    """Totaux à comparer : (préfixe des clés, écart minimal, intitulé, catégorie)."""
+    """Lignes de joueurs à comparer (yards) : (préfixe des clés, écart minimal, intitulé, catégorie)."""
     out = []
     for kind in sorted(kinds):
-        base, unit, ot = kind_parts(kind)
-        need = sp["gap"].get(kind.replace("~ot", ""))
-        u = unit or sp["unit"]
-        extra = " (prolongations comprises)" if ot else ""
-        if not need:
-            continue
-        if base == "tot":
-            out.append((kind + "|", need, "Total de %s%s" % (u, extra), "Écart de ligne"))
-        elif base == "tt":
-            out += [("%s|%s|" % (kind, s), need, "%s de %s%s" % (u.capitalize(), t, extra), "Écart de ligne")
-                    for s, t in (("home", ref.home), ("away", ref.away))]
-        elif kind in PLAYER_LINES:
+        need = sp["gap"].get(kind)
+        if need and kind in PLAYER_LINES:
             players = {player_of(k) for sel, g, inv in v.values() for k in sel if k.startswith(kind + "|")}
             out += [("%s|%s|" % (kind, p), need, player_name(v, p), PLAYER_KINDS[kind]) for p in sorted(players)]
     return out
 
 
 def compare(groups, sp):
-    """→ (cotes anormales, écarts de ligne sur les totaux, surebets sur les handicaps, pages à relire pour confirmer)."""
+    """→ (cotes anormales, écarts de ligne sur les joueurs, surebets sur les handicaps et totaux, pages à relire pour confirmer)."""
     found, lines, sures, stale = [], [], [], set()
     for ref, members in groups:
         if len(members) < 2:
@@ -939,7 +943,7 @@ def compare(groups, sp):
                 else:
                     stale.update((b, v[b][1]) for b in (bb, sb) if not v[b][1].fresh(raw(b)))
         kinds = {k.split("|")[0] for k in odds}
-        # écarts de ligne : totaux, totaux d'une équipe, joueurs (yards)
+        # écarts de ligne : joueurs (yards)
         for prefix, need, label, cat in line_checks(sp, ref, v, kinds):
             bal = {b: x for b, x in ((b, balanced(sel, prefix)) for b, (sel, g, inv) in v.items()) if x}
             if len(bal) < 2:
@@ -950,14 +954,14 @@ def compare(groups, sp):
                     lines.append(dict(ref=ref, v=v, prefix=prefix, label=label, cat=cat, bal=bal, lo_b=lo_b, hi_b=hi_b))
                 else:
                     stale.update((b, v[b][1]) for b in (lo_b, hi_b) if not detail_fresh(v[b][1]))
-        # handicaps : surebets (cotes fraîches chez les deux ou trois sites), qui remplacent une énorme erreur sur ce marché
+        # handicaps et totaux : surebets (cotes fraîches chez les deux ou trois sites), qui remplacent une énorme erreur sur ce marché
         for market, (gain, legs) in alerts.surebets(odds, leg).items():
             old = [b for k, b, o in legs if not v[b][1].fresh(swap(k) if v[b][2] else k)]
             if old:
                 stale.update((b, v[b][1]) for b in old)
             else:
                 sures.append(dict(ref=ref, v=v, market=market, gain=gain, legs=legs))
-                found = [f for f in found if f[0] is not ref or f[2].split("|")[0] != market]
+                found = [f for f in found if f[0] is not ref or (leg(f[2]) or ("",))[0] != market]
     return found, lines, sures, stale
 
 
@@ -965,6 +969,12 @@ def compare(groups, sp):
 def hcp_name(sp, kind):
     base, unit, ot = kind_parts(kind)
     return ("Handicap 3 issues" if base == "eh" else "Handicap") + (" (%s)" % unit if unit else "") + (" (prolongations comprises)" if ot else "")
+
+
+def market_name(sp, ref, key):
+    """« Handicap (sets) », « Handicap 3 issues », « Total de buts », « Buts de Lyon »…"""
+    kind = key.split("|")[0]
+    return hcp_name(sp, kind) if kind_parts(kind)[0] in ("hcp", "eh") else describe(sp, key, ref.home, ref.away).partition(" : ")[0]
 
 
 def leg_text(sp, ref):
@@ -1006,7 +1016,7 @@ def page_gaps(sp_id, sp, found, lines, sures):
     for x in sures:
         ref, v = x["ref"], x["v"]
         e = {"id": "%s|%s|%s|sure|%s" % (ref.home, ref.away, ref.start.date(), x["market"]), "sport": sp_id,
-             "name": hcp_name(sp, x["market"]), "start": iso(ref.start), "home": ref.home, "away": ref.away, "league": ref.league}
+             "name": market_name(sp, ref, x["legs"][0][0]), "start": iso(ref.start), "home": ref.home, "away": ref.away, "league": ref.league}
         e.update(alerts.sure_entry(x["gain"], x["legs"], leg_text(sp, ref), lambda b: v[b][1].url))
         out.append(e)
     return out
@@ -1043,7 +1053,7 @@ def messages(sp, found, lines, sures):
     for x in sures:
         ref, gain = x["ref"], x["gain"]
         rows = alerts.sure_lines(x["legs"], leg_text(sp, ref), BOOK_NAMES) + ["%s · %s" % (ref.league, when(ref.start))]
-        todo.append((ref.start, "💰 Surebet +%s %% · %s · %s – %s" % (("%.1f" % (gain * 100)).replace(".", ","), hcp_name(sp, x["market"]),
+        todo.append((ref.start, "💰 Surebet +%s %% · %s · %s – %s" % (("%.1f" % (gain * 100)).replace(".", ","), market_name(sp, ref, x["legs"][0][0]),
                                                                       ref.home, ref.away),
                      "\n".join(rows), alert_keys(x["v"], ref, "sure|" + x["market"]), gain))
     return todo
@@ -1108,6 +1118,9 @@ def main():
     dry, diag = "--dry" in sys.argv, "--diag" in sys.argv
     only = sys.argv[sys.argv.index("--only") + 1].split(",") if "--only" in sys.argv else list(SPORTS)
     cache = json.loads(CACHE.read_text()) if CACHE.exists() else {}
+    if cache.get("v") != 2:  # 25/11 : total et écart de buts de Winamax au hockey désormais « ~ot » → pages gardées à relire
+        cache.get("hockey", {}).pop("winamax", None)
+        cache["v"] = 2
     state = json.loads(STATE.read_text()) if STATE.exists() else {}
     old = json.loads(PAGE.read_text()) if PAGE.exists() else {}
     sent = state.setdefault("sent", {})

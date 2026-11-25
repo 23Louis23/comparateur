@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 Rugby à XV et à XIII — alertes et page « Écarts » : écart de cote ≥ 50 % entre deux bookmakers sur une
-même sélection, sur tous les marchés que l'on sait rapprocher d'un bookmaker à l'autre ; sur les handicaps,
-seulement les surebets (≥ 1 % de gain garanti) et les énormes erreurs (cote au moins 2 fois plus haute
+même sélection, sur tous les marchés que l'on sait rapprocher d'un bookmaker à l'autre ; sur les handicaps et les
+totaux (match, 1re mi-temps, équipe), seulement les surebets (≥ 1 % de gain garanti) et les énormes erreurs (cote au moins 2 fois plus haute
 qu'ailleurs). Compétitions féminines et rugby à 7 exclus.
 
 Bookmakers : PMU (flux Kambi), Winamax, Unibet, Betclic (pages rendues côté serveur).
@@ -521,15 +521,20 @@ def describe(key, home, away):
     return key
 
 
-HCP_KINDS = {"hcp": "Handicap", "hthcp": "Handicap 1re mi-temps", "h3": "Handicap 3 issues"}
-
-
 def leg(key):
-    """Handicaps à 2 issues (match, 1re mi-temps) et à 3 issues, pour alerts.surebets."""
+    """Handicaps à 2 issues (match, 1re mi-temps), à 3 issues, et totaux (match, 1re mi-temps, équipe), pour alerts.surebets."""
     k = key.split("|")
     if k[0] in ("hcp", "hthcp"):
         return (k[0], k[1], num(k[2]), 2)
-    return ("h3", k[2], num(k[1]), 3) if k[0] == "h3" else None
+    if k[0] == "h3":
+        return ("h3", k[2], num(k[1]), 3)
+    if k[0] in ("tot", "httot"):
+        return alerts.total_leg(k[0], num(k[1]), k[2])
+    return alerts.total_leg("tt|" + k[1], num(k[2]), k[3]) if k[0] == "tt" else None
+
+
+def market_name(ref, key):
+    return "Handicap 3 issues" if key.startswith("h3|") else describe(key, ref.home, ref.away).partition(" : ")[0]
 
 
 def leg_text(ref):
@@ -548,11 +553,11 @@ def player_name(members, pk):
 
 def page_gaps(found, sures):
     """Cotes anormales en cours, pour la page « Écarts » du site : tous les marchés (résultat, double chance,
-    handicap…), et pour les marqueurs d'essai le nom du joueur en titre ; surebets sur les handicaps."""
+    handicap…), et pour les marqueurs d'essai le nom du joueur en titre ; surebets sur les handicaps et les totaux."""
     out = []
     for ref, members, market, gain, legs in sures:
         x = {"id": "%s|%s|%s|sure|%s" % (ref.home, ref.away, ref.start.date(), market), "sport": "rugby",
-             "name": HCP_KINDS[market], "start": iso(ref.start), "home": ref.home, "away": ref.away, "league": ref.league}
+             "name": market_name(ref, legs[0][0]), "start": iso(ref.start), "home": ref.home, "away": ref.away, "league": ref.league}
         x.update(alerts.sure_entry(gain, legs, leg_text(ref), lambda b: members[b][0].url))
         out.append(x)
     for ref, members, key, bb, best, by in found:
@@ -607,7 +612,7 @@ def main():
             second = sorted(by.values(), reverse=True)[1]
             ratios.append((best / second, key, ref, by))
             if leg(key) and not (best <= alerts.HUGE_MAX and best >= second * alerts.HUGE):
-                continue  # handicap : énorme erreur seulement (les surebets sont cherchés à part)
+                continue  # handicap, total : énorme erreur seulement (les surebets sont cherchés à part)
             if best <= (MAX_ODDS_TRY if key.startswith("try") else MAX_ODDS) and best >= second * EDGE:
                 found.append((ref, members, key, bb, best, by))
         if len(members) > 1:
@@ -638,7 +643,8 @@ def main():
                      for g, inv in members.values()})
         if recent.intersection(ks):
             continue
-        title = "💰 Surebet +%s %% · %s · %s – %s" % (("%.1f" % (gain * 100)).replace(".", ","), HCP_KINDS[market], ref.home, ref.away)
+        title = "💰 Surebet +%s %% · %s · %s – %s" % (("%.1f" % (gain * 100)).replace(".", ","), market_name(ref, legs[0][0]),
+                                                     ref.home, ref.away)
         rows = alerts.sure_lines(legs, leg_text(ref), BOOK_NAMES) + ["%s · %s" % (ref.league, when(ref.start))]
         todo.append((title, "\n".join(rows), ks, gain))
     for ref, members, key, bb, best, by in found:
