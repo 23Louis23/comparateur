@@ -419,6 +419,18 @@
     .ft-res { min-width: 34px; }
     .ft-at { display: none; }
   }
+
+  /* Téléphone : onglets Matchs / Écarts / Foot en bas de l'écran, à portée du pouce (en haut, sous l'heure et
+     l'encoche de l'iPhone, ils étaient difficiles à toucher en portrait) */
+  @media (max-width: 760px) {
+    header { -webkit-backdrop-filter: none; backdrop-filter: none; background: rgba(9,12,17,.97); }  /* le flou garderait la barre dans l'en-tête */
+    .pages { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; gap: 6px; border-radius: 0; border-width: 1px 0 0;
+             padding: 7px max(10px, env(safe-area-inset-right)) calc(7px + env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+             background: rgba(14,18,25,.97); }
+    .pages button { flex: 1; justify-content: center; padding: 12px 6px; font-size: 15px; border-radius: 10px; }
+    .pages button.on { background: var(--panel-3); color: var(--accent); }
+    body { padding-bottom: calc(70px + env(safe-area-inset-bottom)); }
+  }
 </style>
 </head>
 <body>
