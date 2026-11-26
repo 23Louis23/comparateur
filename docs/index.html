@@ -34,6 +34,9 @@
 
   /* en-tête */
   header { position: sticky; top: 0; z-index: 20; background: rgba(9,12,17,.9); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+  /* Appli ajoutée à l'écran d'accueil (plein écran) : on décale sous l'heure / l'encoche,
+     sinon en portrait la barre d'état de l'iPhone recouvre les onglets Matchs / Écarts / Foot */
+  header { padding-top: env(safe-area-inset-top); padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
   .bar { display: flex; align-items: center; gap: 12px; padding: 12px 0; }
   .logo { font-weight: 800; font-size: 18px; letter-spacing: -.02em; display: flex; align-items: center; gap: 8px; }
   .logo .tag { font-family: 'Barlow Condensed'; font-size: 13px; background: var(--accent); color: var(--accent-ink); padding: 1px 7px; border-radius: 5px; letter-spacing: .06em; }
